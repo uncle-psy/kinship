@@ -10475,24 +10475,955 @@ const CycleContent = ({ page, context }) => {
     );
   }
 
-  if (page === "economy") return (
-    <div>
-      <PageHeader title="Cycle Economy" subtitle="Coin, wallet, and economic settings for this cycle" />
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
-        {[
-          { label: "Cycle Coin", main: "◎ Temple Coin (TMPL)", details: ["Supply: 100M", "Bonding Curve: Exponential", "Traded against: KNSHP"], btn: "Configure" },
-          { label: "Wallet Balance", main: "12,450 KNSHP", mainColor: colors.accent, details: ["250,000 TMPL", "0.45 SOL"], btn: "View Wallet" },
-        ].map((c, i) => (
-          <div key={i} style={{ padding: 22, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.1, textTransform: "uppercase", marginBottom: 10 }}>{c.label}</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: c.mainColor || colors.text }}>{c.main}</div>
-            <div style={{ fontSize: 12, color: colors.textDim, marginTop: 10, lineHeight: 1.9 }}>{c.details.map((d,j) => <div key={j}>{d}</div>)}</div>
-            <div style={{ marginTop: 16 }}><Btn variant="secondary" size="sm">{c.btn}</Btn></div>
-          </div>
-        ))}
+  if (page === "economy") {
+    // ── Data ───────────────────────────────────────────────────────
+    const CYCLE_COINS_INIT = [
+      {
+        id: "knshp", symbol: "KNSHP", name: "Kinship Coin", icon: "◎",
+        color: "#6FC3FF", scope: "platform",
+        supply: "1,000,000,000", circulation: "124,500,000", holders: 3812,
+        priceUSD: 0.0042, rateToKNSHP: null,
+        curve: null, mintAuthority: "Platform",
+        status: "Active", description: "Platform native token. Available in all cycles automatically.",
+        acceptedActors: ["all"], acceptedOfferings: ["all"],
+        created: "Platform",
+      },
+      {
+        id: "tmpl", symbol: "TMPL", name: "Temple Coin", icon: "🔥",
+        color: "#FFB347", scope: "cycle",
+        supply: 100000000, circulation: 2840000, holders: 234,
+        priceUSD: null, rateToKNSHP: 0.05,
+        curve: "Exponential", mintAuthority: "moto",
+        status: "Active",
+        description: "The Mountain Temple's participation token. Earned through quests and ceremony completion. Used to unlock premium scenes and reward top contributors.",
+        acceptedActors: ["elder-sage", "challenge-master", "story-weaver"],
+        acceptedOfferings: ["crystal-cave", "creator-pass", "journal-kit"],
+        created: "2025-11-01",
+      },
+    ];
+
+    const AVAILABLE_TO_ADD = [
+      { id: "sol",  symbol: "SOL",  name: "Solana",   icon: "◎", color: "#9945FF", type: "external", desc: "Native Solana gas token." },
+      { id: "usdc", symbol: "USDC", name: "USD Coin",  icon: "$", color: "#2775CA", type: "external", desc: "Stable USD-pegged token on Solana." },
+      { id: "bonk", symbol: "BONK", name: "BONK",      icon: "🐶", color: "#F7931A", type: "external", desc: "Popular Solana community token." },
+    ];
+
+    // Cross-ref data (actors + offerings in this cycle)
+    const CYCLE_ACTORS_REF = [
+      { id: "challenge-master", name: "Challenge Master", emoji: "⚔️" },
+      { id: "story-weaver",     name: "Story Weaver",     emoji: "📖" },
+      { id: "elder-sage",       name: "Elder Sage",        emoji: "🧙" },
+      { id: "healer",           name: "The Healer",        emoji: "💚" },
+      { id: "keeper",           name: "The Keeper",        emoji: "🗝️" },
+    ];
+
+    const CYCLE_OFFERINGS_REF = [
+      { id: "crystal-cave",    name: "Crystal Cave Scene Pack",   icon: "🗺️" },
+      { id: "meditation-guide",name: "Meditation Guide Prompt",   icon: "📜" },
+      { id: "creator-pass",    name: "Monthly Creator Pass",      icon: "🎫" },
+      { id: "actor-commission",name: "Custom Actor Commission",   icon: "🎭" },
+      { id: "journal-kit",     name: "Shadow Work Journal Kit",   icon: "📓" },
+    ];
+
+    const CURVE_TYPES = [
+      { id: "Linear",      desc: "Price rises at a fixed rate per token sold. Predictable and easy to understand." },
+      { id: "Exponential", desc: "Price accelerates as supply increases. Rewards early holders more significantly." },
+      { id: "Logarithmic", desc: "Price rises quickly at first, then levels off. Good for wide distribution." },
+      { id: "Flat",        desc: "Fixed price regardless of supply. Simple but no holder incentive." },
+    ];
+
+    const COIN_ICONS = ["🔥","⚡","🌙","🌊","🌿","💎","🏔️","🌀","🔮","⚔️","🌺","🪄","🌈","🪐","🦋","🗝️","🌙","✨","🏛️","🔱"];
+    const COIN_COLORS = [
+      { hex: "#FFB347", label: "Amber"    },
+      { hex: "#6FC3FF", label: "Sky"      },
+      { hex: "#A8E063", label: "Lime"     },
+      { hex: "#C3A6FF", label: "Lavender" },
+      { hex: "#FF6FAE", label: "Rose"     },
+      { hex: "#4ECDC4", label: "Teal"     },
+      { hex: "#F7DC6F", label: "Gold"     },
+      { hex: "#EC7063", label: "Coral"    },
+    ];
+
+    const ENTRY_COST_INIT = {
+      enabled: true,
+      type: "one-time",               // "free" | "one-time" | "subscription"
+      amount: 500,
+      currency: "KNSHP",              // "KNSHP" | "TMPL" | "USD"
+      subscriptionInterval: "monthly",// "monthly" | "quarterly" | "annual"
+      note: "One-time initiation fee. Members keep access permanently after joining.",
+    };
+
+    const [coins, setCoins]       = useState(CYCLE_COINS_INIT);
+    const [view, setView]         = useState(null); // null | "add-coin" | "create-coin" | coin.id
+    const [walletOpen, setWallet] = useState(false);
+    const [feesOpen, setFees]     = useState(false);
+    const [entryOpen, setEntry]   = useState(false);
+
+    // ── Wallet panel ────────────────────────────────────────────
+    const WalletPanel = ({ onClose }) => (
+      <div style={{ maxWidth: 560 }}>
+        <PageHeader title="Cycle Wallet" subtitle="Balances and transaction settings for this cycle" onBack={onClose} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
+          {[
+            { label: "KNSHP",         value: "12,450",  sub: "≈ $52.29 USD"           },
+            { label: "TMPL",          value: "250,000", sub: "12,500 KNSHP equiv."     },
+            { label: "SOL",           value: "0.45",    sub: "gas reserves"            },
+          ].map((b, i) => (
+            <div key={i} style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase", marginBottom: 4 }}>{b.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: colors.accent }}>{b.value}</div>
+              <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{b.sub}</div>
+            </div>
+          ))}
+        </div>
+        <SectionDivider label="Wallet Settings" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[
+            { label: "Wallet Provider",      value: "Privy (embedded)"                },
+            { label: "Network",              value: "Solana mainnet-beta"              },
+            { label: "Custodial default",    value: "Yes — member holds keys"         },
+            { label: "Gas policy",           value: "Platform-sponsored (first 5 txns)" },
+            { label: "On-ramp",              value: "Stripe / MoonPay fallback"        },
+            { label: "Show balances to members", value: "Yes"                          },
+          ].map((r, i) => (
+            <div key={i} style={{ display: "flex", padding: "9px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+              <span style={{ fontSize: 12, color: colors.textDim, width: 240, flexShrink: 0 }}>{r.label}</span>
+              <span style={{ fontSize: 12, color: colors.textMuted, fontWeight: 500 }}>{r.value}</span>
+            </div>
+          ))}
+        </div>
+        <SectionDivider label="Recent Transactions" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {[
+            { type: "Quest Reward",   amount: "+500 TMPL",  member: "solstice.eth",     date: "2h ago"   },
+            { type: "Offering Sale",  amount: "+2,000 KNSHP", member: "wanderer22",    date: "5h ago"   },
+            { type: "Quest Reward",   amount: "+500 TMPL",  member: "deepwater.sol",    date: "Yesterday"},
+            { type: "Fee payout",     amount: "-120 KNSHP", member: "Platform",         date: "Yesterday"},
+            { type: "Coin Purchase",  amount: "+1,000 TMPL", member: "lightpath.eth",  date: "2 days ago"},
+          ].map((t, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted }}>{t.type}</div>
+                <div style={{ fontSize: 11, color: colors.textDim }}>{t.member}</div>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: t.amount.startsWith("+") ? colors.green : colors.red }}>{t.amount}</span>
+              <span style={{ fontSize: 11, color: colors.textDim, width: 70, textAlign: "right" }}>{t.date}</span>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+
+    // ── Fees panel ──────────────────────────────────────────────
+    const FeesPanel = ({ onClose }) => {
+      const [fees, setFees] = useState({
+        platformCut: 2.5,
+        creatorRoyalty: 10,
+        questRewardBudget: 5000,
+        coinSwapFee: 0.5,
+        autoDistribute: true,
+      });
+      return (
+        <div style={{ maxWidth: 560 }}>
+          <PageHeader title="Fees & Rewards" subtitle="Cycle-specific fee rates and reward distribution settings" onBack={onClose} />
+          <InfoBox color={colors.blue}>
+            Platform-level fees (2.5%) apply to all transactions. Cycle-specific settings layer on top — they control creator royalties, reward budgets, and coin swap rates.
+          </InfoBox>
+          <SectionDivider label="Fee Rates" />
+          {[
+            { key: "platformCut",    label: "Platform cut",        hint: "Platform fee on all cycle transactions. Fixed, not editable.",      readOnly: true,  suffix: "%" },
+            { key: "creatorRoyalty", label: "Creator royalty",     hint: "Your cut on every secondary sale of cycle assets or offerings.",    readOnly: false, suffix: "%" },
+            { key: "coinSwapFee",    label: "Coin swap fee",       hint: "Fee charged when members swap TMPL ↔ KNSHP within the cycle.",     readOnly: false, suffix: "%" },
+          ].map(f => (
+            <Field key={f.key} label={f.label} hint={f.hint}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input type="number" value={fees[f.key]} disabled={f.readOnly}
+                  onChange={e => setFees(prev => ({ ...prev, [f.key]: parseFloat(e.target.value) }))}
+                  style={{ width: 100, padding: "8px 12px", background: f.readOnly ? colors.bg : colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: f.readOnly ? colors.textDim : colors.text, fontSize: 13, outline: "none" }} />
+                <span style={{ fontSize: 12, color: colors.textDim }}>{f.suffix}</span>
+                {f.readOnly && <span style={{ fontSize: 10, color: colors.cyan, background: colors.cyan + "15", border: `1px solid ${colors.cyan}33`, padding: "2px 7px", borderRadius: 4, fontWeight: 600 }}>Platform</span>}
+              </div>
+            </Field>
+          ))}
+          <SectionDivider label="Quest Reward Budget" />
+          <Field label="Monthly reward pool" hint="Total TMPL allocated per month for quest completion rewards.">
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input type="number" value={fees.questRewardBudget}
+                onChange={e => setFees(prev => ({ ...prev, questRewardBudget: parseInt(e.target.value) }))}
+                style={{ width: 140, padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none" }} />
+              <span style={{ fontSize: 12, color: colors.textDim }}>TMPL / month</span>
+            </div>
+          </Field>
+          <Field label="Auto-distribute rewards">
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Toggle value={fees.autoDistribute} onChange={v => setFees(prev => ({ ...prev, autoDistribute: v }))} />
+              <span style={{ fontSize: 12, color: colors.textDim }}>Send rewards automatically on quest completion</span>
+            </div>
+          </Field>
+          <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+            <Btn>Save Changes</Btn>
+            <Btn variant="secondary" onClick={onClose}>Cancel</Btn>
+          </div>
+        </div>
+      );
+    };
+
+    // ── Entry Cost panel ────────────────────────────────────────
+    const EntryPanel = ({ onClose }) => {
+      const [entry, setEntry_]  = useState(ENTRY_COST_INIT);
+      const f = (k, v) => setEntry_(prev => ({ ...prev, [k]: v }));
+      const cycleSymbols = coins.map(c => c.symbol);
+
+      return (
+        <div style={{ maxWidth: 560 }}>
+          <PageHeader title="Cycle Entry" subtitle="Set the cost and terms for joining this cycle" onBack={onClose} />
+
+          <SectionDivider label="Entry Type" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
+            {[
+              { id: "free",         icon: "lucide:gift",    label: "Free",         desc: "Anyone can join at no cost."                             },
+              { id: "one-time",     icon: "lucide:key",     label: "One-time",     desc: "Single payment. Permanent access after joining."          },
+              { id: "subscription", icon: "lucide:repeat",  label: "Subscription", desc: "Recurring fee. Access continues while active."             },
+            ].map(t => {
+              const sel = entry.type === t.id;
+              return (
+                <div key={t.id} onClick={() => f("type", t.id)}
+                  style={{ padding: "16px 14px", background: sel ? colors.accent + "14" : colors.surface, border: `2px solid ${sel ? colors.accent : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                  <Icon name={t.icon} size={20} style={{ color: sel ? colors.accent : colors.textDim, marginBottom: 8 }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: sel ? colors.accent : colors.text, marginBottom: 3 }}>{t.label}</div>
+                  <div style={{ fontSize: 11, color: colors.textDim, lineHeight: 1.5 }}>{t.desc}</div>
+                </div>
+              );
+            })}
+          </div>
+
+          {entry.type !== "free" && (
+            <>
+              <SectionDivider label="Amount" />
+              <Field label="Entry price" hint="How much a member pays to join this cycle.">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="number" value={entry.amount} onChange={e => f("amount", Number(e.target.value))}
+                    style={{ width: 140, padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none" }} />
+                  <select value={entry.currency} onChange={e => f("currency", e.target.value)}
+                    style={{ padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" }}>
+                    {cycleSymbols.map(s => <option key={s} value={s}>{s}</option>)}
+                    <option value="USD">USD</option>
+                  </select>
+                </div>
+              </Field>
+
+              {entry.type === "subscription" && (
+                <Field label="Billing interval">
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {["monthly", "quarterly", "annual"].map(i => (
+                      <button key={i} onClick={() => f("subscriptionInterval", i)}
+                        style={{ padding: "7px 14px", borderRadius: 6, border: `1px solid ${entry.subscriptionInterval === i ? colors.accent : colors.border}`, background: entry.subscriptionInterval === i ? colors.accent + "18" : "transparent", color: entry.subscriptionInterval === i ? colors.accent : colors.textMuted, fontSize: 12, fontWeight: entry.subscriptionInterval === i ? 600 : 400, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", textTransform: "capitalize" }}>
+                        {i}
+                      </button>
+                    ))}
+                  </div>
+                </Field>
+              )}
+
+              <Field label="Note to members (optional)" hint="Displayed on the join screen. Explain what the fee covers.">
+                <textarea value={entry.note} onChange={e => f("note", e.target.value)} rows={3}
+                  placeholder="e.g. One-time initiation fee. Includes lifetime access to all current and future cycle content..."
+                  style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }} />
+              </Field>
+            </>
+          )}
+
+          {entry.type === "free" && (
+            <InfoBox color={colors.green}>
+              Members can join this cycle without any payment. You can still sell optional offerings and accept coins within the cycle.
+            </InfoBox>
+          )}
+
+          <SectionDivider label="Preview" />
+          <div style={{ padding: "16px 18px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase", marginBottom: 8 }}>How it appears on the join screen</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <div style={{ fontSize: 26 }}>🏔️</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: colors.text }}>Mountain Temple</div>
+                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>
+                  {entry.type === "free"
+                    ? "Free to join"
+                    : entry.type === "one-time"
+                    ? `${entry.amount.toLocaleString()} ${entry.currency} — one-time`
+                    : `${entry.amount.toLocaleString()} ${entry.currency} / ${entry.subscriptionInterval}`
+                  }
+                </div>
+                {entry.note && entry.type !== "free" && (
+                  <div style={{ fontSize: 11, color: colors.textDim, marginTop: 4, fontStyle: "italic" }}>{entry.note}</div>
+                )}
+              </div>
+              <Btn size="sm">Join Cycle</Btn>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+            <Btn>Save Changes</Btn>
+            <Btn variant="secondary" onClick={onClose}>Cancel</Btn>
+          </div>
+        </div>
+      );
+    };
+
+    // ── "Add existing coin" picker ──────────────────────────────
+    const AddCoinPicker = ({ onAdd, onBack }) => {
+      const existingIds = coins.map(c => c.id);
+      const available   = AVAILABLE_TO_ADD.filter(c => !existingIds.includes(c.id));
+      return (
+        <div style={{ maxWidth: 580 }}>
+          <PageHeader title="Add Coin to Cycle" subtitle="Accept an existing token alongside KNSHP in this cycle" onBack={onBack} />
+          <InfoBox color={colors.blue}>
+            Adding a coin makes it available as a payment option in actors and offerings. You can remove it at any time — members with balances won't lose them.
+          </InfoBox>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16 }}>
+            {available.length === 0 && (
+              <div style={{ textAlign: "center", padding: "40px 20px", color: colors.textDim }}>
+                <div style={{ fontSize: 14 }}>All available external tokens are already in your cycle.</div>
+              </div>
+            )}
+            {available.map(c => {
+              const [hov, setHov] = React.useState(false);
+              return (
+                <div key={c.id}
+                  onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                  style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}
+                  onClick={() => {
+                    onAdd({ ...c, scope: "external", supply: "—", circulation: "—", holders: 0, rateToKNSHP: null, priceUSD: null, curve: null, mintAuthority: "External", status: "Active", acceptedActors: [], acceptedOfferings: [], created: new Date().toISOString().slice(0,10) });
+                  }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: c.color + "22", border: `1px solid ${c.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0, color: c.color, fontWeight: 700 }}>
+                    {c.icon}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{c.name} <span style={{ color: colors.textDim, fontWeight: 400 }}>({c.symbol})</span></div>
+                    <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{c.desc}</div>
+                  </div>
+                  <Icon name="lucide:plus-circle" size={18} style={{ color: hov ? colors.accent : colors.textDim }} />
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${colors.border}` }}>
+            <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Don't see the token you need?</div>
+            <Btn variant="secondary" onClick={() => setView("create-coin")}>Create a New Cycle Coin →</Btn>
+          </div>
+        </div>
+      );
+    };
+
+    // ── Create new coin wizard ──────────────────────────────────
+    const CreateCoinWizard = ({ onBack }) => {
+      const [step, setStep]         = useState(1);
+      const [name, setName]         = useState("");
+      const [symbol, setSymbol]     = useState("");
+      const [icon, setIcon]         = useState("🔥");
+      const [color, setColor]       = useState("#FFB347");
+      const [desc, setDesc]         = useState("");
+      const [supply, setSupply]     = useState(10000000);
+      const [curve, setCurve]       = useState("Linear");
+      const [initRate, setInitRate] = useState(0.01);
+      const [creating, setCreating] = useState(false);
+      const [created, setCreated]   = useState(false);
+
+      const handleCreate = () => {
+        setCreating(true);
+        setTimeout(() => {
+          setCoins(prev => [...prev, {
+            id: symbol.toLowerCase(),
+            symbol: symbol.toUpperCase(),
+            name, icon, color,
+            scope: "cycle",
+            supply, circulation: 0, holders: 0,
+            priceUSD: null, rateToKNSHP: initRate,
+            curve, mintAuthority: "moto",
+            status: "Active", description: desc,
+            acceptedActors: [], acceptedOfferings: [],
+            created: new Date().toISOString().slice(0,10),
+          }]);
+          setCreating(false);
+          setCreated(true);
+          setTimeout(() => setView(symbol.toLowerCase()), 1000);
+        }, 900);
+      };
+
+      if (created) return (
+        <div style={{ maxWidth: 540, textAlign: "center", paddingTop: 60 }}>
+          <div style={{ fontSize: 56, marginBottom: 16 }}>{icon}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: colors.text, marginBottom: 8 }}>{name} ({symbol.toUpperCase()}) created</div>
+          <div style={{ fontSize: 13, color: colors.textDim }}>Opening coin settings...</div>
+        </div>
+      );
+
+      return (
+        <div style={{ maxWidth: 580 }}>
+          {/* Step indicator */}
+          <PageHeader title="Create Cycle Coin" subtitle={`Step ${step} of 3`} onBack={step === 1 ? onBack : () => setStep(step - 1)} />
+          <div style={{ display: "flex", gap: 0, marginBottom: 28, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
+            {["Identity", "Supply & Pricing", "Review"].map((s, i) => (
+              <div key={s} style={{ flex: 1, padding: "10px 8px", background: step === i+1 ? colors.accent + "18" : step > i+1 ? colors.green + "12" : "transparent", borderRight: i < 2 ? `1px solid ${colors.border}` : "none", textAlign: "center" }}>
+                <div style={{ fontSize: 12, fontWeight: step === i+1 ? 600 : 400, color: step === i+1 ? colors.accent : step > i+1 ? colors.green : colors.textDim }}>
+                  {step > i+1 ? "✓ " : ""}{s}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Step 1: Identity */}
+          {step === 1 && (
+            <div>
+              <SectionDivider label="Identity" />
+              <Field label="Token Name" hint="The full name of this coin, e.g. 'Temple Coin'">
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Grove Token" />
+              </Field>
+              <Field label="Symbol" hint="2-5 uppercase characters, e.g. TMPL">
+                <Input value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase().slice(0,5))} placeholder="e.g. GROV" style={{ width: 140 }} />
+              </Field>
+              <Field label="Icon">
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {COIN_ICONS.map(em => (
+                    <button key={em} onClick={() => setIcon(em)}
+                      style={{ width: 36, height: 36, fontSize: 18, borderRadius: 8, border: `2px solid ${icon === em ? colors.accent : colors.border}`, background: icon === em ? colors.accent + "15" : colors.surface, cursor: "pointer" }}>
+                      {em}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Color">
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {COIN_COLORS.map(c => (
+                    <button key={c.hex} onClick={() => setColor(c.hex)} title={c.label}
+                      style={{ width: 28, height: 28, borderRadius: "50%", border: `3px solid ${color === c.hex ? "#fff" : "transparent"}`, background: c.hex, cursor: "pointer", boxShadow: color === c.hex ? `0 0 0 2px ${c.hex}` : "none", outline: color === c.hex ? `2px solid ${c.hex}` : "none" }} />
+                  ))}
+                </div>
+              </Field>
+              <Field label="Description" hint="Explain what this token represents and how members earn or use it.">
+                <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3}
+                  placeholder="e.g. The Mountain Temple's participation token. Earned through quests and ceremony completion..."
+                  style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }} />
+              </Field>
+              <div style={{ marginTop: 20 }}>
+                <Btn onClick={() => { if (name && symbol) setStep(2); }} style={{ opacity: name && symbol ? 1 : 0.45 }}>Continue →</Btn>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Supply & Pricing */}
+          {step === 2 && (
+            <div>
+              <SectionDivider label="Supply" />
+              <Field label="Total supply" hint="Maximum number of tokens that can ever exist.">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="number" value={supply} onChange={e => setSupply(Number(e.target.value))}
+                    style={{ width: 180, padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none" }} />
+                  <span style={{ fontSize: 12, color: colors.textDim }}>{symbol || "tokens"}</span>
+                </div>
+              </Field>
+
+              <SectionDivider label="Pricing Model" />
+              <Field label="Bonding curve" hint="Controls how the token price changes as more tokens are issued.">
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {CURVE_TYPES.map(c => (
+                    <div key={c.id} onClick={() => setCurve(c.id)}
+                      style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", background: curve === c.id ? colors.accent + "12" : colors.surface, border: `1px solid ${curve === c.id ? colors.accent : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s" }}>
+                      <div style={{ width: 16, height: 16, borderRadius: "50%", border: `2px solid ${curve === c.id ? colors.accent : colors.border}`, background: curve === c.id ? colors.accent : "transparent", flexShrink: 0, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {curve === c.id && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff" }} />}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: curve === c.id ? colors.accent : colors.text }}>{c.id}</div>
+                        <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{c.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Initial exchange rate" hint="Starting price vs KNSHP. Members pay this when buying new tokens.">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 13, color: colors.textDim }}>1 {symbol || "TOKEN"} =</span>
+                  <input type="number" value={initRate} step="0.001"
+                    onChange={e => setInitRate(parseFloat(e.target.value))}
+                    style={{ width: 100, padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none" }} />
+                  <span style={{ fontSize: 12, color: colors.textDim }}>KNSHP</span>
+                </div>
+              </Field>
+              <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+                <Btn onClick={() => setStep(3)}>Continue →</Btn>
+                <Btn variant="secondary" onClick={() => setStep(1)}>Back</Btn>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Review */}
+          {step === 3 && (
+            <div>
+              <SectionDivider label="Review" />
+              {/* Coin preview card */}
+              <div style={{ padding: "20px 22px", background: color + "12", border: `1px solid ${color}44`, borderRadius: 14, marginBottom: 24 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 12, background: color + "28", border: `2px solid ${color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>
+                    {icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 700, color: colors.text }}>{name || "—"}</div>
+                    <div style={{ fontSize: 13, color, fontWeight: 600, marginTop: 1 }}>{symbol || "—"}</div>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {[
+                    { label: "Supply",           value: supply?.toLocaleString()  },
+                    { label: "Curve",            value: curve                     },
+                    { label: "Initial rate",     value: `${initRate} KNSHP`       },
+                    { label: "Scope",            value: "This cycle"              },
+                  ].map((r, i) => (
+                    <div key={i} style={{ padding: "10px 12px", background: "rgba(255,255,255,0.06)", borderRadius: 8 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase", marginBottom: 3 }}>{r.label}</div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>{r.value}</div>
+                    </div>
+                  ))}
+                </div>
+                {desc && <div style={{ fontSize: 12, color: colors.textDim, marginTop: 12, lineHeight: 1.6 }}>{desc}</div>}
+              </div>
+              <InfoBox color={colors.blue}>
+                After creating this coin you can assign it to specific actors and offerings in the Acceptance tab, or go to Actors and Offerings directly to configure which coins they accept.
+              </InfoBox>
+              <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+                <Btn onClick={handleCreate}>{creating ? "Creating..." : "Create Coin"}</Btn>
+                <Btn variant="secondary" onClick={() => setStep(2)}>Back</Btn>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ── Coin detail / editor ────────────────────────────────────
+    const CoinDetail = ({ coin, onBack }) => {
+      const isPlatform = coin.scope === "platform";
+      const [tab, setTab]               = useState("info");
+      const [name, setName]             = useState(coin.name);
+      const [desc, setDesc]             = useState(coin.description);
+      const [icon, setIcon]             = useState(coin.icon);
+      const [color, setColor]           = useState(coin.color);
+      const [rateToKNSHP, setRate]      = useState(coin.rateToKNSHP);
+      const [curve, setCurve]           = useState(coin.curve || "Linear");
+      const [status, setStatus]         = useState(coin.status);
+      const [acceptedActors, setActors] = useState(coin.acceptedActors);
+      const [acceptedOfferings, setOff] = useState(coin.acceptedOfferings);
+      const [saving, setSaving]         = useState(false);
+      const [confirmRemove, setConfirm] = useState(false);
+
+      const toggleActor = id => {
+        if (acceptedActors.includes("all")) {
+          setActors(CYCLE_ACTORS_REF.map(a => a.id).filter(x => x !== id));
+        } else {
+          setActors(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+        }
+      };
+      const toggleOffering = id =>
+        setOff(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+      const allActors = acceptedActors.includes("all");
+
+      const handleSave = () => {
+        setSaving(true);
+        setTimeout(() => {
+          setCoins(prev => prev.map(c => c.id === coin.id
+            ? { ...c, name, description: desc, icon, color, rateToKNSHP, curve, status, acceptedActors, acceptedOfferings }
+            : c
+          ));
+          setSaving(false);
+          onBack();
+        }, 700);
+      };
+
+      return (
+        <div style={{ maxWidth: 700 }}>
+          <PageHeader
+            title={`${coin.icon} ${coin.name}`}
+            subtitle={`${coin.scope === "platform" ? "Platform coin" : coin.scope === "cycle" ? "Cycle coin" : "External token"} · ${coin.symbol}`}
+            onBack={onBack}
+          >
+            <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 4, fontWeight: 700, letterSpacing: 0.5,
+              background: coin.scope === "platform" ? colors.cyan + "18" : coin.scope === "cycle" ? colors.purple + "18" : colors.warning + "18",
+              color:       coin.scope === "platform" ? colors.cyan       : coin.scope === "cycle" ? colors.purple       : colors.warning,
+              border: `1px solid ${coin.scope === "platform" ? colors.cyan : coin.scope === "cycle" ? colors.purple : colors.warning}33`,
+            }}>
+              {coin.scope === "platform" ? "Platform" : coin.scope === "cycle" ? "Cycle Coin" : "External"}
+            </span>
+          </PageHeader>
+
+          {/* Stats row */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
+            {[
+              { label: "Holders",       value: coin.holders.toLocaleString() },
+              { label: "Circulation",   value: typeof coin.circulation === "number" ? coin.circulation.toLocaleString() : coin.circulation },
+              { label: "Rate (KNSHP)",  value: coin.rateToKNSHP ? `${coin.rateToKNSHP}` : "—" },
+              { label: "Total supply",  value: typeof coin.supply === "number" ? coin.supply.toLocaleString() : coin.supply },
+            ].map((s, i) => (
+              <div key={i} style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase", marginBottom: 4 }}>{s.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: colors.text }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tab bar */}
+          <div style={{ display: "flex", gap: 0, marginBottom: 24, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
+            {[
+              { id: "info",       label: "Settings"    },
+              { id: "acceptance", label: "Acceptance"  },
+              { id: "activity",   label: "Activity"    },
+            ].map((t, i, arr) => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{ flex: 1, padding: "11px 8px", background: tab === t.id ? colors.accent + "18" : "transparent", border: "none", borderRight: i < arr.length-1 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit" }}>
+                <span style={{ fontSize: 13, fontWeight: tab === t.id ? 600 : 400, color: tab === t.id ? colors.accent : colors.textMuted }}>{t.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Settings tab */}
+          {tab === "info" && (
+            <div>
+              {isPlatform ? (
+                <InfoBox color={colors.cyan}>
+                  KNSHP is the platform-level coin and cannot be edited here. It is always active in every cycle. To configure platform coin settings, go to Platform → Commerce.
+                </InfoBox>
+              ) : (
+                <>
+                  {coin.scope !== "external" && (
+                    <>
+                      <SectionDivider label="Identity" />
+                      <Field label="Icon">
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {COIN_ICONS.map(em => (
+                            <button key={em} onClick={() => setIcon(em)}
+                              style={{ width: 32, height: 32, fontSize: 16, borderRadius: 7, border: `2px solid ${icon === em ? colors.accent : colors.border}`, background: icon === em ? colors.accent + "15" : colors.surface, cursor: "pointer" }}>
+                              {em}
+                            </button>
+                          ))}
+                        </div>
+                      </Field>
+                      <Field label="Color">
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {COIN_COLORS.map(c => (
+                            <button key={c.hex} onClick={() => setColor(c.hex)} title={c.label}
+                              style={{ width: 26, height: 26, borderRadius: "50%", border: `3px solid ${color === c.hex ? "#fff" : "transparent"}`, background: c.hex, cursor: "pointer", outline: color === c.hex ? `2px solid ${c.hex}` : "none" }} />
+                          ))}
+                        </div>
+                      </Field>
+                      <Field label="Name">
+                        <Input value={name} onChange={e => setName(e.target.value)} />
+                      </Field>
+                      <Field label="Description">
+                        <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3}
+                          style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }} />
+                      </Field>
+                    </>
+                  )}
+
+                  <SectionDivider label="Pricing" />
+                  {coin.scope === "cycle" ? (
+                    <>
+                      <Field label="Bonding curve">
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {CURVE_TYPES.map(c => (
+                            <div key={c.id} onClick={() => setCurve(c.id)}
+                              style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px", background: curve === c.id ? colors.accent + "12" : colors.surface, border: `1px solid ${curve === c.id ? colors.accent : colors.border}`, borderRadius: 8, cursor: "pointer" }}>
+                              <div style={{ width: 14, height: 14, borderRadius: "50%", border: `2px solid ${curve === c.id ? colors.accent : colors.border}`, background: curve === c.id ? colors.accent : "transparent", flexShrink: 0, marginTop: 2, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                {curve === c.id && <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#fff" }} />}
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: curve === c.id ? colors.accent : colors.text }}>{c.id}</div>
+                                <div style={{ fontSize: 11, color: colors.textDim }}>{c.desc}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </Field>
+                      <Field label="Exchange rate (KNSHP)" hint="Current price — how many KNSHP per 1 of this token.">
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 13, color: colors.textDim }}>1 {coin.symbol} =</span>
+                          <Input type="number" value={rateToKNSHP} onChange={e => setRate(parseFloat(e.target.value))} style={{ width: 120 }} />
+                          <span style={{ fontSize: 12, color: colors.textDim }}>KNSHP</span>
+                        </div>
+                      </Field>
+                    </>
+                  ) : (
+                    <InfoBox color={colors.blue}>Exchange rate is set by the open market for external tokens like {coin.symbol}.</InfoBox>
+                  )}
+
+                  <SectionDivider label="Status" />
+                  <Field label="Coin status">
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {["Active", "Paused"].map(s => (
+                        <button key={s} onClick={() => setStatus(s)}
+                          style={{ padding: "7px 16px", borderRadius: 6, border: `1px solid ${status === s ? colors.accent : colors.border}`, background: status === s ? colors.accent + "18" : "transparent", color: status === s ? colors.accent : colors.textMuted, fontSize: 12, fontWeight: status === s ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                    <div style={{ fontSize: 11, color: colors.textDim, marginTop: 6 }}>Pausing a coin prevents new transactions but does not affect existing balances.</div>
+                  </Field>
+
+                  <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+                    <Btn onClick={handleSave}>{saving ? "Saving..." : "Save Changes"}</Btn>
+                    <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+                  </div>
+
+                  {coin.scope !== "platform" && (
+                    <div style={{ marginTop: 32, padding: "20px 24px", background: colors.red + "08", border: `1px solid ${colors.red}22`, borderRadius: 10 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: colors.red, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 10 }}>Danger Zone</div>
+                      {!confirmRemove ? (
+                        <>
+                          <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
+                            Removing {coin.name} ({coin.symbol}) from this cycle stops new transactions. Members with existing balances keep them but can no longer use the coin here.
+                          </p>
+                          <Btn danger onClick={() => setConfirm(true)}>Remove from Cycle</Btn>
+                        </>
+                      ) : (
+                        <>
+                          <p style={{ fontSize: 13, color: colors.red, fontWeight: 500, marginBottom: 12 }}>
+                            Remove {coin.symbol} from this cycle?
+                          </p>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <Btn danger onClick={() => { setCoins(prev => prev.filter(c => c.id !== coin.id)); onBack(); }}>Confirm Remove</Btn>
+                            <Btn variant="secondary" onClick={() => setConfirm(false)}>Cancel</Btn>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Acceptance tab */}
+          {tab === "acceptance" && (
+            <div>
+              <p style={{ fontSize: 13, color: colors.textDim, marginBottom: 20, lineHeight: 1.6 }}>
+                Control which actors and offerings accept {coin.symbol} as payment. You can also configure this from each actor or offering directly.
+              </p>
+
+              <SectionDivider label="Actors" />
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                <Toggle value={allActors} onChange={v => setActors(v ? ["all"] : [])} />
+                <span style={{ fontSize: 12, color: colors.textDim }}>Accept {coin.symbol} across all actors in this cycle</span>
+              </div>
+              {!allActors && (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                  {CYCLE_ACTORS_REF.map(a => {
+                    const on = acceptedActors.includes(a.id);
+                    return (
+                      <button key={a.id} onClick={() => toggleActor(a.id)}
+                        style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 20, border: `1px solid ${on ? colors.accent : colors.border}`, background: on ? colors.accent + "15" : colors.surface, color: on ? colors.accent : colors.textMuted, fontSize: 12, fontWeight: on ? 600 : 400, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
+                        <span>{a.emoji}</span> {a.name}
+                        {on && <Icon name="lucide:check" size={11} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {allActors && (
+                <div style={{ padding: "10px 14px", background: colors.green + "10", border: `1px solid ${colors.green}22`, borderRadius: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, color: colors.green, fontWeight: 500 }}>✓ All actors in this cycle accept {coin.symbol}</span>
+                </div>
+              )}
+
+              <SectionDivider label="Offerings" />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {CYCLE_OFFERINGS_REF.map(o => {
+                  const on = acceptedOfferings.includes(o.id);
+                  return (
+                    <button key={o.id} onClick={() => toggleOffering(o.id)}
+                      style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 20, border: `1px solid ${on ? colors.accent : colors.border}`, background: on ? colors.accent + "15" : colors.surface, color: on ? colors.accent : colors.textMuted, fontSize: 12, fontWeight: on ? 600 : 400, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
+                      <span>{o.icon}</span> {o.name}
+                      {on && <Icon name="lucide:check" size={11} />}
+                    </button>
+                  );
+                })}
+              </div>
+              {acceptedOfferings.length === 0 && (
+                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 8, fontStyle: "italic" }}>No offerings currently accept {coin.symbol}</div>
+              )}
+
+              <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+                <Btn onClick={handleSave}>{saving ? "Saving..." : "Save Acceptance Settings"}</Btn>
+                <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+              </div>
+            </div>
+          )}
+
+          {/* Activity tab */}
+          {tab === "activity" && (
+            <div>
+              <SectionDivider label="Recent Activity" />
+              {coin.holders === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 20px", color: colors.textDim }}>
+                  <Icon name="lucide:activity" size={32} style={{ color: colors.border, marginBottom: 12 }} />
+                  <div style={{ fontSize: 14, color: colors.textMuted, marginBottom: 6 }}>No transactions yet</div>
+                  <div style={{ fontSize: 12 }}>Activity will appear here once members start using {coin.symbol}</div>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {[
+                    { type: "Quest Reward",  amount: `+500 ${coin.symbol}`,   member: "solstice.eth",  date: "2h ago"    },
+                    { type: "Quest Reward",  amount: `+500 ${coin.symbol}`,   member: "deepwater.sol", date: "Yesterday" },
+                    { type: "Offering Sale", amount: `+1,200 ${coin.symbol}`, member: "wanderer22",    date: "Yesterday" },
+                    { type: "Coin Swap",     amount: `-200 ${coin.symbol}`,   member: "lightpath.eth", date: "2 days ago"},
+                    { type: "Ceremony Drop", amount: `+1,000 ${coin.symbol}`, member: "(ceremony)",    date: "3 days ago"},
+                  ].map((t, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted }}>{t.type}</div>
+                        <div style={{ fontSize: 11, color: colors.textDim }}>{t.member}</div>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: t.amount.startsWith("+") ? colors.green : colors.red }}>{t.amount}</span>
+                      <span style={{ fontSize: 11, color: colors.textDim, width: 70, textAlign: "right" }}>{t.date}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ── Routing ────────────────────────────────────────────────
+    if (walletOpen) return <WalletPanel onClose={() => setWallet(false)} />;
+    if (feesOpen)   return <FeesPanel   onClose={() => setFees(false)}   />;
+    if (entryOpen)  return <EntryPanel  onClose={() => setEntry(false)}  />;
+    if (view === "add-coin")    return <AddCoinPicker onAdd={c => { setCoins(prev => [...prev, c]); setView(null); }} onBack={() => setView(null)} />;
+    if (view === "create-coin") return <CreateCoinWizard onBack={() => setView(null)} />;
+    const selectedCoin = coins.find(c => c.id === view);
+    if (selectedCoin) return <CoinDetail coin={selectedCoin} onBack={() => setView(null)} />;
+
+    // ── Dashboard ──────────────────────────────────────────────
+    const totalHolders   = coins.filter(c => c.scope !== "platform").reduce((s, c) => s + (c.holders || 0), 0);
+    const totalCirc      = coins.filter(c => c.scope === "cycle"    ).reduce((s, c) => s + (typeof c.circulation === "number" ? c.circulation : 0), 0);
+
+    return (
+      <div>
+        <PageHeader title="Cycle Economy" subtitle="Coins, wallet, and economic settings for this cycle">
+          <Btn variant="secondary" onClick={() => setView("add-coin")}>+ Add Coin</Btn>
+          <Btn onClick={() => setView("create-coin")}>Create Coin</Btn>
+        </PageHeader>
+
+        {/* Economy stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 24 }}>
+          {[
+            { label: "Coins active",      value: String(coins.length),                  icon: "lucide:coins",        color: colors.accent  },
+            { label: "Cycle holders",     value: totalHolders.toLocaleString(),          icon: "lucide:users",        color: colors.purple  },
+            { label: "Cycle circulation", value: (totalCirc / 1e6).toFixed(2) + "M",    icon: "lucide:trending-up",  color: colors.green   },
+            { label: "Wallet balance",    value: "12,450 KNSHP",                         icon: "lucide:wallet-2",     color: colors.cyan    },
+            { label: "Entry",             value: ENTRY_COST_INIT.type === "free" ? "Free" : `${ENTRY_COST_INIT.amount.toLocaleString()} ${ENTRY_COST_INIT.currency}${ENTRY_COST_INIT.type === "subscription" ? "/" + ENTRY_COST_INIT.subscriptionInterval.slice(0,2) : ""}`, icon: "lucide:door-open", color: colors.warning, onClick: () => setEntry(true) },
+          ].map((s, i) => (
+            <div key={i} onClick={s.onClick} style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, cursor: s.onClick ? "pointer" : "default" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                <Icon name={s.icon} size={13} style={{ color: s.color }} />
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase" }}>{s.label}</span>
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Coin list */}
+        <SectionDivider label={`Coins in this Cycle (${coins.length})`} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+          {coins.map(c => {
+            const [hov, setHov] = React.useState(false);
+            const scopeColor = c.scope === "platform" ? colors.cyan : c.scope === "cycle" ? colors.purple : colors.warning;
+            const scopeLabel = c.scope === "platform" ? "Platform" : c.scope === "cycle" ? "Cycle Coin" : "External";
+            const actorCount   = c.acceptedActors.includes("all") ? "All actors"    : `${c.acceptedActors.length} actor${c.acceptedActors.length !== 1 ? "s" : ""}`;
+            const offerCount   = c.acceptedOfferings.includes("all") ? "All offerings" : `${c.acceptedOfferings.length} offering${c.acceptedOfferings.length !== 1 ? "s" : ""}`;
+            return (
+              <div key={c.id} onClick={() => setView(c.id)}
+                onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 18px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
+                {/* Coin icon */}
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: c.color + "22", border: `2px solid ${c.color}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0, color: c.color, fontWeight: 700 }}>
+                  {c.icon}
+                </div>
+                {/* Name + symbol */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: colors.text }}>{c.name}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: c.color, background: c.color + "18", padding: "1px 7px", borderRadius: 4 }}>{c.symbol}</span>
+                    <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: scopeColor + "18", color: scopeColor, border: `1px solid ${scopeColor}33`, fontWeight: 600, letterSpacing: 0.5 }}>{scopeLabel}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: colors.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {c.description}
+                  </div>
+                  {/* Acceptance chips */}
+                  <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "rgba(255,255,255,0.06)", color: colors.textDim, border: `1px solid ${colors.borderSubtle}` }}>
+                      {actorCount}
+                    </span>
+                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "rgba(255,255,255,0.06)", color: colors.textDim, border: `1px solid ${colors.borderSubtle}` }}>
+                      {offerCount}
+                    </span>
+                  </div>
+                </div>
+                {/* Right side stats */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0, minWidth: 100 }}>
+                  <StatusPill status={c.status} />
+                  {c.rateToKNSHP && <span style={{ fontSize: 11, color: colors.textDim }}>1 {c.symbol} = {c.rateToKNSHP} KNSHP</span>}
+                  {c.holders > 0 && <span style={{ fontSize: 11, color: colors.textDim }}>{c.holders.toLocaleString()} holders</span>}
+                </div>
+                <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
+              </div>
+            );
+          })}
+
+          {/* Add tiles */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div onClick={() => setView("add-coin")}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px", border: `2px dashed ${colors.border}`, borderRadius: 10, cursor: "pointer", color: colors.textDim, fontSize: 13, transition: "all 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = colors.accent; e.currentTarget.style.color = colors.accent; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textDim; }}>
+              <Icon name="lucide:plus" size={14} />
+              <span>Add existing token</span>
+            </div>
+            <div onClick={() => setView("create-coin")}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px", border: `2px dashed ${colors.border}`, borderRadius: 10, cursor: "pointer", color: colors.textDim, fontSize: 13, transition: "all 0.15s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = colors.accent; e.currentTarget.style.color = colors.accent; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textDim; }}>
+              <Icon name="lucide:sparkles" size={14} />
+              <span>Create new cycle coin</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Secondary sections */}
+        <SectionDivider label="Other Settings" />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          {[
+            { label: "Cycle Entry",    sub: "Join cost, one-time or subscription",   icon: "lucide:door-open",  onClick: () => setEntry(true)  },
+            { label: "Wallet",         sub: "Balances, on-ramp, transactions",        icon: "lucide:wallet-2",   onClick: () => setWallet(true) },
+            { label: "Fees & Rewards", sub: "Fee rates, quest reward budget",         icon: "lucide:percent",    onClick: () => setFees(true)   },
+          ].map((s, i) => {
+            const [hov, setHov] = React.useState(false);
+            return (
+              <div key={i} onClick={s.onClick}
+                onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                <Icon name={s.icon} size={20} style={{ color: colors.accent }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{s.label}</div>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{s.sub}</div>
+                </div>
+                <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
