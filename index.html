@@ -2847,18 +2847,9 @@ const PlatformContent = ({ page }) => {
   if (page === "p-bots") return <PlatformBotsContent />;
   if (page === "p-knowledge") return <PlatformKnowledgeContent />;
   if (page === "p-databases") return <PlatformDatabasesContent />;
+  if (page === "p-templates") return <PlatformTemplatesContent />;
 
   const pages = {
-    "p-templates": {
-      title: "Templates & Starters",
-      subtitle: "Pre-built components creators can use in their cycles",
-      items: [
-        { name: "Quest: Introduction Arc", status: "Published", icon: "📖" },
-        { name: "Scene: Meditation Garden", status: "Published", icon: "🏞️" },
-        { name: "Actor: Wise Guide", status: "Pending Setup", icon: "🧙" },
-        { name: "Scene: Trading Post", status: "Published", icon: "🏪" },
-      ]
-    },
     "p-teams": {
       title: "Teams & Roles",
       subtitle: "Manage team membership and permissions across the platform",
@@ -2899,6 +2890,740 @@ const PlatformContent = ({ page }) => {
               </div>
               <StatusPill status={item.status} />
               <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ─── Platform Templates ───────────────────────────────────────────────────────
+
+const PLATFORM_TEMPLATES = [
+  {
+    id: "quest-intro-arc",
+    type: "Quest",
+    icon: "📖",
+    name: "Introduction Arc",
+    desc: "A multi-step onboarding quest that orients new members to a cycle's purpose, introduces the guide actor, and surfaces their first HEARTS reflection.",
+    status: "Published",
+    visibility: "Platform-wide",
+    creator: "moto",
+    created: "2024-06-15",
+    updated: "2025-11-02",
+    version: "1.3",
+    usedIn: 7,
+    tags: ["onboarding", "HEARTS", "reflection"],
+    content: {
+      steps: [
+        { title: "Welcome & Orientation", desc: "Guide introduces the cycle's purpose and atmosphere. Member selects an initial intention." },
+        { title: "First Reflection", desc: "Kaytee asks a single open question about what brought the member here. No pressure to respond at depth." },
+        { title: "HEARTS Check-in", desc: "Member chooses up to two HEARTS facets that feel most alive for them right now." },
+        { title: "Meeting the Space", desc: "A short walkthrough of the cycle's scenes and what each offers." },
+        { title: "First Step", desc: "Member chooses their first scene or activity. Quest completes." },
+      ],
+      estimatedTime: "15–20 min",
+      recommendedActors: ["Kaytee", "Platform Core"],
+      objectives: ["Orient the member", "Surface initial intention", "Establish HEARTS baseline"],
+    },
+  },
+  {
+    id: "scene-meditation-garden",
+    type: "Scene",
+    icon: "🏞️",
+    name: "Meditation Garden",
+    desc: "A calm, unhurried space for solitary reflection or gentle guided practice. Works well as an anchor scene in cycles centered on inner work.",
+    status: "Published",
+    visibility: "Platform-wide",
+    creator: "moto",
+    created: "2024-07-01",
+    updated: "2025-10-18",
+    version: "2.0",
+    usedIn: 5,
+    tags: ["meditation", "solo", "reflection", "HEARTS-Si"],
+    content: {
+      ambiance: "Still and soft. Natural textures. No urgency. The feeling of early morning before any noise arrives.",
+      moodKeywords: ["calm", "spacious", "inward", "unhurried", "safe"],
+      recommendedActors: ["Kaytee"],
+      suggestedActivities: ["Breath awareness", "HEARTS reflection prompt", "Journaling space", "Silence timer"],
+      heartsAlignment: ["H", "Si"],
+      lightingHint: "Diffuse morning light. Low contrast. No sharp edges.",
+    },
+  },
+  {
+    id: "actor-wise-guide",
+    type: "Actor",
+    icon: "🧙",
+    name: "Wise Guide",
+    desc: "A contemplative elder-archetype actor for cycles where depth of inquiry is more important than pace. Preconfigured with strong Harmony and Synthesis-Inward facets.",
+    status: "Draft",
+    visibility: "Platform-wide",
+    creator: "moto",
+    created: "2024-08-20",
+    updated: "2026-01-05",
+    version: "0.7",
+    usedIn: 0,
+    tags: ["elder", "guide", "depth", "HEARTS-H", "HEARTS-Si"],
+    content: {
+      actorType: "Guide",
+      emoji: "🧙",
+      model: "claude-opus-4-5-20251101",
+      memory: "Persistent",
+      facets: ["H", "R", "Si"],
+      persona: "You are an elder. You have walked a long path and carry knowledge without urgency. You do not rush. You ask more than you tell. You are comfortable with silence.",
+      instructions: "Hold space for the member without rushing toward resolution. Ask one question at a time. Honor what is said before offering any perspective. Trust that the member knows their own path — your role is to illuminate, not to direct.",
+      constraints: "Never moralize. Never interpret what wasn't offered. Never reduce someone's experience to a category or pattern. Avoid advice that sounds like a framework.",
+    },
+  },
+  {
+    id: "scene-trading-post",
+    type: "Scene",
+    icon: "🏪",
+    name: "Trading Post",
+    desc: "A lively exchange space where members can browse offerings, trade, and engage with commerce features. Designed for cycles with active marketplace activity.",
+    status: "Published",
+    visibility: "Platform-wide",
+    creator: "Eloy",
+    created: "2024-09-10",
+    updated: "2025-12-01",
+    version: "1.1",
+    usedIn: 3,
+    tags: ["commerce", "exchange", "social", "HEARTS-So"],
+    content: {
+      ambiance: "Warm and social. The energy of a marketplace — active but not overwhelming. A sense that value is being exchanged in multiple directions.",
+      moodKeywords: ["social", "exchange", "abundance", "discovery"],
+      recommendedActors: ["Platform Core"],
+      suggestedActivities: ["Browse offerings", "Make an offer", "Check wallet", "Trade with another member"],
+      heartsAlignment: ["E", "So"],
+      lightingHint: "Warm amber. Active. Inviting.",
+    },
+  },
+  {
+    id: "starter-mountain-temple",
+    type: "Cycle Starter",
+    icon: "🏔️",
+    name: "Mountain Temple Starter",
+    desc: "A full starter kit for inner-work cycles. Bundles a Meditation Garden scene, the Introduction Arc quest, and a Wise Guide actor into a ready-to-launch package.",
+    status: "Published",
+    visibility: "Platform-wide",
+    creator: "moto",
+    created: "2025-01-12",
+    updated: "2026-01-20",
+    version: "1.0",
+    usedIn: 2,
+    tags: ["starter", "inner-work", "meditation", "onboarding"],
+    content: {
+      bundledTemplates: [
+        { type: "Scene", name: "Meditation Garden", id: "scene-meditation-garden" },
+        { type: "Quest", name: "Introduction Arc", id: "quest-intro-arc" },
+        { type: "Actor", name: "Wise Guide", id: "actor-wise-guide" },
+      ],
+      cycleTheme: "Contemplative inner work with gentle HEARTS-centered facilitation",
+      recommendedFor: "Cycles focused on self-reflection, emotional regulation, or personal growth",
+    },
+  },
+];
+
+const TEMPLATE_TYPE_COLORS = {
+  Quest: colors.purple,
+  Scene: colors.green,
+  Actor: colors.cyan,
+  "Cycle Starter": colors.accent,
+};
+
+const TemplateTypeBadge = ({ type }) => (
+  <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 5, background: (TEMPLATE_TYPE_COLORS[type] || colors.accent) + "18", color: TEMPLATE_TYPE_COLORS[type] || colors.accent, fontWeight: 700, border: `1px solid ${(TEMPLATE_TYPE_COLORS[type] || colors.accent)}33` }}>{type}</span>
+);
+
+const TemplateDetail = ({ template, onBack }) => {
+  const [name, setName] = useState(template.name);
+  const [desc, setDesc] = useState(template.desc);
+  const [status, setStatus] = useState(template.status);
+  const [visibility, setVisibility] = useState(template.visibility);
+  const [tags, setTags] = useState(template.tags.join(", "));
+  const [saving, setSaving] = useState(false);
+  const [saveLabel, setSaveLabel] = useState("Save Changes");
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [activeSection, setActiveSection] = useState("overview");
+
+  const handleSave = () => {
+    setSaving(true);
+    setTimeout(() => { setSaving(false); setSaveLabel("✓ Saved"); setTimeout(() => setSaveLabel("Save Changes"), 1800); }, 800);
+  };
+
+  const sections = [
+    { id: "overview", label: "Overview" },
+    { id: "content", label: "Content" },
+    { id: "settings", label: "Settings" },
+  ];
+
+  return (
+    <div style={{ maxWidth: 700 }}>
+      <PageHeader
+        title={`${template.icon} ${name}`}
+        subtitle={template.desc}
+        onBack={onBack}
+      >
+        <TemplateTypeBadge type={template.type} />
+        <StatusPill status={status} />
+      </PageHeader>
+
+      {/* Stats row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 22 }}>
+        {[
+          { label: "Version", value: `v${template.version}` },
+          { label: "Used In", value: `${template.usedIn} cycles` },
+          { label: "Creator", value: template.creator },
+          { label: "Last Updated", value: template.updated },
+        ].map((s, i) => (
+          <div key={i} style={{ padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+            <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.4 }}>{s.label}</div>
+            <div style={{ fontSize: 13, color: colors.text, fontWeight: 500 }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Section tabs */}
+      <div style={{ display: "flex", gap: 0, marginBottom: 20, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden", width: "fit-content" }}>
+        {sections.map((s, i) => (
+          <button key={s.id} onClick={() => setActiveSection(s.id)}
+            style={{ padding: "10px 22px", background: activeSection === s.id ? colors.accent + "16" : "transparent", border: "none", borderRight: i < sections.length - 1 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit" }}>
+            <span style={{ fontSize: 13, fontWeight: activeSection === s.id ? 600 : 400, color: activeSection === s.id ? colors.accent : colors.textMuted }}>{s.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Overview tab */}
+      {activeSection === "overview" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 16 }}>Metadata</div>
+            <Field label="Template Name">
+              <input value={name} onChange={e => setName(e.target.value)}
+                style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+            </Field>
+            <div style={{ marginTop: 14 }}>
+              <Field label="Description" hint="Shown to creators when browsing the template library.">
+                <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3}
+                  style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+              </Field>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <Field label="Tags" hint="Comma-separated. Used for search and filtering in the creator library.">
+                <input value={tags} onChange={e => setTags(e.target.value)} placeholder="e.g. onboarding, reflection, HEARTS"
+                  style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+              </Field>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
+              {tags.split(",").map(t => t.trim()).filter(Boolean).map((t, i) => (
+                <span key={i} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 9999, background: "rgba(255,255,255,0.07)", border: `1px solid ${colors.border}`, color: colors.textMuted }}>{t}</span>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Publish Status</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {["Published", "Draft", "Archived"].map(s => (
+                <div key={s} onClick={() => setStatus(s)}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: status === s ? colors.accent + "10" : colors.bg, border: `1px solid ${status === s ? colors.accent + "50" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+                  <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${status === s ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {status === s && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+                  </div>
+                  <div>
+                    <span style={{ fontSize: 13, color: status === s ? colors.text : colors.textMuted, fontWeight: status === s ? 500 : 400 }}>{s}</span>
+                    <span style={{ fontSize: 11, color: colors.textDim, marginLeft: 10 }}>
+                      {s === "Published" && "Visible and usable by all creators on the platform"}
+                      {s === "Draft" && "Only visible to Wizards — not yet available to creators"}
+                      {s === "Archived" && "Hidden from library but preserved for reference"}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Content tab */}
+      {activeSection === "content" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {template.type === "Quest" && (
+            <>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Quest Steps</div>
+                  <Btn variant="secondary" style={{ fontSize: 11 }}>+ Add Step</Btn>
+                </div>
+                {template.content.steps.map((step, i) => (
+                  <div key={i} style={{ display: "flex", gap: 12, marginBottom: 10 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: 12, background: colors.accent + "20", border: `1px solid ${colors.accent}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: colors.accent, flexShrink: 0, marginTop: 8 }}>{i + 1}</div>
+                    <div style={{ flex: 1, padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                      <input defaultValue={step.title} style={{ width: "100%", background: "transparent", border: "none", color: colors.text, fontSize: 13, fontWeight: 600, fontFamily: "inherit", marginBottom: 4, outline: "none" }} />
+                      <textarea defaultValue={step.desc} rows={2} style={{ width: "100%", background: "transparent", border: "none", color: colors.textDim, fontSize: 12, fontFamily: "inherit", resize: "none", outline: "none", lineHeight: 1.6 }} />
+                    </div>
+                    <button style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 14, alignSelf: "flex-start", marginTop: 8 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 12 }}>Objectives</div>
+                {template.content.objectives.map((obj, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ color: colors.accent, fontSize: 12 }}>✓</span>
+                    <input defaultValue={obj} style={{ flex: 1, padding: "7px 10px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12, fontFamily: "inherit" }} />
+                  </div>
+                ))}
+                <button style={{ background: "none", border: "none", color: colors.accent, fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 4 }}>+ Add objective</button>
+              </div>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+                <Field label="Estimated Time">
+                  <input defaultValue={template.content.estimatedTime} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+                </Field>
+              </div>
+            </>
+          )}
+
+          {template.type === "Scene" && (
+            <>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+                <Field label="Ambiance Description" hint="The feeling and atmosphere of this space. Shown to actors and members when entering.">
+                  <textarea defaultValue={template.content.ambiance} rows={4} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+                </Field>
+              </div>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 12 }}>Mood Keywords</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                  {template.content.moodKeywords.map((k, i) => (
+                    <span key={i} style={{ padding: "4px 12px", borderRadius: 9999, background: "rgba(255,255,255,0.07)", border: `1px solid ${colors.border}`, color: colors.textMuted, fontSize: 12 }}>{k} ✕</span>
+                  ))}
+                  <input placeholder="+ add keyword" style={{ padding: "4px 10px", background: "transparent", border: `1px dashed ${colors.border}`, borderRadius: 9999, color: colors.textDim, fontSize: 12, fontFamily: "inherit", width: 100 }} />
+                </div>
+              </div>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+                <Field label="Lighting / Visual Hint" hint="Guidance for visual design when this template is used.">
+                  <input defaultValue={template.content.lightingHint} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+                </Field>
+              </div>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 12 }}>HEARTS Alignment</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {["H","E","A","R","T","Si","So"].map(f => {
+                    const on = template.content.heartsAlignment.includes(f);
+                    return <span key={f} style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: on ? colors.accent + "20" : "rgba(255,255,255,0.04)", border: `1px solid ${on ? colors.accent + "60" : colors.border}`, color: on ? colors.accent : colors.textDim, cursor: "pointer" }}>{f}</span>;
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+
+          {template.type === "Actor" && (
+            <>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+                <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 14, background: colors.surface, border: `1px solid ${colors.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26 }}>{template.content.emoji}</div>
+                  <div style={{ flex: 1 }}>
+                    <Field label="Actor Type">
+                      <select defaultValue={template.content.actorType} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                        {ACTOR_TYPES.map(t => <option key={t.id}>{t.id}</option>)}
+                      </select>
+                    </Field>
+                  </div>
+                </div>
+                <Field label="Model">
+                  <select defaultValue={template.content.model} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                    {MODEL_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </select>
+                </Field>
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>HEARTS Facets</div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {["H","E","A","R","T","Si","So"].map(f => {
+                      const on = template.content.facets.includes(f);
+                      return <span key={f} style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: on ? colors.accent + "20" : "rgba(255,255,255,0.04)", border: `1px solid ${on ? colors.accent + "60" : colors.border}`, color: on ? colors.accent : colors.textDim, cursor: "pointer" }}>{f}</span>;
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+                <Field label="Persona" hint="Voice, tone, and character this actor embodies.">
+                  <textarea defaultValue={template.content.persona} rows={3} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+                </Field>
+                <div style={{ marginTop: 14 }}>
+                  <Field label="Core Instructions">
+                    <textarea defaultValue={template.content.instructions} rows={4} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+                  </Field>
+                </div>
+                <div style={{ marginTop: 14 }}>
+                  <Field label="Constraints">
+                    <textarea defaultValue={template.content.constraints} rows={3} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+                  </Field>
+                </div>
+              </div>
+            </>
+          )}
+
+          {template.type === "Cycle Starter" && (
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>Bundled Templates</div>
+              <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 16 }}>These templates are included when a creator uses this starter kit. Drag to reorder.</div>
+              {template.content.bundledTemplates.map((bt, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, marginBottom: 6 }}>
+                  <span style={{ color: colors.textDim, fontSize: 14, cursor: "grab" }}>⠿</span>
+                  <TemplateTypeBadge type={bt.type} />
+                  <span style={{ flex: 1, fontSize: 13, color: colors.textMuted }}>{bt.name}</span>
+                  <button style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 12 }}>✕</button>
+                </div>
+              ))}
+              <button style={{ background: "none", border: "none", color: colors.accent, fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 8 }}>+ Add template to bundle</button>
+              <div style={{ marginTop: 20 }}>
+                <Field label="Cycle Theme" hint="Describes what kind of cycle this starter is designed for.">
+                  <input defaultValue={template.content.cycleTheme} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+                </Field>
+              </div>
+              <div style={{ marginTop: 14 }}>
+                <Field label="Recommended For">
+                  <input defaultValue={template.content.recommendedFor} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+                </Field>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Settings tab */}
+      {activeSection === "settings" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+            <Field label="Visibility">
+              <select value={visibility} onChange={e => setVisibility(e.target.value)}
+                style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                <option>Platform-wide</option>
+                <option>Wizard-only</option>
+                <option>Hidden</option>
+              </select>
+            </Field>
+          </div>
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Version History</div>
+            {[
+              { v: template.version, date: template.updated, note: "Current version" },
+              { v: String(parseFloat(template.version) - 0.1).substring(0, 3), date: "2025-08-10", note: "Updated persona constraints" },
+              { v: "1.0", date: "2024-07-01", note: "Initial publish" },
+            ].slice(0, 3).map((row, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < 2 ? `1px solid ${colors.borderSubtle}` : "none" }}>
+                <span style={{ fontSize: 12, fontFamily: "monospace", color: colors.accent, fontWeight: 600, width: 32 }}>v{row.v}</span>
+                <span style={{ fontSize: 12, color: colors.textDim, flex: 1 }}>{row.note}</span>
+                <span style={{ fontSize: 11, color: colors.textDim }}>{row.date}</span>
+                {i > 0 && <button style={{ background: "none", border: `1px solid ${colors.border}`, borderRadius: 5, color: colors.textDim, cursor: "pointer", fontSize: 10, padding: "2px 8px", fontFamily: "inherit" }}>Restore</button>}
+              </div>
+            ))}
+          </div>
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 12 }}>Actions</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn variant="secondary">Duplicate Template</Btn>
+              <Btn variant="secondary">Export as JSON</Btn>
+              {template.usedIn === 0 && <Btn variant="secondary" style={{ color: colors.red }}>Delete</Btn>}
+            </div>
+            {template.usedIn > 0 && <div style={{ marginTop: 10, fontSize: 12, color: colors.textDim }}>This template is used in {template.usedIn} cycles and cannot be deleted. Archive it instead.</div>}
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+        <Btn onClick={handleSave}>{saving ? "Saving..." : saveLabel}</Btn>
+        <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+      </div>
+    </div>
+  );
+};
+
+const TemplateCreate = ({ onBack }) => {
+  const [type, setType] = useState(null);
+  const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
+  const [tags, setTags] = useState("");
+  const [steps, setSteps] = useState([{ title: "", desc: "" }]);
+  const [facets, setFacets] = useState([]);
+  const [model, setModel] = useState("claude-sonnet-4-5-20250929");
+  const [persona, setPersona] = useState("");
+  const [instructions, setInstructions] = useState("");
+  const [constraints, setConstraints] = useState("");
+  const [ambiance, setAmbiance] = useState("");
+  const [moodKw, setMoodKw] = useState("");
+  const [heartsScene, setHeartsScene] = useState([]);
+  const [publishNow, setPublishNow] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [created, setCreated] = useState(false);
+
+  if (created) return (
+    <div style={{ textAlign: "center", padding: "48px 24px" }}>
+      <div style={{ fontSize: 52, marginBottom: 14 }}>
+        {{ Quest: "📖", Scene: "🏞️", Actor: "🧙", "Cycle Starter": "🏔️" }[type] || "📦"}
+      </div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8 }}>"{name || "New Template"}" created</div>
+      <div style={{ fontSize: 14, color: colors.textDim, marginBottom: 28 }}>
+        {publishNow ? "Published and available to all creators on the platform." : "Saved as a draft. Publish it from the template detail page when it's ready."}
+      </div>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+        <Btn onClick={onBack}>Back to Templates</Btn>
+        <Btn variant="secondary" onClick={() => { setCreated(false); setType(null); setName(""); setDesc(""); }}>Create Another</Btn>
+      </div>
+    </div>
+  );
+
+  const typeOptions = [
+    { id: "Quest", icon: "📖", desc: "A sequence of steps, prompts, or activities that guide members through an experience" },
+    { id: "Scene", icon: "🏞️", desc: "A space or environment with an atmosphere, mood, and recommended activities" },
+    { id: "Actor", icon: "🧙", desc: "A preconfigured actor with persona, HEARTS settings, model, and starter prompt" },
+    { id: "Cycle Starter", icon: "🏔️", desc: "A full starter kit — bundles scenes, actors, and quests into a ready-to-launch package" },
+  ];
+
+  return (
+    <div style={{ maxWidth: 680 }}>
+      <PageHeader title="New Template" subtitle="Build a reusable component creators can add to their cycles" onBack={onBack} />
+
+      {!type ? (
+        <div>
+          <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 14 }}>What kind of template are you creating?</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {typeOptions.map(opt => {
+              const [hov, setHov] = useState(false);
+              return (
+                <div key={opt.id} onClick={() => setType(opt.id)} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                  style={{ padding: "20px 18px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.accent + "50" : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
+                  <div style={{ fontSize: 32, marginBottom: 10 }}>{opt.icon}</div>
+                  <div style={{ display: "flex", align: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: colors.text }}>{opt.id}</span>
+                    <TemplateTypeBadge type={opt.id} />
+                  </div>
+                  <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.6 }}>{opt.desc}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <button onClick={() => setType(null)} style={{ background: "none", border: "none", color: colors.accent, fontSize: 12, cursor: "pointer", marginBottom: 16, fontFamily: "inherit" }}>← Change type</button>
+
+          <div style={{ display: "flex", align: "center", gap: 10, marginBottom: 20, padding: "10px 16px", background: (TEMPLATE_TYPE_COLORS[type] || colors.accent) + "10", border: `1px solid ${(TEMPLATE_TYPE_COLORS[type] || colors.accent)}33`, borderRadius: 8 }}>
+            <span style={{ fontSize: 22 }}>{{ Quest: "📖", Scene: "🏞️", Actor: "🧙", "Cycle Starter": "🏔️" }[type]}</span>
+            <TemplateTypeBadge type={type} />
+            <span style={{ fontSize: 13, color: colors.textMuted }}>{typeOptions.find(t => t.id === type)?.desc}</span>
+          </div>
+
+          {/* Shared metadata */}
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 16 }}>Identity</div>
+            <Field label="Template Name" hint="Shown in the creator library.">
+              <input value={name} onChange={e => setName(e.target.value)} placeholder={`e.g. ${type === "Quest" ? "Onboarding Arc" : type === "Scene" ? "Fire Circle" : type === "Actor" ? "Village Elder" : "Community Starter"}`}
+                style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+            </Field>
+            <div style={{ marginTop: 14 }}>
+              <Field label="Description" hint="1-2 sentences on what this template is and when to use it.">
+                <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} placeholder="e.g. A grounding quest that helps members arrive into a new cycle with intention..."
+                  style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+              </Field>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <Field label="Tags" hint="Help creators find this in search.">
+                <input value={tags} onChange={e => setTags(e.target.value)} placeholder="e.g. onboarding, reflection"
+                  style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+              </Field>
+            </div>
+          </div>
+
+          {/* Quest-specific */}
+          {type === "Quest" && (
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Steps</div>
+                <Btn variant="secondary" style={{ fontSize: 11 }} onClick={() => setSteps([...steps, { title: "", desc: "" }])}>+ Add Step</Btn>
+              </div>
+              {steps.map((step, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 12, background: colors.accent + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: colors.accent, flexShrink: 0, marginTop: 10 }}>{i + 1}</div>
+                  <div style={{ flex: 1 }}>
+                    <input value={step.title} onChange={e => { const s = [...steps]; s[i].title = e.target.value; setSteps(s); }} placeholder={`Step ${i + 1} title`}
+                      style={{ width: "100%", padding: "7px 10px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 13, fontFamily: "inherit", marginBottom: 6, boxSizing: "border-box" }} />
+                    <textarea value={step.desc} onChange={e => { const s = [...steps]; s[i].desc = e.target.value; setSteps(s); }} rows={2} placeholder="What happens in this step?"
+                      style={{ width: "100%", padding: "7px 10px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12, fontFamily: "inherit", resize: "none", boxSizing: "border-box" }} />
+                  </div>
+                  {steps.length > 1 && <button onClick={() => setSteps(steps.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 13, alignSelf: "flex-start", marginTop: 10 }}>✕</button>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Scene-specific */}
+          {type === "Scene" && (
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 16 }}>Atmosphere</div>
+              <Field label="Ambiance" hint="The feeling and texture of this space.">
+                <textarea value={ambiance} onChange={e => setAmbiance(e.target.value)} rows={3} placeholder="e.g. Warm firelight. A circle of seats. The feeling of being held by something ancient..."
+                  style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+              </Field>
+              <div style={{ marginTop: 14 }}>
+                <Field label="Mood Keywords" hint="Comma-separated. Used for actor tone matching.">
+                  <input value={moodKw} onChange={e => setMoodKw(e.target.value)} placeholder="e.g. grounded, warm, communal"
+                    style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+                </Field>
+              </div>
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>HEARTS Alignment</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {["H","E","A","R","T","Si","So"].map(f => {
+                    const on = heartsScene.includes(f);
+                    return <span key={f} onClick={() => setHeartsScene(prev => on ? prev.filter(x => x !== f) : [...prev, f])} style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: on ? colors.accent + "20" : "rgba(255,255,255,0.04)", border: `1px solid ${on ? colors.accent + "60" : colors.border}`, color: on ? colors.accent : colors.textDim, cursor: "pointer" }}>{f}</span>;
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Actor-specific */}
+          {type === "Actor" && (
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 16 }}>Actor Configuration</div>
+              <Field label="Model">
+                <select value={model} onChange={e => setModel(e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                  {MODEL_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label} — {m.hint}</option>)}
+                </select>
+              </Field>
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>HEARTS Facets</div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                  {["H","E","A","R","T","Si","So"].map(f => {
+                    const on = facets.includes(f);
+                    return <span key={f} onClick={() => setFacets(prev => on ? prev.filter(x => x !== f) : [...prev, f])} style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, background: on ? colors.accent + "20" : "rgba(255,255,255,0.04)", border: `1px solid ${on ? colors.accent + "60" : colors.border}`, color: on ? colors.accent : colors.textDim, cursor: "pointer" }}>{f}</span>;
+                  })}
+                </div>
+              </div>
+              <Field label="Persona">
+                <textarea value={persona} onChange={e => setPersona(e.target.value)} rows={3} placeholder="e.g. You are an elder. You speak slowly. You hold space without rushing..."
+                  style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+              </Field>
+              <div style={{ marginTop: 14 }}>
+                <Field label="Core Instructions">
+                  <textarea value={instructions} onChange={e => setInstructions(e.target.value)} rows={3} placeholder="What should this actor do?"
+                    style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+                </Field>
+              </div>
+              <div style={{ marginTop: 14 }}>
+                <Field label="Constraints">
+                  <textarea value={constraints} onChange={e => setConstraints(e.target.value)} rows={2} placeholder="What must this actor never do?"
+                    style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+                </Field>
+              </div>
+            </div>
+          )}
+
+          {/* Cycle Starter-specific */}
+          {type === "Cycle Starter" && (
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 14 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>Bundle Templates</div>
+              <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 14 }}>Select existing templates to include in this starter kit.</div>
+              {["Scene", "Quest", "Actor"].map(ttype => (
+                <div key={ttype} style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>{ttype}</div>
+                  <select style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                    <option value="">— Select a {ttype} template —</option>
+                    {PLATFORM_TEMPLATES.filter(t => t.type === ttype).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Publish toggle */}
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16, marginBottom: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div onClick={() => setPublishNow(!publishNow)} style={{ width: 36, height: 20, borderRadius: 10, background: publishNow ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s" }}>
+                <div style={{ position: "absolute", top: 3, left: publishNow ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: colors.text, fontWeight: 500 }}>Publish immediately</div>
+                <div style={{ fontSize: 11, color: colors.textDim }}>If off, saves as a draft visible only to Wizards</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn onClick={() => { setSaving(true); setTimeout(() => { setSaving(false); setCreated(true); }, 900); }}>
+              {saving ? "Creating..." : publishNow ? "Create & Publish" : "Save as Draft"}
+            </Btn>
+            <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PlatformTemplatesContent = () => {
+  const [view, setView] = useState("list");
+  const [selected, setSelected] = useState(null);
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  if (view === "create") return <TemplateCreate onBack={() => setView("list")} />;
+  if (view === "detail" && selected) {
+    const tmpl = PLATFORM_TEMPLATES.find(t => t.id === selected);
+    return tmpl ? <TemplateDetail template={tmpl} onBack={() => { setView("list"); setSelected(null); }} /> : null;
+  }
+
+  const typeFilters = ["All", "Quest", "Scene", "Actor", "Cycle Starter"];
+  const statusFilters = ["All", "Published", "Draft", "Archived"];
+
+  const filtered = PLATFORM_TEMPLATES.filter(t => {
+    if (typeFilter !== "All" && t.type !== typeFilter) return false;
+    if (statusFilter !== "All" && t.status !== statusFilter) return false;
+    return true;
+  });
+
+  return (
+    <div>
+      <PageHeader title="Templates & Starters" subtitle="Reusable components and starter kits available to all creators on the platform">
+        <Btn onClick={() => setView("create")}>+ New Template</Btn>
+      </PageHeader>
+
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+        {typeFilters.map(f => <FilterPill key={f} label={f} active={typeFilter === f} onClick={() => setTypeFilter(f)} />)}
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 18 }}>
+        {statusFilters.map(f => (
+          <span key={f} onClick={() => setStatusFilter(f)}
+            style={{ padding: "3px 10px", borderRadius: 9999, fontSize: 10, fontWeight: 600, cursor: "pointer", background: statusFilter === f ? "rgba(255,255,255,0.12)" : "transparent", color: statusFilter === f ? colors.text : colors.textDim, border: `1px solid ${statusFilter === f ? colors.border : "transparent"}` }}>
+            {f}
+          </span>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {filtered.map(t => {
+          const [hovered, setHovered] = useState(false);
+          return (
+            <div key={t.id} onClick={() => { setSelected(t.id); setView("detail"); }}
+              onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+              <span style={{ fontSize: 26 }}>{t.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{t.name}</span>
+                  <TemplateTypeBadge type={t.type} />
+                </div>
+                <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 6, lineHeight: 1.4 }}>{t.desc}</div>
+                <div style={{ display: "flex", gap: 14, fontSize: 11, color: colors.textDim }}>
+                  <span>Used in {t.usedIn} cycles</span>
+                  <span>v{t.version}</span>
+                  <span>by {t.creator}</span>
+                </div>
+              </div>
+              <StatusPill status={t.status} />
+              <Btn variant="secondary" style={{ fontSize: 11, padding: "5px 12px" }}>Edit</Btn>
             </div>
           );
         })}
@@ -3231,7 +3956,7 @@ function App() {
     { id: "p-knowledge", icon: "📚", label: "Knowledge Base", count: 3 },
     { id: "p-databases", icon: "🗄️", label: "Databases", count: 4 },
     { id: "p-actors", icon: "🎙️", label: "Platform Actors", count: 2 },
-    { id: "p-templates", icon: "📦", label: "Templates", count: 4 },
+    { id: "p-templates", icon: "📦", label: "Templates", count: 5 },
     { id: "p-teams", icon: "👥", label: "Teams & Roles", count: 3 },
     { id: "p-commerce", icon: "💰", label: "Commerce & Coins", count: 4 },
   ];
