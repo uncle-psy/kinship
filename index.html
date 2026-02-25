@@ -1953,151 +1953,439 @@ const PlatformActorsContent = () => {
   );
 };
 
-// ─── Platform Users ───────────────────────────────────────────────────────────
+// ─── Platform Members ─────────────────────────────────────────────────────────
 
 const PLATFORM_USERS = [
-  { id: "moto", name: "moto", email: "motodave@gmail.com", role: "Wizard", status: "Active", joined: "2024-03-15", lastLogin: "2026-02-25" },
-  { id: "eloy", name: "Eloy", email: "andres.lara@kinship.systems", role: "Creator", status: "Active", joined: "2024-04-02", lastLogin: "2026-02-20" },
-  { id: "aashik", name: "Aashik", email: "aashik200227@gmail.com", role: "Player", status: "Active", joined: "2024-05-10", lastLogin: "2026-01-14" },
-  { id: "chastity", name: "Chastity", email: "lightsaltfire144@gmail.com", role: "Player", status: "Active", joined: "2024-06-01", lastLogin: "2026-02-18" },
-  { id: "zach", name: "Zach", email: "Zachfisher1974@gmail.com", role: "Player", status: "Active", joined: "2024-07-22", lastLogin: "2025-12-30" },
-  { id: "kinship", name: "Kinship", email: "test.kinship@kinship.systems", role: "Creator", status: "Active", joined: "2024-08-01", lastLogin: "2026-02-24" },
-  { id: "syren", name: "Syren", email: "syrenwind@gmail.com", role: "Player", status: "Active", joined: "2024-09-15", lastLogin: "2026-01-03" },
-  { id: "danin", name: "Danin", email: "themaster3194@protonmail.com", role: "Player", status: "Active", joined: "2024-10-08", lastLogin: "2026-02-01" },
-  { id: "gino", name: "Gino Why Files", email: "Gino@thewhyfiles.com", role: "Creator", status: "Active", joined: "2024-11-12", lastLogin: "2026-01-28" },
-  { id: "nova", name: "Nova", email: "Bloominglotus@protonmail.com", role: "Player", status: "Pending", joined: "2026-02-20", lastLogin: "—" },
-  { id: "solonets", name: "solonets", email: "solonetsserhii@gmail.com", role: "Player", status: "Active", joined: "2025-01-05", lastLogin: "2026-02-10" },
-  { id: "david2", name: "David AppTest", email: "motodave+apptest2@gmail.com", role: "Player", status: "Suspended", joined: "2024-12-01", lastLogin: "2025-11-30" },
+  { id: "moto", name: "moto", email: "motodave@gmail.com", role: "Wizard", type: "Member", status: "Active", joined: "2024-03-15", lastLogin: "2026-02-25", cycles: 5, messages: 1420, quests: 38, warnings: 0, notes: "" },
+  { id: "eloy", name: "Eloy", email: "andres.lara@kinship.systems", role: "Creator", type: "Member", status: "Active", joined: "2024-04-02", lastLogin: "2026-02-20", cycles: 4, messages: 873, quests: 22, warnings: 0, notes: "" },
+  { id: "aashik", name: "Aashik", email: "aashik200227@gmail.com", role: "Member", type: "Member", status: "Active", joined: "2024-05-10", lastLogin: "2026-01-14", cycles: 2, messages: 341, quests: 11, warnings: 0, notes: "" },
+  { id: "chastity", name: "Chastity", email: "lightsaltfire144@gmail.com", role: "Member", type: "Member", status: "Active", joined: "2024-06-01", lastLogin: "2026-02-18", cycles: 3, messages: 512, quests: 17, warnings: 0, notes: "" },
+  { id: "zach", name: "Zach", email: "Zachfisher1974@gmail.com", role: "Member", type: "Member", status: "Active", joined: "2024-07-22", lastLogin: "2025-12-30", cycles: 1, messages: 94, quests: 4, warnings: 0, notes: "" },
+  { id: "kinship", name: "Kinship", email: "test.kinship@kinship.systems", role: "Creator", type: "Member", status: "Active", joined: "2024-08-01", lastLogin: "2026-02-24", cycles: 5, messages: 208, quests: 9, warnings: 0, notes: "Test account" },
+  { id: "syren", name: "Syren", email: "syrenwind@gmail.com", role: "Member", type: "Member", status: "Active", joined: "2024-09-15", lastLogin: "2026-01-03", cycles: 2, messages: 176, quests: 6, warnings: 1, notes: "One prior community guideline warning (Oct 2025)" },
+  { id: "danin", name: "Danin", email: "themaster3194@protonmail.com", role: "Member", type: "Member", status: "Active", joined: "2024-10-08", lastLogin: "2026-02-01", cycles: 3, messages: 289, quests: 10, warnings: 0, notes: "" },
+  { id: "gino", name: "Gino Why Files", email: "Gino@thewhyfiles.com", role: "Creator", type: "Member", status: "Active", joined: "2024-11-12", lastLogin: "2026-01-28", cycles: 2, messages: 445, quests: 14, warnings: 0, notes: "" },
+  { id: "nova", name: "Nova", email: "Bloominglotus@protonmail.com", role: "Guest", type: "Guest", status: "Pending", joined: "2026-02-20", lastLogin: "—", cycles: 0, messages: 0, quests: 0, warnings: 0, notes: "" },
+  { id: "solonets", name: "solonets", email: "solonetsserhii@gmail.com", role: "Member", type: "Member", status: "Active", joined: "2025-01-05", lastLogin: "2026-02-10", cycles: 1, messages: 122, quests: 3, warnings: 0, notes: "" },
+  { id: "david2", name: "David AppTest", email: "motodave+apptest2@gmail.com", role: "Visitor", type: "Visitor", status: "Suspended", joined: "2024-12-01", lastLogin: "2025-11-30", cycles: 0, messages: 7, quests: 0, warnings: 2, notes: "Test account — repeated ToS violations. Suspended 2025-12-01." },
 ];
 
-const roleColors = { Wizard: colors.accent, Creator: colors.purple, Player: colors.cyan, Moderator: colors.green };
+const roleColors = { Wizard: colors.accent, Creator: colors.purple, Member: colors.cyan, Moderator: colors.green, Guest: colors.blue, Visitor: colors.textDim };
 
-const UserDetail = ({ user, isNew, onBack }) => {
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [role, setRole] = useState(user?.role || "Player");
-  const [status, setStatus] = useState(user?.status || "Active");
+// ── Member Manage Detail ──────────────────────────────────────────────────────
+const MemberDetail = ({ user, onBack }) => {
+  const [tab, setTab] = useState("profile");
+  const [role, setRole] = useState(user.role);
+  const [status, setStatus] = useState(user.status);
+  const [notes, setNotes] = useState(user.notes || "");
+  const [warnMsg, setWarnMsg] = useState("");
+  const [showWarnBox, setShowWarnBox] = useState(false);
+
+  const rc = roleColors[role] || colors.blue;
+  const selectStyle = { width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" };
+  const actionRow = (icon, label, desc, btnLabel, btnColor, onClick) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 0", borderBottom: `1px solid ${colors.borderSubtle}` }}>
+      <span style={{ fontSize: 18, width: 28, textAlign: "center" }}>{icon}</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>{label}</div>
+        <div style={{ fontSize: 11, color: colors.textDim, marginTop: 1 }}>{desc}</div>
+      </div>
+      <button onClick={onClick} style={{ padding: "5px 14px", borderRadius: 7, border: `1px solid ${btnColor}40`, background: btnColor + "14", color: btnColor, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{btnLabel}</button>
+    </div>
+  );
+
+  const TabBtn = ({ id, label }) => (
+    <button onClick={() => setTab(id)} style={{ padding: "6px 16px", borderRadius: 20, border: "none", background: tab === id ? colors.accent : "rgba(255,255,255,0.07)", color: tab === id ? "#fff" : colors.textMuted, fontSize: 12, fontWeight: tab === id ? 600 : 400, cursor: "pointer" }}>{label}</button>
+  );
+
+  const CYCLES_IN = ["Mountain Temple", "Ocean Depths", "Dark Forest"].slice(0, user.cycles);
+
   return (
-    <div style={{ maxWidth: 640 }}>
-      <PageHeader
-        title={isNew ? "Invite User" : user.name}
-        subtitle={isNew ? "Send an invitation to a new platform user" : `ID: ${user.id} · Joined ${user.joined}`}
-        onBack={onBack}
-      >
-        {!isNew && <StatusPill status={user.status} />}
+    <div style={{ maxWidth: 680 }}>
+      <PageHeader title={user.name} subtitle={`${user.email} · Joined ${user.joined}`} onBack={onBack} backLabel="Members">
+        <StatusPill status={status} />
       </PageHeader>
-      <SectionDivider label="Account Details" />
-      <Field label="Name"><Input value={name} onChange={e => setName(e.target.value)} placeholder="Display name" /></Field>
-      <Field label="Email"><Input value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" /></Field>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <Field label="Role">
-          <select value={role} onChange={e => setRole(e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" }}>
-            <option>Player</option><option>Creator</option><option>Moderator</option><option>Wizard</option>
-          </select>
-        </Field>
-        <Field label="Account Status">
-          <select value={status} onChange={e => setStatus(e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" }}>
-            <option>Active</option><option>Pending</option><option>Suspended</option><option>Banned</option>
-          </select>
-        </Field>
-      </div>
-      {!isNew && (
-        <>
-          <SectionDivider label="Activity" />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Field label="Sign Up Date"><Input value={user.joined} readOnly /></Field>
-            <Field label="Last Login"><Input value={user.lastLogin} readOnly /></Field>
+
+      {/* Stats row */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 22 }}>
+        {[["Cycles", user.cycles], ["Messages", user.messages.toLocaleString()], ["Quests", user.quests], ["Warnings", user.warnings]].map(([label, val]) => (
+          <div key={label} style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 9, padding: "12px 14px", textAlign: "center" }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: label === "Warnings" && user.warnings > 0 ? colors.warning : colors.accent }}>{val}</div>
+            <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.7, fontWeight: 600 }}>{label}</div>
           </div>
-          <SectionDivider label="Security" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>Password Reset</div>
-                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>Send a reset email to {user.email}</div>
-              </div>
-              <Btn variant="secondary" size="sm">Send Reset Email</Btn>
-            </div>
-            <div style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>Active Sessions</div>
-                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>Revoke all active login sessions</div>
-              </div>
-              <Btn variant="secondary" size="sm">Revoke Sessions</Btn>
-            </div>
-          </div>
-        </>
-      )}
-      <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
-        <Btn>{isNew ? "Send Invitation" : "Save Changes"}</Btn>
-        <Btn variant="secondary">Cancel</Btn>
+        ))}
       </div>
-      {!isNew && (
-        <DangerZone>
-          <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
-            {user.status === "Suspended"
-              ? "This account is suspended. You can reactivate it or permanently delete it."
-              : "Suspending this account immediately revokes access. Deletion is permanent and cannot be undone."}
-          </p>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        <TabBtn id="profile" label="Profile" />
+        <TabBtn id="activity" label="Activity" />
+        <TabBtn id="moderation" label="Moderation" />
+        <TabBtn id="access" label="Access & Security" />
+      </div>
+
+      {tab === "profile" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <SectionCard title="Account">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div>
+                <div style={{ fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 5 }}>Role</div>
+                <select value={role} onChange={e => setRole(e.target.value)} style={selectStyle}>
+                  <option>Visitor</option><option>Guest</option><option>Member</option><option>Creator</option><option>Moderator</option><option>Wizard</option>
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 5 }}>Status</div>
+                <select value={status} onChange={e => setStatus(e.target.value)} style={selectStyle}>
+                  <option>Active</option><option>Pending</option><option>Suspended</option><option>Banned</option>
+                </select>
+              </div>
+            </div>
+          </SectionCard>
+          <SectionCard title="Internal Notes">
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={4} placeholder="Notes visible only to Wizards and Guides..." style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${colors.border}`, borderRadius: 8, padding: "10px 12px", color: colors.textMuted, fontSize: 13, resize: "vertical", outline: "none" }} />
+          </SectionCard>
           <div style={{ display: "flex", gap: 8 }}>
-            {user.status !== "Suspended" && <Btn danger>Suspend Account</Btn>}
-            {user.status === "Suspended" && <Btn variant="secondary" size="sm">Reactivate</Btn>}
-            <Btn danger>Delete Account</Btn>
+            <Btn variant="primary">Save Changes</Btn>
+            <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
           </div>
-        </DangerZone>
+        </div>
+      )}
+
+      {tab === "activity" && (
+        <SectionCard title="Cycle Membership">
+          {CYCLES_IN.length > 0 ? CYCLES_IN.map(c => (
+            <div key={c} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${colors.borderSubtle}` }}>
+              <span style={{ fontSize: 13, color: colors.textMuted }}>{c}</span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: `1px solid ${colors.border}`, background: "none", color: colors.textDim, cursor: "pointer" }}>View Progress</button>
+                <button style={{ fontSize: 11, padding: "3px 10px", borderRadius: 6, border: `1px solid ${colors.red}40`, background: colors.red + "10", color: colors.red, cursor: "pointer" }}>Remove</button>
+              </div>
+            </div>
+          )) : <div style={{ fontSize: 13, color: colors.textDim }}>Not enrolled in any cycles.</div>}
+          <div style={{ marginTop: 12 }}>
+            <Btn variant="secondary">+ Enroll in a Cycle</Btn>
+          </div>
+        </SectionCard>
+      )}
+
+      {tab === "moderation" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <SectionCard title="Actions">
+            {actionRow("⚠️", "Issue a Warning", "Send the member a formal warning message", "Send Warning", colors.warning, () => setShowWarnBox(w => !w))}
+            {showWarnBox && (
+              <div style={{ padding: "12px 0 4px" }}>
+                <textarea value={warnMsg} onChange={e => setWarnMsg(e.target.value)} rows={3} placeholder="Describe the reason for the warning..." style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${colors.warning}44`, borderRadius: 8, padding: "9px 12px", color: colors.textMuted, fontSize: 13, resize: "vertical", outline: "none" }} />
+                <Btn variant="primary" style={{ marginTop: 8, background: colors.warning, border: "none" }}>Send Warning</Btn>
+              </div>
+            )}
+            {actionRow("📨", "Send Direct Message", "Send a private message from the platform", "Message", colors.blue, () => {})}
+            {actionRow("🚫", "Suspend Account", "Immediately revokes access. Member can be reinstated.", user.status === "Suspended" ? "Reactivate Instead" : "Suspend", colors.warning, () => {})}
+            {actionRow("🔨", "Ban Account", "Permanently blocks this account from the platform", "Ban", colors.red, () => {})}
+            {actionRow("🗑️", "Delete Account", "Permanently removes all data. Cannot be undone.", "Delete", colors.red, () => {})}
+          </SectionCard>
+          {user.warnings > 0 && (
+            <SectionCard title="Warning History">
+              <div style={{ padding: "10px 0", borderBottom: `1px solid ${colors.borderSubtle}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: colors.warning }}>Warning #1</span>
+                  <span style={{ fontSize: 11, color: colors.textDim }}>Oct 14, 2025</span>
+                </div>
+                <div style={{ fontSize: 12, color: colors.textMuted }}>Community guideline violation: off-topic content in sacred space.</div>
+              </div>
+            </SectionCard>
+          )}
+        </div>
+      )}
+
+      {tab === "access" && (
+        <SectionCard title="Security">
+          {actionRow("🔑", "Reset Password", `Send a password reset link to ${user.email}`, "Send Reset", colors.blue, () => {})}
+          {actionRow("📱", "Revoke Sessions", "Force sign-out from all devices immediately", "Revoke All", colors.warning, () => {})}
+          {actionRow("🔐", "Reset 2FA", "Clear any two-factor authentication setup", "Reset 2FA", colors.textMuted, () => {})}
+          {actionRow("📋", "Export Data", "Download a full data export for this account", "Export", colors.textMuted, () => {})}
+          <div style={{ padding: "12px 0 4px", display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7 }}>Login History</div>
+            {[["2026-02-25 14:32", "Chrome · macOS", "San Francisco, CA"], ["2026-02-24 09:11", "iOS App", "San Francisco, CA"], ["2026-02-20 22:04", "Chrome · macOS", "San Francisco, CA"]].map(([time, client, loc]) => (
+              <div key={time} style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: colors.textDim, padding: "6px 0", borderBottom: `1px solid ${colors.borderSubtle}` }}>
+                <span>{time}</span><span>{client}</span><span>{loc}</span>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
       )}
     </div>
   );
 };
 
+// ── Invite Guest Flow ─────────────────────────────────────────────────────────
+const InviteGuestFlow = ({ onBack }) => {
+  const [mode, setMode] = useState("single"); // single | bulk
+  const [email, setEmail] = useState("");
+  const [role, setRole] = useState("Guest");
+  const [cycle, setCycle] = useState("");
+  const [message, setMessage] = useState("");
+  const [bulkEmails, setBulkEmails] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const inputStyle = { background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 8, padding: "9px 12px", color: colors.text, fontSize: 13, width: "100%", outline: "none" };
+  const labelStyle = { fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 6 };
+
+  const CYCLES_LIST = ["Mountain Temple", "Ocean Depths", "Dark Forest"];
+  const bulkCount = bulkEmails.split(/[\n,;]+/).map(e => e.trim()).filter(Boolean).length;
+
+  if (sent) return (
+    <div style={{ textAlign: "center", padding: "60px 40px" }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>{mode === "bulk" ? "📨" : "✅"}</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8 }}>
+        {mode === "bulk" ? `${bulkCount} invitations queued` : "Invitation sent"}
+      </div>
+      <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 32 }}>
+        {mode === "bulk" ? `Each address will receive a personalized invitation as ${role}.` : `${email} will receive an invitation to join as ${role}.`}
+        {cycle && ` They'll be added to ${cycle} upon accepting.`}
+      </div>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+        <Btn onClick={() => { setSent(false); setEmail(""); setBulkEmails(""); setMessage(""); }}>Invite Another</Btn>
+        <Btn variant="secondary" onClick={onBack}>Done</Btn>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth: 580 }}>
+      <PageHeader title="Invite a Guest" subtitle="Guests become members once they accept and complete onboarding" onBack={onBack} backLabel="Members" />
+
+      {/* Mode toggle */}
+      <div style={{ display: "flex", gap: 0, marginBottom: 24, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: 4 }}>
+        {[["single", "Single Invite"], ["bulk", "Bulk Invite"]].map(([id, label]) => (
+          <button key={id} onClick={() => setMode(id)} style={{ flex: 1, padding: "8px 0", borderRadius: 8, border: "none", background: mode === id ? colors.accent : "transparent", color: mode === id ? "#fff" : colors.textMuted, fontSize: 13, fontWeight: mode === id ? 600 : 400, cursor: "pointer", transition: "all 0.15s" }}>{label}</button>
+        ))}
+      </div>
+
+      {mode === "single" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <SectionCard title="Invitation Details">
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <div style={labelStyle}>Email address</div>
+                <input value={email} onChange={e => setEmail(e.target.value)} style={inputStyle} placeholder="guest@example.com" type="email" />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={labelStyle}>Starting role</div>
+                  <select value={role} onChange={e => setRole(e.target.value)} style={{ ...inputStyle }}>
+                    <option>Visitor</option><option>Guest</option><option>Member</option>
+                  </select>
+                </div>
+                <div>
+                  <div style={labelStyle}>Add to cycle (optional)</div>
+                  <select value={cycle} onChange={e => setCycle(e.target.value)} style={{ ...inputStyle }}>
+                    <option value="">— No cycle —</option>
+                    {CYCLES_LIST.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <div style={labelStyle}>Personal message (optional)</div>
+                <textarea value={message} onChange={e => setMessage(e.target.value)} rows={3} placeholder="Add a note to appear in the invitation email..." style={{ ...inputStyle, resize: "vertical" }} />
+              </div>
+            </div>
+          </SectionCard>
+          <div style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${colors.border}`, borderRadius: 10, padding: "14px 16px" }}>
+            <div style={{ fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 8 }}>Invitation preview</div>
+            <div style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.7 }}>
+              <span style={{ color: colors.text }}>moto</span> has invited you to join Kinship as a <span style={{ color: colors.accent }}>{role}</span>.
+              {cycle && <> You'll be enrolled in <span style={{ color: colors.accent }}>{cycle}</span> once you accept.</>}
+              {message && <><br /><br /><em style={{ color: colors.textDim }}>"{message}"</em></>}
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Btn variant="primary" onClick={() => email && setSent(true)}>Send Invitation</Btn>
+            <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+          </div>
+        </div>
+      )}
+
+      {mode === "bulk" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <SectionCard title="Bulk Invite">
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>
+                <div style={labelStyle}>Email addresses</div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 6 }}>Paste or type one per line, or separate with commas or semicolons.</div>
+                <textarea value={bulkEmails} onChange={e => setBulkEmails(e.target.value)} rows={8} placeholder={"alice@example.com\nbob@example.com\ncarol@example.com"} style={{ ...inputStyle, resize: "vertical", fontFamily: "monospace", fontSize: 12 }} />
+                {bulkCount > 0 && <div style={{ fontSize: 12, color: colors.accent, marginTop: 6 }}>{bulkCount} address{bulkCount !== 1 ? "es" : ""} detected</div>}
+              </div>
+              <div>
+                <div style={labelStyle}>Or upload a CSV</div>
+                <div style={{ border: `2px dashed ${colors.border}`, borderRadius: 9, padding: "20px", textAlign: "center", color: colors.textDim, fontSize: 13, cursor: "pointer" }}>
+                  📂 Drop a .csv file here, or click to browse
+                  <div style={{ fontSize: 11, color: colors.textDim, marginTop: 4 }}>First column should be email. Optional: name, role, cycle.</div>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <div style={labelStyle}>Default role</div>
+                  <select value={role} onChange={e => setRole(e.target.value)} style={{ ...inputStyle }}>
+                    <option>Visitor</option><option>Guest</option><option>Member</option>
+                  </select>
+                </div>
+                <div>
+                  <div style={labelStyle}>Add all to cycle (optional)</div>
+                  <select value={cycle} onChange={e => setCycle(e.target.value)} style={{ ...inputStyle }}>
+                    <option value="">— No cycle —</option>
+                    {CYCLES_LIST.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <div style={labelStyle}>Shared message (optional)</div>
+                <textarea value={message} onChange={e => setMessage(e.target.value)} rows={2} placeholder="A short note included in every invitation..." style={{ ...inputStyle, resize: "vertical" }} />
+              </div>
+            </div>
+          </SectionCard>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Btn variant="primary" onClick={() => bulkCount > 0 && setSent(true)}>Send {bulkCount > 0 ? bulkCount : ""} Invitation{bulkCount !== 1 ? "s" : ""}</Btn>
+            <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Members List ──────────────────────────────────────────────────────────────
 const PlatformUsersContent = () => {
   const [view, setView] = useState(null);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
+  const [selected, setSelected] = useState(new Set());
+  const [bulkAction, setBulkAction] = useState(null);
 
-  if (view === "new") return <UserDetail isNew onBack={() => setView(null)} />;
-  const editing = PLATFORM_USERS.find(u => u.id === view);
-  if (editing) return <UserDetail user={editing} onBack={() => setView(null)} />;
+  if (view === "invite") return <InviteGuestFlow onBack={() => setView(null)} />;
+  const managing = PLATFORM_USERS.find(u => u.id === view);
+  if (managing) return <MemberDetail user={managing} onBack={() => setView(null)} />;
 
   const filtered = PLATFORM_USERS.filter(u => {
     const matchSearch = !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === "All" || u.status === filter;
+    const matchFilter = filter === "All" || u.status === filter || u.role === filter || u.type === filter;
     return matchSearch && matchFilter;
   });
 
+  const allChecked = filtered.length > 0 && filtered.every(u => selected.has(u.id));
+  const toggleAll = () => setSelected(allChecked ? new Set() : new Set(filtered.map(u => u.id)));
+  const toggleOne = (id) => setSelected(s => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const selCount = selected.size;
+
+  const BULK_ACTIONS = [
+    { id: "warn", label: "⚠️ Warn", color: colors.warning },
+    { id: "suspend", label: "🚫 Suspend", color: colors.warning },
+    { id: "ban", label: "🔨 Ban", color: colors.red },
+    { id: "reactivate", label: "✅ Reactivate", color: colors.green },
+    { id: "message", label: "📨 Message", color: colors.blue },
+    { id: "change-role", label: "🔁 Change Role", color: colors.purple },
+    { id: "enroll", label: "➕ Enroll in Cycle", color: colors.cyan },
+    { id: "remove-cycle", label: "➖ Remove from Cycle", color: colors.textDim },
+    { id: "export", label: "📤 Export", color: colors.textDim },
+    { id: "delete", label: "🗑️ Delete", color: colors.red },
+  ];
+
+  const Checkbox = ({ checked, onChange }) => (
+    <div onClick={onChange} style={{ width: 17, height: 17, borderRadius: 4, border: `2px solid ${checked ? colors.accent : "rgba(255,255,255,0.2)"}`, background: checked ? colors.accent : "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.12s" }}>
+      {checked && <span style={{ color: "#fff", fontSize: 10, lineHeight: 1, fontWeight: 700 }}>✓</span>}
+    </div>
+  );
+
+  const members = PLATFORM_USERS.filter(u => u.type === "Member").length;
+  const guests = PLATFORM_USERS.filter(u => u.type === "Guest").length;
+  const visitors = PLATFORM_USERS.filter(u => u.type === "Visitor").length;
+
   return (
     <div>
-      <PageHeader title="Users" subtitle={`${PLATFORM_USERS.length} registered accounts on this platform`}>
-        <Btn onClick={() => setView("new")}>+ Invite User</Btn>
+      <PageHeader title="Members & Guests" subtitle={`${members} members · ${guests} guests · ${visitors} visitors`}>
+        <Btn variant="primary" onClick={() => setView("invite")}>+ Invite Guest</Btn>
       </PageHeader>
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
-        <div style={{ flex: 1, minWidth: 200, position: "relative" }}>
-          <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: colors.textDim, fontSize: 13, pointerEvents: "none" }}>🔍</span>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or email..."
-            style={{ width: "100%", padding: "8px 12px 8px 32px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
-        </div>
-        <div style={{ display: "flex", gap: 6 }}>
-          {["All", "Active", "Pending", "Suspended"].map(f => <FilterPill key={f} label={f} active={filter === f} onClick={() => setFilter(f)} />)}
-        </div>
+
+      {/* Stat pills */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+        {[["All", PLATFORM_USERS.length, "All"], ["Member", members, "Member"], ["Guest", guests, "Guest"], ["Visitor", visitors, "Visitor"], ["Active", PLATFORM_USERS.filter(u=>u.status==="Active").length, "Active"], ["Pending", PLATFORM_USERS.filter(u=>u.status==="Pending").length, "Pending"], ["Suspended", PLATFORM_USERS.filter(u=>u.status==="Suspended").length, "Suspended"]].map(([label, count, f]) => (
+          <button key={label} onClick={() => setFilter(f)} style={{ padding: "5px 12px", borderRadius: 16, border: "none", background: filter === f ? colors.accent : "rgba(255,255,255,0.07)", color: filter === f ? "#fff" : colors.textMuted, fontSize: 12, fontWeight: filter === f ? 600 : 400, cursor: "pointer" }}>
+            {label} <span style={{ opacity: 0.7 }}>{count}</span>
+          </button>
+        ))}
       </div>
+
+      {/* Search */}
+      <div style={{ position: "relative", marginBottom: 14 }}>
+        <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: colors.textDim, fontSize: 13, pointerEvents: "none" }}>🔍</span>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or email..."
+          style={{ width: "100%", padding: "8px 12px 8px 32px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+      </div>
+
+      {/* Bulk action bar */}
+      {selCount > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: colors.accent + "14", border: `1px solid ${colors.accent}30`, borderRadius: 9, marginBottom: 12, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: colors.accent, marginRight: 4 }}>{selCount} selected</span>
+          {BULK_ACTIONS.map(a => (
+            <button key={a.id} onClick={() => setBulkAction(a.id)}
+              style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${a.color}40`, background: a.color + "14", color: a.color, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+              {a.label}
+            </button>
+          ))}
+          <button onClick={() => setSelected(new Set())} style={{ marginLeft: "auto", padding: "5px 10px", borderRadius: 7, border: `1px solid ${colors.border}`, background: "none", color: colors.textDim, fontSize: 12, cursor: "pointer" }}>Clear</button>
+        </div>
+      )}
+
+      {/* Bulk action confirm */}
+      {bulkAction && (
+        <div style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 9, marginBottom: 14 }}>
+          <div style={{ fontSize: 13, color: colors.text, marginBottom: 10 }}>
+            Apply <strong>{BULK_ACTIONS.find(a=>a.id===bulkAction)?.label}</strong> to {selCount} selected {selCount === 1 ? "person" : "people"}?
+            {bulkAction === "change-role" && (
+              <select style={{ marginLeft: 10, padding: "4px 8px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12 }}>
+                <option>Visitor</option><option>Guest</option><option>Member</option><option>Creator</option>
+              </select>
+            )}
+            {bulkAction === "enroll" && (
+              <select style={{ marginLeft: 10, padding: "4px 8px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12 }}>
+                <option>Mountain Temple</option><option>Ocean Depths</option><option>Dark Forest</option>
+              </select>
+            )}
+            {bulkAction === "warn" && (
+              <input placeholder="Reason..." style={{ marginLeft: 10, padding: "4px 10px", background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, width: 220 }} />
+            )}
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="primary" onClick={() => { setBulkAction(null); setSelected(new Set()); }}>Confirm</Btn>
+            <Btn variant="secondary" onClick={() => setBulkAction(null)}>Cancel</Btn>
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
       <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 2.5fr 1fr 1fr 1.2fr 72px", padding: "9px 16px", borderBottom: `1px solid ${colors.borderSubtle}` }}>
+        <div style={{ display: "grid", gridTemplateColumns: "28px 2fr 2.2fr 1fr 1fr 1.1fr 72px", padding: "9px 14px", borderBottom: `1px solid ${colors.borderSubtle}`, gap: 10, alignItems: "center" }}>
+          <Checkbox checked={allChecked} onChange={toggleAll} />
           {["Name", "Email", "Role", "Status", "Last Login", ""].map((h, i) => (
             <div key={i} style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase" }}>{h}</div>
           ))}
         </div>
         {filtered.map((u, i) => {
           const [hovered, setHovered] = useState(false);
+          const isSelected = selected.has(u.id);
+          const rc = roleColors[u.role] || colors.blue;
           return (
             <div key={u.id} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-              style={{ display: "grid", gridTemplateColumns: "2fr 2.5fr 1fr 1fr 1.2fr 72px", padding: "11px 16px", alignItems: "center", background: hovered ? colors.surfaceHover : "transparent", borderBottom: i < filtered.length - 1 ? `1px solid ${colors.borderSubtle}` : "none", transition: "background 0.12s" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: (roleColors[u.role] || colors.blue) + "28", border: `1px solid ${(roleColors[u.role] || colors.blue) + "55"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: roleColors[u.role] || colors.blue, flexShrink: 0 }}>
+              style={{ display: "grid", gridTemplateColumns: "28px 2fr 2.2fr 1fr 1fr 1.1fr 72px", padding: "10px 14px", alignItems: "center", gap: 10, background: isSelected ? colors.accent + "0A" : hovered ? colors.surfaceHover : "transparent", borderBottom: i < filtered.length - 1 ? `1px solid ${colors.borderSubtle}` : "none", transition: "background 0.12s" }}>
+              <Checkbox checked={isSelected} onChange={() => toggleOne(u.id)} />
+              <div style={{ display: "flex", alignItems: "center", gap: 9, overflow: "hidden" }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: rc + "28", border: `1px solid ${rc}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: rc, flexShrink: 0 }}>
                   {u.name.charAt(0).toUpperCase()}
                 </div>
-                <span style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>{u.name}</span>
+                <span style={{ fontSize: 13, fontWeight: 500, color: colors.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.name}</span>
+                {u.warnings > 0 && <span style={{ fontSize: 9, color: colors.warning, background: colors.warning + "18", padding: "1px 5px", borderRadius: 4, flexShrink: 0 }}>⚠️ {u.warnings}</span>}
               </div>
               <div style={{ fontSize: 12, color: colors.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>
-              <div><span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 9999, background: (roleColors[u.role] || colors.blue) + "22", color: roleColors[u.role] || colors.blue }}>{u.role}</span></div>
+              <div><span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 9999, background: rc + "22", color: rc }}>{u.role}</span></div>
               <div><StatusPill status={u.status} /></div>
               <div style={{ fontSize: 12, color: colors.textDim }}>{u.lastLogin}</div>
               <button onClick={() => setView(u.id)} style={{ padding: "4px 10px", background: "none", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Manage</button>
@@ -2105,7 +2393,7 @@ const PlatformUsersContent = () => {
           );
         })}
         {filtered.length === 0 && (
-          <div style={{ padding: "32px 16px", textAlign: "center", color: colors.textDim, fontSize: 13 }}>No users match your search.</div>
+          <div style={{ padding: "32px 16px", textAlign: "center", color: colors.textDim, fontSize: 13 }}>No people match your filters.</div>
         )}
       </div>
     </div>
@@ -5500,7 +5788,7 @@ function App() {
   }, [context, page, isWizard]);
 
   const platformNav = [
-    { id: "p-users", icon: "👤", label: "Users", count: 12 },
+    { id: "p-users", icon: "👤", label: "Members", count: 12 },
     { id: "p-bots", icon: "🤖", label: "Bots (Global)", count: 8 },
     { id: "p-tools", icon: "🔧", label: "Tools & Connectors", count: 8 },
     { id: "p-prompts", icon: "💬", label: "System Prompts", count: 3 },
