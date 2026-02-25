@@ -674,21 +674,24 @@ const PROMPTS = [
   { id: "actor-defaults", name: "Actor Behavioral Defaults", status: "Pending Setup", icon: "🎭", scope: "All cycles · All actors", lastEdited: "Not yet saved", content: "" },
 ];
 
-const PromptInputModes = ({ mode, setMode }) => (
-  <div style={{ display: "flex", gap: 0, marginBottom: 24, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
-    {[
-      { id: "build", label: "🔧 Build", hint: "Structured fields" },
-      { id: "type", label: "✍️ Type / Paste", hint: "Free text" },
-      { id: "upload", label: "📎 Upload Doc", hint: "PDF, DOCX, TXT, MD" },
-    ].map((m, i) => (
-      <button key={m.id} onClick={() => setMode(m.id)}
-        style={{ flex: 1, padding: "12px 8px", background: mode === m.id ? colors.accent + "18" : "transparent", border: "none", borderRight: i < 2 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s" }}>
-        <div style={{ fontSize: 13, fontWeight: mode === m.id ? 600 : 400, color: mode === m.id ? colors.accent : colors.textMuted }}>{m.label}</div>
-        <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>{m.hint}</div>
-      </button>
-    ))}
-  </div>
-);
+const PromptContentTabs = ({ mode, setMode }) => {
+  const tabs = [
+    { id: "build", label: "🔧 Build", hint: "Structured fields" },
+    { id: "type", label: "✍️ Type / Paste", hint: "Direct editing" },
+    { id: "assist", label: "✨ AI Assist", hint: "Prompt your edits" },
+  ];
+  return (
+    <div style={{ display: "flex", gap: 0, marginBottom: 20, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
+      {tabs.map((m, i) => (
+        <button key={m.id} onClick={() => setMode(m.id)}
+          style={{ flex: 1, padding: "12px 8px", background: mode === m.id ? colors.accent + "18" : "transparent", border: "none", borderRight: i < tabs.length - 1 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s" }}>
+          <div style={{ fontSize: 13, fontWeight: mode === m.id ? 600 : 400, color: mode === m.id ? colors.accent : colors.textMuted }}>{m.label}</div>
+          <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>{m.hint}</div>
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const BuildMode = ({ fields, setFields }) => {
   const sections = [
@@ -717,48 +720,121 @@ const BuildMode = ({ fields, setFields }) => {
 };
 
 const TypeMode = ({ value, onChange }) => (
-  <Field label="Prompt Content" hint="Write or paste your full system prompt here.">
+  <Field label="Prompt Content" hint="Write or paste your full system prompt here. You can also edit content generated via AI Assist.">
     <textarea
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={"You are a Kinship actor on the Kinship platform...\n\nYour role is to...\n\nAlways...\nNever..."}
-      rows={16}
+      rows={18}
       style={{ width: "100%", padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.7, fontFamily: "'Inter', monospace" }}
     />
   </Field>
 );
 
-const UploadMode = ({ files, setFiles }) => {
-  const [dragging, setDragging] = useState(false);
+const AIAssistMode = ({ existingContent, isNew }) => {
+  const [instruction, setInstruction] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState(false);
+  const suggestions = isNew
+    ? ["Write a system prompt for a meditation guide actor", "Create safety guardrails for youth-focused interactions", "Build a prompt based on my uploaded documents"]
+    : ["Make the tone warmer and less clinical", "Add a section about crisis de-escalation", "Strengthen the constraints around member privacy", "Rewrite to integrate HEARTS framework language"];
   return (
     <div>
-      <div
-        onDragOver={e => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={e => { e.preventDefault(); setDragging(false); setFiles([...files, ...Array.from(e.dataTransfer.files).map(f => f.name)]); }}
-        style={{ border: `2px dashed ${dragging ? colors.accent : colors.border}`, borderRadius: 10, padding: "40px 20px", textAlign: "center", background: dragging ? colors.accent + "08" : colors.surface, transition: "all 0.15s", marginBottom: 16, cursor: "pointer" }}>
-        <div style={{ fontSize: 32, marginBottom: 10 }}>📎</div>
-        <div style={{ fontSize: 14, color: colors.textMuted, fontWeight: 500 }}>Drop files here</div>
-        <div style={{ fontSize: 12, color: colors.textDim, marginTop: 4 }}>PDF, DOCX, TXT, or MD — contents will be extracted and used as prompt context</div>
-        <button onClick={() => setFiles([...files, "example-guidelines.pdf"])}
-          style={{ marginTop: 16, padding: "7px 16px", background: "transparent", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
-          Browse files
-        </button>
-      </div>
-      {files.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {files.map((f, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.green}33`, borderRadius: 8 }}>
-              <span style={{ fontSize: 16 }}>📄</span>
-              <span style={{ flex: 1, fontSize: 13, color: colors.textMuted }}>{f}</span>
-              <StatusPill status="Ingested" />
-              <button onClick={() => setFiles(files.filter((_, j) => j !== i))}
-                style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 13 }}>✕</button>
-            </div>
+      <div style={{ padding: "16px 18px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, marginBottom: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 10, letterSpacing: 0.4, textTransform: "uppercase" }}>Describe what you want</div>
+        <textarea
+          value={instruction}
+          onChange={e => setInstruction(e.target.value)}
+          placeholder={isNew ? "Describe the system prompt you want to create. Include the actor's purpose, voice, and any specific behaviors..." : "Describe how you'd like to change this prompt. Kaytee will generate a revised version you can review before applying..."}
+          rows={4}
+          style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }}
+        />
+        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+          {suggestions.map((s, i) => (
+            <button key={i} onClick={() => setInstruction(s)}
+              style={{ padding: "5px 10px", background: colors.accent + "12", border: `1px solid ${colors.accent}33`, borderRadius: 6, color: colors.accent, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+              {s}
+            </button>
           ))}
         </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <Btn onClick={() => { setGenerating(true); setTimeout(() => { setGenerating(false); setGenerated(true); }, 1200); }}>
+            {generating ? "Generating..." : isNew ? "Generate Prompt" : "Generate Revision"}
+          </Btn>
+          {!isNew && <Btn variant="secondary">Show current prompt for reference</Btn>}
+        </div>
+      </div>
+      {generated && (
+        <div style={{ border: `1px solid ${colors.green}44`, borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ padding: "10px 16px", background: colors.green + "18", borderBottom: `1px solid ${colors.green}33`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: colors.green }}>
+              {isNew ? "Generated Prompt" : "Suggested Revision"}
+            </span>
+            <span style={{ fontSize: 11, color: colors.textDim }}>Review before applying</span>
+          </div>
+          <div style={{ padding: "14px 16px", background: colors.surface }}>
+            <div style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.7, whiteSpace: "pre-wrap", fontFamily: "'Inter', monospace", maxHeight: 280, overflowY: "auto" }}>
+              {isNew
+                ? "You are a meditation guide within the Mountain Temple cycle of the Kinship platform. You create and hold space for members to develop inner awareness, emotional regulation, and reflective practice.\n\nYour tone is warm, unhurried, and grounded. You speak simply and with care. You never rush a member through a difficult moment.\n\nCore behaviors:\n- Begin each interaction by checking in with the member's current state\n- Use open questions rather than prescriptive advice\n- Honor silence and pauses as productive\n- Draw on the HEARTS framework, especially Harmony and Synthesis Inward\n\nConstraints:\n- Never diagnose psychological conditions\n- Never claim to replace professional therapy\n- If a member shows signs of acute distress, follow platform escalation protocols"
+                : existingContent + "\n\n--- REVISION BELOW ---\n\n[The revised version would appear here with the requested changes highlighted. Kaytee analyzes the existing prompt and applies your instructions while preserving the original intent and structure.]"}
+            </div>
+          </div>
+          <div style={{ padding: "10px 16px", background: colors.surface, borderTop: `1px solid ${colors.borderSubtle}`, display: "flex", gap: 8 }}>
+            <Btn size="sm">Accept & Apply to Type/Paste</Btn>
+            <Btn variant="secondary" size="sm">Refine Further</Btn>
+            <Btn variant="secondary" size="sm" onClick={() => setGenerated(false)}>Discard</Btn>
+          </div>
+        </div>
       )}
-      <p style={{ fontSize: 12, color: colors.textDim, marginTop: 12 }}>Multiple files will be combined into a single prompt context. Kinship will extract the relevant text and structure it automatically.</p>
+      {!generated && !generating && (
+        <InfoBox color={colors.blue}>
+          {isNew
+            ? "AI Assist can generate a full system prompt from your description and uploaded documents. After generating, you can accept it into the Type/Paste tab for further manual editing."
+            : "AI Assist reads the current prompt content plus any uploaded source documents, then generates a revised version based on your instructions. You review and accept before anything changes."}
+        </InfoBox>
+      )}
+    </div>
+  );
+};
+
+const SourceDocuments = ({ files, setFiles }) => {
+  const [dragging, setDragging] = useState(false);
+  const [expanded, setExpanded] = useState(files.length > 0);
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <button onClick={() => setExpanded(!expanded)}
+        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 14px", background: files.length > 0 ? colors.accent + "10" : colors.surface, border: `1px solid ${files.length > 0 ? colors.accent + "33" : colors.border}`, borderRadius: 8, cursor: "pointer", fontFamily: "inherit" }}>
+        <span style={{ fontSize: 14 }}>📎</span>
+        <span style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted, flex: 1, textAlign: "left" }}>
+          Source Documents {files.length > 0 && `(${files.length})`}
+        </span>
+        <span style={{ fontSize: 12, color: colors.textDim }}>{files.length === 0 ? "Upload reference docs" : expanded ? "▾" : "▸"}</span>
+      </button>
+      {(expanded || files.length === 0) && (
+        <div style={{ marginTop: 8 }}>
+          <div
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={e => { e.preventDefault(); setDragging(false); setFiles([...files, ...Array.from(e.dataTransfer.files).map(f => f.name)]); setExpanded(true); }}
+            style={{ border: `2px dashed ${dragging ? colors.accent : colors.border}`, borderRadius: 9, padding: files.length > 0 ? "16px" : "28px 16px", textAlign: "center", background: dragging ? colors.accent + "08" : colors.surface, transition: "all 0.15s", cursor: "pointer" }}>
+            {files.length === 0 && <div style={{ fontSize: 24, marginBottom: 6 }}>📎</div>}
+            <div style={{ fontSize: 12, color: colors.textMuted }}>Drop files here or <button onClick={() => { setFiles([...files, "uploaded-doc.pdf"]); setExpanded(true); }} style={{ background: "none", border: "none", color: colors.accent, fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>browse</button></div>
+            <div style={{ fontSize: 11, color: colors.textDim, marginTop: 3 }}>PDF, DOCX, TXT, MD — contents feed into Build and AI Assist</div>
+          </div>
+          {files.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 5, marginTop: 8 }}>
+              {files.map((f, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 9, padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.green}33`, borderRadius: 7 }}>
+                  <span style={{ fontSize: 14 }}>📄</span>
+                  <span style={{ flex: 1, fontSize: 12, color: colors.textMuted }}>{f}</span>
+                  <StatusPill status="Ingested" />
+                  <button onClick={() => setFiles(files.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 12 }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -766,7 +842,7 @@ const UploadMode = ({ files, setFiles }) => {
 const PromptEditor = ({ prompt, onBack, isNew }) => {
   const [name, setName] = useState(prompt?.name || "");
   const [scope, setScope] = useState(prompt?.scope || "All cycles · All actors");
-  const [inputMode, setInputMode] = useState("build");
+  const [contentMode, setContentMode] = useState(isNew ? "build" : "type");
   const [buildFields, setBuildFields] = useState({
     role: "", context: "", instructions: "", format: "", constraints: "", examples: "",
     ...(prompt?.id === "safety" ? { role: "You are a Kinship actor operating within the Kinship platform. You must always maintain safety, respect, and care in all interactions.", constraints: "Never provide harmful, dangerous, or deceptive information. Prioritize member wellbeing above engagement metrics.\n\nIf a member appears to be in distress, acknowledge their feelings and gently suggest appropriate support resources." } : {}),
@@ -776,7 +852,7 @@ const PromptEditor = ({ prompt, onBack, isNew }) => {
   const [uploadFiles, setUploadFiles] = useState([]);
 
   return (
-    <div style={{ maxWidth: 680 }}>
+    <div style={{ maxWidth: 700 }}>
       <PageHeader
         title={isNew ? "New System Prompt" : `Edit: ${prompt.name}`}
         subtitle={isNew ? "Add a prompt that all actors across all cycles will inherit" : "Changes will apply to all actors on next sync"}
@@ -798,12 +874,16 @@ const PromptEditor = ({ prompt, onBack, isNew }) => {
         </select>
       </Field>
 
-      <SectionDivider label="Prompt Content" />
-      <PromptInputModes mode={inputMode} setMode={setInputMode} />
+      <SectionDivider label="Source Documents" />
+      <SourceDocuments files={uploadFiles} setFiles={setUploadFiles} />
+      <p style={{ fontSize: 11, color: colors.textDim, marginTop: 4, marginBottom: 8 }}>Uploaded documents are available as context for AI Assist and are appended to the compiled prompt.</p>
 
-      {inputMode === "build" && <BuildMode fields={buildFields} setFields={setBuildFields} />}
-      {inputMode === "type" && <TypeMode value={typeContent} onChange={setTypeContent} />}
-      {inputMode === "upload" && <UploadMode files={uploadFiles} setFiles={setUploadFiles} />}
+      <SectionDivider label="Prompt Content" />
+      <PromptContentTabs mode={contentMode} setMode={setContentMode} />
+
+      {contentMode === "build" && <BuildMode fields={buildFields} setFields={setBuildFields} />}
+      {contentMode === "type" && <TypeMode value={typeContent} onChange={setTypeContent} />}
+      {contentMode === "assist" && <AIAssistMode existingContent={typeContent} isNew={isNew} />}
 
       {!isNew && (
         <>
