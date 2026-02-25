@@ -3471,6 +3471,641 @@ const PlatformTeamsContent = () => {
   );
 };
 
+// ─── Platform Commerce ────────────────────────────────────────────────────────
+
+const COIN_DATA = {
+  symbol: "KNSHP",
+  name: "Kinship Coin",
+  supply: 1000000000,
+  price: 0.0042,
+  circulation: 124500000,
+  holders: 3812,
+  network: "Solana (mainnet-beta)",
+  programId: "KNSHPxyz...1234",
+  decimals: 9,
+  mintAuthority: "moto",
+  freezeAuthority: "None",
+  description: "Native utility token powering the Kinship platform economy. Used for rewards, access, and marketplace transactions.",
+};
+
+const WALLET_CONFIG = {
+  provider: "Privy",
+  embeddedWallets: true,
+  externalWallets: true,
+  custodialDefault: true,
+  chainId: "mainnet-beta",
+  rpcEndpoint: "https://api.mainnet-beta.solana.com",
+  backupMethod: "Email recovery",
+  fundingOnramp: "Stripe (MoonPay fallback)",
+  gasPolicy: "Platform-sponsored (first 5 txns)",
+  showBalanceToUser: true,
+};
+
+const MARKETPLACE_FEES = {
+  platformFee: 2.5,
+  creatorRoyalty: 10,
+  referralCut: 1.0,
+  templateSale: 5.0,
+  actorSale: 5.0,
+  merchandiseFee: 8.0,
+  minimumPayout: 10,
+  payoutSchedule: "Weekly",
+  currency: "KNSHP + USD",
+};
+
+const BONDING_CURVE = {
+  defaultCurve: "Linear",
+  initialPrice: 0.001,
+  slope: 0.0000001,
+  reserveRatio: 0.5,
+  maxSupply: 1000000,
+  burnOnSell: false,
+  priceFloor: 0.0005,
+  allowCreatorOverride: true,
+};
+
+const MEMBERSHIP_LEVELS = [
+  { id: "explorer", name: "Explorer", icon: "🌱", color: colors.cyan, monthlyPrice: 0, annualPrice: 0, description: "Free access to public cycles and basic features.", features: ["Join public cycles", "3 AI actor interactions/day", "Basic quests", "Community access"] },
+  { id: "wanderer", name: "Wanderer", icon: "🌊", color: colors.blue, monthlyPrice: 9, annualPrice: 79, description: "For members ready to go deeper into their journey.", features: ["All Explorer features", "Join private cycles", "30 AI actor interactions/day", "Full quest access", "Knowledge uploads (500MB)"] },
+  { id: "initiate", name: "Initiate", icon: "🔥", color: colors.purple, monthlyPrice: 29, annualPrice: 249, description: "Full platform access plus creation tools.", features: ["All Wanderer features", "Create cycles and scenes", "Custom actor training", "Unlimited AI interactions", "Knowledge uploads (5GB)", "Early feature access"] },
+  { id: "sovereign", name: "Sovereign", icon: "👑", color: colors.warning, monthlyPrice: 99, annualPrice: 849, description: "Governance, advanced tools, and priority everything.", features: ["All Initiate features", "Governance voting rights", "White-label options", "Dedicated guide support", "API access", "Unlimited storage", "Revenue sharing eligible"] },
+];
+
+const SPECIAL_OFFERS = [
+  { id: "founding", name: "Founding Member", icon: "⚡", discount: 40, type: "percent", validUntil: "2026-06-01", appliesTo: ["wanderer","initiate","sovereign"], code: "FOUNDING40", uses: 47, maxUses: 100, status: "Active" },
+  { id: "annual-boost", name: "Annual Boost", icon: "📅", discount: 20, type: "percent", validUntil: null, appliesTo: ["wanderer","initiate","sovereign"], code: null, isAutomatic: true, condition: "Annual billing only", uses: 312, maxUses: null, status: "Active" },
+];
+
+const COUPONS = [
+  { code: "GUIDE2026", discount: 3, type: "months_free", appliesTo: "wanderer", uses: 8, maxUses: 50, expires: "2026-03-31", status: "Active" },
+  { code: "WELCOME30", discount: 30, type: "percent", appliesTo: "all", uses: 203, maxUses: null, expires: null, status: "Active" },
+  { code: "RETREAT2025", discount: 100, type: "percent", appliesTo: "initiate", uses: 14, maxUses: 20, expires: "2025-12-31", status: "Expired" },
+];
+
+const PLATFORM_OFFERINGS = [
+  { id: "tpl-meditation-garden", type: "Template", icon: "🏞️", name: "Meditation Garden Scene", price: 4.99, currency: "USD", status: "Listed", sales: 38, creator: "moto" },
+  { id: "tpl-intro-arc", type: "Template", icon: "📖", name: "Introduction Arc Quest", price: 0, currency: "USD", status: "Free", sales: 142, creator: "moto" },
+  { id: "act-wise-guide", type: "Actor", icon: "🧙", name: "Wise Guide", price: 9.99, currency: "USD", status: "Listed", sales: 21, creator: "moto" },
+  { id: "act-trading", type: "Actor", icon: "🏪", name: "Trading Post Keeper", price: 4.99, currency: "USD", status: "Listed", sales: 9, creator: "Eloy" },
+  { id: "merch-journal", type: "Merch", icon: "📓", name: "Kinship Journey Journal", price: 24.99, currency: "USD", status: "Listed", sales: 67, creator: "moto" },
+  { id: "merch-hoodie", type: "Merch", icon: "👕", name: "Sovereign Hoodie", price: 59.99, currency: "USD", status: "Draft", sales: 0, creator: "moto" },
+  { id: "prog-intensive", type: "Program", icon: "🏕️", name: "7-Day Initiation Intensive", price: 197, currency: "USD", status: "Listed", sales: 11, creator: "moto" },
+  { id: "prog-group", type: "Program", icon: "🌀", name: "Group HEARTS Facilitation", price: 49.99, currency: "USD", status: "Listed", sales: 5, creator: "Eloy" },
+];
+
+// ── Coin Detail ───────────────────────────────────────────────────────────────
+const KinshipCoinDetail = ({ onBack }) => {
+  const [editing, setEditing] = useState(false);
+  const [data, setData] = useState({ ...COIN_DATA });
+  const f = (k, v) => setData(d => ({ ...d, [k]: v }));
+  const inputStyle = { background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 8, padding: "8px 12px", color: colors.text, fontSize: 13, width: "100%" };
+  const labelStyle = { fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 5 };
+  const statBox = (label, value, sub) => (
+    <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: "14px 18px" }}>
+      <div style={{ fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: colors.accent }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{sub}</div>}
+    </div>
+  );
+  return (
+    <div>
+      <PageHeader title="Kinship Coin (KNSHP)" subtitle="Native platform token · Solana" onBack={onBack} backLabel="Commerce">
+        <Btn variant={editing ? "primary" : "secondary"} onClick={() => setEditing(e => !e)}>{editing ? "Save Changes" : "Edit Config"}</Btn>
+      </PageHeader>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
+        {statBox("Price", `$${data.price}`, "KNSHP/USD")}
+        {statBox("Circulating", `${(data.circulation/1e6).toFixed(1)}M`, `of ${(data.supply/1e9).toFixed(0)}B total`)}
+        {statBox("Holders", data.holders.toLocaleString(), "unique wallets")}
+        {statBox("Network", "Solana", "mainnet-beta")}
+      </div>
+      <SectionCard title="Token Settings">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          {[["Token Name", "name"], ["Symbol", "symbol"], ["Total Supply", "supply"], ["Decimals", "decimals"]].map(([label, key]) => (
+            <div key={key}>
+              <div style={labelStyle}>{label}</div>
+              {editing ? <input value={data[key]} onChange={e => f(key, e.target.value)} style={inputStyle} /> : <div style={{ fontSize: 14, color: colors.text, padding: "8px 0" }}>{data[key]}</div>}
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <div style={labelStyle}>Description</div>
+          {editing ? <textarea value={data.description} onChange={e => f("description", e.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} /> : <div style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.6 }}>{data.description}</div>}
+        </div>
+      </SectionCard>
+      <SectionCard title="On-Chain Info" style={{ marginTop: 16 }}>
+        {[["Program ID", data.programId], ["Mint Authority", data.mintAuthority], ["Freeze Authority", data.freezeAuthority], ["Network", data.network]].map(([label, val]) => (
+          <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: `1px solid ${colors.borderSubtle}` }}>
+            <span style={{ fontSize: 12, color: colors.textDim }}>{label}</span>
+            <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: "monospace" }}>{val}</span>
+          </div>
+        ))}
+      </SectionCard>
+    </div>
+  );
+};
+
+// ── Wallet Config Detail ──────────────────────────────────────────────────────
+const WalletConfigDetail = ({ onBack }) => {
+  const [editing, setEditing] = useState(false);
+  const [data, setData] = useState({ ...WALLET_CONFIG });
+  const toggle = (k) => setData(d => ({ ...d, [k]: !d[k] }));
+  const labelStyle = { fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 5 };
+  const inputStyle = { background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 8, padding: "8px 12px", color: colors.text, fontSize: 13, width: "100%" };
+  const ToggleRow = ({ label, desc, field }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: `1px solid ${colors.borderSubtle}` }}>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 13, color: colors.text }}>{label}</div>
+        {desc && <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{desc}</div>}
+      </div>
+      <div onClick={() => editing && toggle(field)} style={{ width: 36, height: 20, borderRadius: 10, background: data[field] ? colors.accent : "rgba(255,255,255,0.10)", cursor: editing ? "pointer" : "default", position: "relative", flexShrink: 0 }}>
+        <div style={{ position: "absolute", top: 3, left: data[field] ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+      </div>
+    </div>
+  );
+  return (
+    <div>
+      <PageHeader title="Embedded Wallet Config" subtitle="Privy integration · Solana" onBack={onBack} backLabel="Commerce">
+        <Btn variant={editing ? "primary" : "secondary"} onClick={() => setEditing(e => !e)}>{editing ? "Save Changes" : "Edit Config"}</Btn>
+      </PageHeader>
+      <SectionCard title="Wallet Behavior">
+        <ToggleRow label="Embedded Wallets" desc="Create wallets automatically on signup" field="embeddedWallets" />
+        <ToggleRow label="External Wallets" desc="Allow users to connect Phantom, Backpack, etc." field="externalWallets" />
+        <ToggleRow label="Custodial by Default" desc="Platform manages keys until user opts out" field="custodialDefault" />
+        <ToggleRow label="Show Balance to User" desc="Display KNSHP balance in app UI" field="showBalanceToUser" />
+      </SectionCard>
+      <SectionCard title="Network & RPC" style={{ marginTop: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {[["RPC Endpoint", "rpcEndpoint"], ["Backup / Recovery", "backupMethod"], ["Funding On-Ramp", "fundingOnramp"], ["Gas Policy", "gasPolicy"]].map(([label, key]) => (
+            <div key={key}>
+              <div style={labelStyle}>{label}</div>
+              {editing ? <input value={data[key]} onChange={e => setData(d => ({ ...d, [key]: e.target.value }))} style={inputStyle} /> : <div style={{ fontSize: 13, color: colors.textMuted }}>{data[key]}</div>}
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
+  );
+};
+
+// ── Marketplace Fees Detail ───────────────────────────────────────────────────
+const MarketplaceFeesDetail = ({ onBack }) => {
+  const [editing, setEditing] = useState(false);
+  const [data, setData] = useState({ ...MARKETPLACE_FEES });
+  const labelStyle = { fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 5 };
+  const inputStyle = { background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 8, padding: "8px 12px", color: colors.text, fontSize: 13, width: 120, textAlign: "right" };
+  const FeeRow = ({ label, field, suffix = "%" }) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 0", borderBottom: `1px solid ${colors.borderSubtle}` }}>
+      <span style={{ fontSize: 13, color: colors.textMuted }}>{label}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {editing ? <input type="number" value={data[field]} onChange={e => setData(d => ({ ...d, [field]: parseFloat(e.target.value) }))} style={inputStyle} step={0.1} /> : <span style={{ fontSize: 14, fontWeight: 600, color: colors.accent }}>{data[field]}{suffix}</span>}
+      </div>
+    </div>
+  );
+  return (
+    <div>
+      <PageHeader title="Marketplace Fees" subtitle="Revenue splits and payout settings" onBack={onBack} backLabel="Commerce">
+        <Btn variant={editing ? "primary" : "secondary"} onClick={() => setEditing(e => !e)}>{editing ? "Save Changes" : "Edit Fees"}</Btn>
+      </PageHeader>
+      <SectionCard title="Transaction Fees">
+        <FeeRow label="Platform fee (all sales)" field="platformFee" />
+        <FeeRow label="Creator royalty (secondary sales)" field="creatorRoyalty" />
+        <FeeRow label="Referral cut" field="referralCut" />
+        <FeeRow label="Template sale fee" field="templateSale" />
+        <FeeRow label="Actor sale fee" field="actorSale" />
+        <FeeRow label="Merchandise fee" field="merchandiseFee" />
+      </SectionCard>
+      <SectionCard title="Payouts" style={{ marginTop: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          {[["Minimum payout (USD)", "minimumPayout", "$"], ["Payout schedule", "payoutSchedule", ""], ["Currency accepted", "currency", ""]].map(([label, key, pre]) => (
+            <div key={key}>
+              <div style={labelStyle}>{label}</div>
+              {editing ? <input value={data[key]} onChange={e => setData(d => ({ ...d, [key]: e.target.value }))} style={{ background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 8, padding: "8px 12px", color: colors.text, fontSize: 13, width: "100%" }} /> : <div style={{ fontSize: 14, color: colors.text }}>{pre}{data[key]}</div>}
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
+  );
+};
+
+// ── Bonding Curve Detail ──────────────────────────────────────────────────────
+const BondingCurveDetail = ({ onBack }) => {
+  const [editing, setEditing] = useState(false);
+  const [data, setData] = useState({ ...BONDING_CURVE });
+  const labelStyle = { fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 5 };
+  const inputStyle = { background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 8, padding: "8px 12px", color: colors.text, fontSize: 13, width: "100%" };
+  const CURVE_TYPES = ["Linear", "Exponential", "Sigmoid", "Flat"];
+  return (
+    <div>
+      <PageHeader title="Bonding Curve Defaults" subtitle="Default pricing model for tokenized assets" onBack={onBack} backLabel="Commerce">
+        <Btn variant={editing ? "primary" : "secondary"} onClick={() => setEditing(e => !e)}>{editing ? "Save Changes" : "Edit Defaults"}</Btn>
+      </PageHeader>
+      <div style={{ background: "rgba(235,128,0,0.06)", border: `1px solid ${colors.accent}22`, borderRadius: 10, padding: "14px 18px", marginBottom: 20 }}>
+        <div style={{ fontSize: 13, color: colors.accent, fontWeight: 600, marginBottom: 4 }}>Bonding Curve: {data.defaultCurve}</div>
+        <div style={{ fontSize: 12, color: colors.textDim }}>Price = initial ({data.initialPrice}) + slope ({data.slope}) × supply. Floor: {data.priceFloor} KNSHP.</div>
+      </div>
+      <SectionCard title="Curve Parameters">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div>
+            <div style={labelStyle}>Curve Type</div>
+            {editing ? (
+              <select value={data.defaultCurve} onChange={e => setData(d => ({ ...d, defaultCurve: e.target.value }))} style={{ ...inputStyle }}>
+                {CURVE_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            ) : <div style={{ fontSize: 14, color: colors.text, padding: "8px 0" }}>{data.defaultCurve}</div>}
+          </div>
+          {[["Initial Price", "initialPrice"], ["Slope", "slope"], ["Reserve Ratio", "reserveRatio"], ["Max Supply", "maxSupply"], ["Price Floor", "priceFloor"]].map(([label, key]) => (
+            <div key={key}>
+              <div style={labelStyle}>{label}</div>
+              {editing ? <input type="number" value={data[key]} onChange={e => setData(d => ({ ...d, [key]: parseFloat(e.target.value) }))} style={inputStyle} step="any" /> : <div style={{ fontSize: 14, color: colors.text, padding: "8px 0" }}>{data[key]}</div>}
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 16, display: "flex", alignItems: "center", gap: 12, padding: "10px 0" }}>
+          <div onClick={() => editing && setData(d => ({ ...d, burnOnSell: !d.burnOnSell }))} style={{ width: 36, height: 20, borderRadius: 10, background: data.burnOnSell ? colors.accent : "rgba(255,255,255,0.10)", cursor: editing ? "pointer" : "default", position: "relative" }}>
+            <div style={{ position: "absolute", top: 3, left: data.burnOnSell ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, color: colors.text }}>Burn tokens on sell</div>
+            <div style={{ fontSize: 11, color: colors.textDim }}>Reduces supply when users sell back to the curve</div>
+          </div>
+        </div>
+        <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 12, padding: "10px 0" }}>
+          <div onClick={() => editing && setData(d => ({ ...d, allowCreatorOverride: !d.allowCreatorOverride }))} style={{ width: 36, height: 20, borderRadius: 10, background: data.allowCreatorOverride ? colors.accent : "rgba(255,255,255,0.10)", cursor: editing ? "pointer" : "default", position: "relative" }}>
+            <div style={{ position: "absolute", top: 3, left: data.allowCreatorOverride ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, color: colors.text }}>Allow creator overrides</div>
+            <div style={{ fontSize: 11, color: colors.textDim }}>Producers can set custom curves per asset</div>
+          </div>
+        </div>
+      </SectionCard>
+    </div>
+  );
+};
+
+// ── Add New Commerce Item ─────────────────────────────────────────────────────
+const AddCommerceFlow = ({ onBack }) => {
+  const [step, setStep] = useState("type");
+  const [type, setType] = useState(null);
+  const [form, setForm] = useState({ name: "", price: "", currency: "USD", description: "", status: "Draft" });
+  const f = (k, v) => setForm(d => ({ ...d, [k]: v }));
+  const inputStyle = { background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 8, padding: "9px 12px", color: colors.text, fontSize: 13, width: "100%" };
+  const labelStyle = { fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 6 };
+
+  const TYPES = [
+    { id: "template", icon: "📦", name: "Template", desc: "Sell or share a quest, scene, or actor template" },
+    { id: "actor", icon: "🎙️", name: "Actor", desc: "Offer a platform actor as a purchasable addition" },
+    { id: "membership", icon: "🪙", name: "Membership Level", desc: "Create a new subscription tier" },
+    { id: "program", icon: "🏕️", name: "Program", desc: "Facilitated experience or course offering" },
+    { id: "merch", icon: "👕", name: "Merch", desc: "Physical or digital goods" },
+    { id: "coupon", icon: "🎟️", name: "Coupon / Offer", desc: "Discount code or special promotion" },
+  ];
+
+  if (step === "done") return (
+    <div style={{ textAlign: "center", padding: "60px 40px" }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8 }}>{form.name || "New item"} created</div>
+      <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 32 }}>Status: {form.status}. You can edit it from the Commerce index any time.</div>
+      <Btn onClick={onBack}>Back to Commerce</Btn>
+    </div>
+  );
+
+  if (step === "form") return (
+    <div>
+      <PageHeader title={`New ${TYPES.find(t => t.id === type)?.name}`} subtitle="Fill in the details below" onBack={() => setStep("type")} backLabel="Back" />
+      <SectionCard title="Basic Info">
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div><div style={labelStyle}>Name</div><input value={form.name} onChange={e => f("name", e.target.value)} style={inputStyle} placeholder={`e.g. ${type === "coupon" ? "SUMMER25" : "My " + TYPES.find(t=>t.id===type)?.name}`} /></div>
+          <div><div style={labelStyle}>Description</div><textarea value={form.description} onChange={e => f("description", e.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} placeholder="What is this?" /></div>
+          {type !== "coupon" && type !== "membership" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div><div style={labelStyle}>Price</div><input type="number" value={form.price} onChange={e => f("price", e.target.value)} style={inputStyle} placeholder="0.00" step="0.01" /></div>
+              <div><div style={labelStyle}>Currency</div>
+                <select value={form.currency} onChange={e => f("currency", e.target.value)} style={inputStyle}>
+                  <option>USD</option><option>KNSHP</option><option>USD + KNSHP</option>
+                </select>
+              </div>
+            </div>
+          )}
+          {type === "coupon" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+              <div><div style={labelStyle}>Discount</div><input type="number" value={form.price} onChange={e => f("price", e.target.value)} style={inputStyle} placeholder="20" /></div>
+              <div><div style={labelStyle}>Type</div>
+                <select value={form.currency} onChange={e => f("currency", e.target.value)} style={inputStyle}>
+                  <option value="percent">% off</option><option value="flat">$ off</option><option value="months_free">Months free</option>
+                </select>
+              </div>
+              <div><div style={labelStyle}>Code</div><input value={form.code || ""} onChange={e => f("code", e.target.value.toUpperCase())} style={inputStyle} placeholder="SUMMER25" /></div>
+            </div>
+          )}
+          {type === "membership" && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div><div style={labelStyle}>Monthly price (USD)</div><input type="number" value={form.monthlyPrice || ""} onChange={e => f("monthlyPrice", e.target.value)} style={inputStyle} placeholder="9.00" /></div>
+              <div><div style={labelStyle}>Annual price (USD)</div><input type="number" value={form.annualPrice || ""} onChange={e => f("annualPrice", e.target.value)} style={inputStyle} placeholder="79.00" /></div>
+            </div>
+          )}
+          <div><div style={labelStyle}>Initial Status</div>
+            <select value={form.status} onChange={e => f("status", e.target.value)} style={inputStyle}>
+              <option>Draft</option><option>Listed</option>{type === "coupon" && <option>Active</option>}
+            </select>
+          </div>
+        </div>
+      </SectionCard>
+      <div style={{ marginTop: 20, display: "flex", gap: 10, justifyContent: "flex-end" }}>
+        <Btn variant="ghost" onClick={onBack}>Cancel</Btn>
+        <Btn variant="primary" onClick={() => setStep("done")}>Create {TYPES.find(t=>t.id===type)?.name}</Btn>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <PageHeader title="Add to Commerce" subtitle="What would you like to create?" onBack={onBack} backLabel="Commerce" />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        {TYPES.map(t => {
+          const [hov, setHov] = useState(false);
+          return (
+            <div key={t.id} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+              onClick={() => { setType(t.id); setStep("form"); }}
+              style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "18px 20px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
+              <span style={{ fontSize: 26 }}>{t.icon}</span>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: colors.text, marginBottom: 4 }}>{t.name}</div>
+                <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.5 }}>{t.desc}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ── Memberships ───────────────────────────────────────────────────────────────
+const MembershipsSection = ({ onBack }) => {
+  const [view, setView] = useState("list");
+  const [selected, setSelected] = useState(null);
+  const [levels, setLevels] = useState(MEMBERSHIP_LEVELS);
+  const [offers, setOffers] = useState(SPECIAL_OFFERS);
+  const [coupons] = useState(COUPONS);
+  const [tab, setTab] = useState("levels");
+  const [editingLevel, setEditingLevel] = useState(null);
+  const [creatingLevel, setCreatingLevel] = useState(false);
+  const [newLevel, setNewLevel] = useState({ name: "", icon: "🌟", monthlyPrice: 0, annualPrice: 0, description: "", features: [] });
+
+  const inputStyle = { background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 8, padding: "8px 12px", color: colors.text, fontSize: 13, width: "100%" };
+  const labelStyle = { fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 5 };
+
+  if (creatingLevel) return (
+    <div>
+      <PageHeader title="New Membership Level" subtitle="Define pricing and features" onBack={() => setCreatingLevel(false)} backLabel="Memberships">
+        <Btn variant="primary" onClick={() => { setLevels(ls => [...ls, { id: newLevel.name.toLowerCase().replace(/\s+/g,"-"), ...newLevel }]); setCreatingLevel(false); }}>Create Level</Btn>
+      </PageHeader>
+      <SectionCard title="Level Details">
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "60px 1fr", gap: 12 }}>
+            <div><div style={labelStyle}>Icon</div><input value={newLevel.icon} onChange={e => setNewLevel(l => ({ ...l, icon: e.target.value }))} style={inputStyle} /></div>
+            <div><div style={labelStyle}>Level Name</div><input value={newLevel.name} onChange={e => setNewLevel(l => ({ ...l, name: e.target.value }))} style={inputStyle} placeholder="e.g. Artisan" /></div>
+          </div>
+          <div><div style={labelStyle}>Description</div><textarea value={newLevel.description} onChange={e => setNewLevel(l => ({ ...l, description: e.target.value }))} rows={2} style={{ ...inputStyle, resize: "vertical" }} /></div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div><div style={labelStyle}>Monthly price (USD)</div><input type="number" value={newLevel.monthlyPrice} onChange={e => setNewLevel(l => ({ ...l, monthlyPrice: parseFloat(e.target.value) }))} style={inputStyle} /></div>
+            <div><div style={labelStyle}>Annual price (USD)</div><input type="number" value={newLevel.annualPrice} onChange={e => setNewLevel(l => ({ ...l, annualPrice: parseFloat(e.target.value) }))} style={inputStyle} /></div>
+          </div>
+          <div>
+            <div style={labelStyle}>Features (one per line)</div>
+            <textarea value={newLevel.features.join("\n")} onChange={e => setNewLevel(l => ({ ...l, features: e.target.value.split("\n").filter(Boolean) }))} rows={5} style={{ ...inputStyle, resize: "vertical" }} placeholder="All Explorer features&#10;Unlimited AI interactions&#10;Custom actor training" />
+          </div>
+        </div>
+      </SectionCard>
+    </div>
+  );
+
+  if (editingLevel) {
+    const lvl = levels.find(l => l.id === editingLevel);
+    const updateLvl = (k, v) => setLevels(ls => ls.map(l => l.id === editingLevel ? { ...l, [k]: v } : l));
+    return (
+      <div>
+        <PageHeader title={`${lvl.icon} ${lvl.name}`} subtitle="Membership level settings" onBack={() => setEditingLevel(null)} backLabel="Memberships">
+          <Btn variant="primary" onClick={() => setEditingLevel(null)}>Save Changes</Btn>
+        </PageHeader>
+        <SectionCard title="Pricing">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div><div style={labelStyle}>Monthly price (USD)</div><input type="number" value={lvl.monthlyPrice} onChange={e => updateLvl("monthlyPrice", parseFloat(e.target.value))} style={inputStyle} /></div>
+            <div><div style={labelStyle}>Annual price (USD)</div><input type="number" value={lvl.annualPrice} onChange={e => updateLvl("annualPrice", parseFloat(e.target.value))} style={inputStyle} /></div>
+          </div>
+        </SectionCard>
+        <SectionCard title="Details" style={{ marginTop: 16 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div><div style={labelStyle}>Description</div><textarea value={lvl.description} onChange={e => updateLvl("description", e.target.value)} rows={2} style={{ ...inputStyle, resize: "vertical" }} /></div>
+            <div>
+              <div style={labelStyle}>Features (one per line)</div>
+              <textarea value={lvl.features.join("\n")} onChange={e => updateLvl("features", e.target.value.split("\n").filter(Boolean))} rows={6} style={{ ...inputStyle, resize: "vertical" }} />
+            </div>
+          </div>
+        </SectionCard>
+        <SectionCard title="Danger Zone" style={{ marginTop: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 13, color: colors.text }}>Delete this membership level</div>
+              <div style={{ fontSize: 11, color: colors.textDim }}>Existing subscribers keep their benefits until renewal.</div>
+            </div>
+            <Btn style={{ background: colors.red + "18", color: colors.red, border: `1px solid ${colors.red}40` }}>Delete Level</Btn>
+          </div>
+        </SectionCard>
+      </div>
+    );
+  }
+
+  const TabBtn = ({ id, label }) => (
+    <button onClick={() => setTab(id)} style={{ padding: "7px 18px", borderRadius: 20, border: "none", background: tab === id ? colors.accent : "rgba(255,255,255,0.07)", color: tab === id ? "#fff" : colors.textMuted, fontSize: 13, fontWeight: tab === id ? 600 : 400, cursor: "pointer" }}>{label}</button>
+  );
+
+  return (
+    <div>
+      <PageHeader title="Memberships" subtitle="Subscription tiers, offers, and coupons" onBack={onBack} backLabel="Commerce">
+        {tab === "levels" && <Btn variant="primary" onClick={() => setCreatingLevel(true)}>+ New Level</Btn>}
+        {tab === "coupons" && <Btn variant="primary" onClick={() => {}}>+ New Coupon</Btn>}
+      </PageHeader>
+      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+        <TabBtn id="levels" label="Levels" /><TabBtn id="offers" label="Special Offers" /><TabBtn id="coupons" label="Coupons" />
+      </div>
+
+      {tab === "levels" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {levels.map(lvl => (
+            <div key={lvl.id} onClick={() => setEditingLevel(lvl.id)} style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 20px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, cursor: "pointer" }}>
+              <span style={{ fontSize: 28 }}>{lvl.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>{lvl.name}</div>
+                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{lvl.description}</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: lvl.monthlyPrice === 0 ? colors.green : colors.accent }}>{lvl.monthlyPrice === 0 ? "Free" : `$${lvl.monthlyPrice}/mo`}</div>
+                {lvl.annualPrice > 0 && <div style={{ fontSize: 11, color: colors.textDim }}>${lvl.annualPrice}/yr</div>}
+              </div>
+              <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {tab === "offers" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {offers.map(offer => (
+            <div key={offer.id} style={{ padding: "16px 20px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                <span style={{ fontSize: 22 }}>{offer.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{offer.name}</div>
+                  {offer.code && <div style={{ fontSize: 11, color: colors.textDim, marginTop: 1 }}>Code: <span style={{ fontFamily: "monospace", color: colors.accent }}>{offer.code}</span></div>}
+                  {offer.condition && <div style={{ fontSize: 11, color: colors.textDim, marginTop: 1 }}>{offer.condition}</div>}
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: colors.accent }}>{offer.discount}% off</div>
+                  <StatusPill status={offer.status} />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 20, paddingTop: 10, borderTop: `1px solid ${colors.borderSubtle}` }}>
+                <span style={{ fontSize: 11, color: colors.textDim }}>Uses: <span style={{ color: colors.textMuted }}>{offer.uses}{offer.maxUses ? ` / ${offer.maxUses}` : ""}</span></span>
+                {offer.validUntil && <span style={{ fontSize: 11, color: colors.textDim }}>Expires: <span style={{ color: colors.textMuted }}>{offer.validUntil}</span></span>}
+                <span style={{ fontSize: 11, color: colors.textDim }}>Applies to: <span style={{ color: colors.textMuted }}>{offer.appliesTo.join(", ")}</span></span>
+              </div>
+            </div>
+          ))}
+          <Btn style={{ alignSelf: "flex-start" }}>+ New Offer</Btn>
+        </div>
+      )}
+
+      {tab === "coupons" && (
+        <div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {coupons.map(c => (
+              <div key={c.code} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+                <span style={{ fontSize: 18 }}>🎟️</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: colors.text, fontFamily: "monospace" }}>{c.code}</span>
+                    <StatusPill status={c.status} />
+                  </div>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginTop: 3 }}>
+                    {c.type === "months_free" ? `${c.discount} months free` : c.type === "percent" ? `${c.discount}% off` : `$${c.discount} off`} · {c.appliesTo === "all" ? "All plans" : c.appliesTo}
+                    {c.expires && ` · Expires ${c.expires}`}
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", fontSize: 12, color: colors.textDim }}>
+                  {c.uses} uses {c.maxUses ? `/ ${c.maxUses}` : ""}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Platform Offerings ────────────────────────────────────────────────────────
+const PlatformOfferingsSection = ({ onBack }) => {
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [offerings, setOfferings] = useState(PLATFORM_OFFERINGS);
+  const TYPES = ["All", "Template", "Actor", "Program", "Merch"];
+  const filtered = typeFilter === "All" ? offerings : offerings.filter(o => o.type === typeFilter);
+  const totalRevenue = offerings.reduce((s, o) => s + o.price * o.sales, 0);
+
+  const typeColor = (t) => ({ Template: colors.purple, Actor: colors.cyan, Program: colors.blue, Merch: colors.warning }[t] || colors.textDim);
+
+  return (
+    <div>
+      <PageHeader title="Platform Offerings" subtitle="Sellable templates, actors, programs, and goods" onBack={onBack} backLabel="Commerce">
+        <Btn variant="primary">+ Add Offering</Btn>
+      </PageHeader>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 24 }}>
+        {[["Total Revenue", `$${totalRevenue.toFixed(2)}`, "all time"], ["Listings", offerings.filter(o=>o.status==="Listed").length, "active"], ["Drafts", offerings.filter(o=>o.status==="Draft").length, "unpublished"]].map(([label, val, sub]) => (
+          <div key={label} style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: "14px 18px" }}>
+            <div style={{ fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 4 }}>{label}</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: colors.accent }}>{val}</div>
+            <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{sub}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {TYPES.map(t => (
+          <button key={t} onClick={() => setTypeFilter(t)} style={{ padding: "6px 14px", borderRadius: 16, border: "none", background: typeFilter === t ? colors.accent : "rgba(255,255,255,0.07)", color: typeFilter === t ? "#fff" : colors.textMuted, fontSize: 12, fontWeight: typeFilter === t ? 600 : 400, cursor: "pointer" }}>{t}</button>
+        ))}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {filtered.map(o => (
+          <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, cursor: "pointer" }}>
+            <span style={{ fontSize: 22 }}>{o.icon}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{o.name}</span>
+                <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 10, background: typeColor(o.type) + "18", color: typeColor(o.type), fontWeight: 600 }}>{o.type}</span>
+              </div>
+              <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>by {o.creator} · {o.sales} sales</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: o.price === 0 ? colors.green : colors.accent }}>{o.price === 0 ? "Free" : `$${o.price}`}</div>
+              <StatusPill status={o.status} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ── Main Commerce Content ─────────────────────────────────────────────────────
+const PlatformCommerceContent = () => {
+  const [view, setView] = useState("index");
+
+  if (view === "add") return <AddCommerceFlow onBack={() => setView("index")} />;
+  if (view === "coin") return <KinshipCoinDetail onBack={() => setView("index")} />;
+  if (view === "wallet") return <WalletConfigDetail onBack={() => setView("index")} />;
+  if (view === "fees") return <MarketplaceFeesDetail onBack={() => setView("index")} />;
+  if (view === "curve") return <BondingCurveDetail onBack={() => setView("index")} />;
+  if (view === "memberships") return <MembershipsSection onBack={() => setView("index")} />;
+  if (view === "offerings") return <PlatformOfferingsSection onBack={() => setView("index")} />;
+
+  const totalRevenue = PLATFORM_OFFERINGS.reduce((s,o) => s + o.price * o.sales, 0);
+  const SECTIONS = [
+    { id: "coin", icon: "◎", name: "Kinship Coin (KNSHP)", sub: `Supply: 1B · Price: $${COIN_DATA.price} · ${COIN_DATA.holders.toLocaleString()} holders`, status: "Active" },
+    { id: "wallet", icon: "👛", name: "Embedded Wallet Config", sub: "Privy · Solana mainnet-beta", status: "Active" },
+    { id: "fees", icon: "📊", name: "Marketplace Fees", sub: `Platform fee: ${MARKETPLACE_FEES.platformFee}% · Creator royalty: ${MARKETPLACE_FEES.creatorRoyalty}%`, status: "Active" },
+    { id: "curve", icon: "📈", name: "Bonding Curve Defaults", sub: `${BONDING_CURVE.defaultCurve} · Initial: ${BONDING_CURVE.initialPrice} KNSHP`, status: "Active" },
+    { id: "memberships", icon: "🪙", name: "Memberships", sub: `${MEMBERSHIP_LEVELS.length} levels · ${SPECIAL_OFFERS.length} active offers · ${COUPONS.filter(c=>c.status==="Active").length} coupons`, status: "Active" },
+    { id: "offerings", icon: "🛍️", name: "Platform Offerings", sub: `${PLATFORM_OFFERINGS.filter(o=>o.status==="Listed").length} listed · $${totalRevenue.toFixed(0)} total revenue`, status: "Active" },
+  ];
+
+  return (
+    <div>
+      <PageHeader title="Commerce & Coins" subtitle="Token economy, memberships, marketplace, and offerings">
+        <Btn variant="primary" onClick={() => setView("add")}>+ Add New</Btn>
+      </PageHeader>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {SECTIONS.map(s => {
+          const [hov, setHov] = useState(false);
+          return (
+            <div key={s.id} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+              onClick={() => setView(s.id)}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+              <span style={{ fontSize: 22 }}>{s.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{s.name}</div>
+                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{s.sub}</div>
+              </div>
+              <StatusPill status={s.status} />
+              <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ─── Other platform pages ─────────────────────────────────────────────────────
 
 const PlatformContent = ({ page }) => {
@@ -3483,9 +4118,10 @@ const PlatformContent = ({ page }) => {
   if (page === "p-databases") return <PlatformDatabasesContent />;
   if (page === "p-templates") return <PlatformTemplatesContent />;
   if (page === "p-teams") return <PlatformTeamsContent />;
+  if (page === "p-commerce") return <PlatformCommerceContent />;
 
   const pages = {
-    "p-commerce": {
+    "p-commerce_stub": {
       title: "Platform Commerce",
       subtitle: "Solana integration, coins, and marketplace settings",
       items: [
@@ -4584,7 +5220,7 @@ function App() {
     { id: "p-actors", icon: "🎙️", label: "Platform Actors", count: 2 },
     { id: "p-templates", icon: "📦", label: "Templates", count: 5 },
     { id: "p-teams", icon: "👥", label: "Teams & Roles", count: 4 },
-    { id: "p-commerce", icon: "💰", label: "Commerce & Coins", count: 4 },
+    { id: "p-commerce", icon: "💰", label: "Commerce & Coins", count: 6 },
   ];
 
   const cycleNav = {
