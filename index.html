@@ -622,48 +622,652 @@ const SolanaDetail = ({ onBack }) => {
 
 // ─── Platform tools list ──────────────────────────────────────────────────────
 
-const TOOLS = [
-  { id: "bluesky", name: "BlueSky", icon: "🦋", account: "@kinship.bsky.social", status: "Connected" },
-  { id: "telegram", name: "Telegram", icon: "✈️", account: "KinshipBot", status: "Connected" },
-  { id: "google", name: "Google Workspace", icon: "📧", account: "admin@kinship.today", status: "Connected" },
-  { id: "linkedin", name: "LinkedIn", icon: "💼", account: "Chrome plugin required", status: "Pending Setup" },
-  { id: "solana", name: "Solana", icon: "◎", account: "mainnet-beta", status: "Connected" },
+const CONNECTORS = [
+  { id: "bluesky", name: "BlueSky", icon: "🦋", account: "@kinship.bsky.social", status: "Connected", category: "Social" },
+  { id: "telegram", name: "Telegram", icon: "✈️", account: "KinshipBot", status: "Connected", category: "Messaging" },
+  { id: "google", name: "Google Workspace", icon: "📧", account: "admin@kinship.today", status: "Connected", category: "Productivity" },
+  { id: "linkedin", name: "LinkedIn", icon: "💼", account: "Chrome plugin required", status: "Pending Setup", category: "Social" },
+  { id: "solana", name: "Solana", icon: "◎", account: "mainnet-beta", status: "Connected", category: "Commerce" },
 ];
 
-const PlatformToolsList = ({ onSelectTool }) => (
-  <div>
-    <PageHeader title="Platform Tools & Connectors" subtitle="Manage integrations available to all creators across all cycles">
-      <Btn>+ Add Connector</Btn>
-    </PageHeader>
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {TOOLS.map(t => {
-        const [hovered, setHovered] = useState(false);
-        return (
-          <div key={t.id} onClick={() => onSelectTool(t.id)}
-            onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-            style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-            <span style={{ fontSize: 22 }}>{t.icon}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{t.name}</div>
-              <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{t.account}</div>
-            </div>
-            <StatusPill status={t.status} />
-            <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+const PLATFORM_TOOLS_DATA = [
+  {
+    id: "meeting-facilitator",
+    name: "Meeting Facilitator",
+    icon: "🎙️",
+    category: "Communication",
+    status: "Active",
+    version: "1.2.0",
+    availability: "Platform-wide",
+    addedBy: "moto",
+    addedOn: "2025-11-10",
+    cyclesUsing: 3,
+    desc: "Listens to live meetings and offers real-time guidance on communication patterns, collaboration health, and HEARTS alignment.",
+    heartsAligned: ["H", "E", "A", "T"],
+    canAddTo: ["Cycle", "Scene"],
+    triggers: ["long-monologue", "cross-talk", "tension-signal", "silence"],
+    outputModes: ["sidebar", "facilitator-dm", "chat-overlay"],
+  },
+  {
+    id: "pattern-tracker",
+    name: "Pattern Tracker",
+    icon: "🔁",
+    category: "Analytics",
+    status: "Active",
+    version: "0.9.1",
+    availability: "Platform-wide",
+    addedBy: "moto",
+    addedOn: "2025-12-04",
+    cyclesUsing: 5,
+    desc: "Tracks recurring interaction patterns across sessions and surfaces insights about member growth trajectories.",
+    heartsAligned: ["R", "Si", "So"],
+    canAddTo: ["Cycle"],
+    triggers: [],
+    outputModes: ["dashboard-widget", "actor-context"],
+  },
+  {
+    id: "ritual-timer",
+    name: "Ritual Timer",
+    icon: "⏱️",
+    category: "Facilitation",
+    status: "Active",
+    version: "1.0.3",
+    availability: "Platform-wide",
+    addedBy: "Eloy",
+    addedOn: "2026-01-18",
+    cyclesUsing: 7,
+    desc: "Manages timed ritual structures — opening rounds, silence periods, closing reflections — with configurable pacing and cues.",
+    heartsAligned: ["H", "A", "Si"],
+    canAddTo: ["Cycle", "Scene"],
+    triggers: [],
+    outputModes: ["chat-overlay", "facilitator-dm"],
+  },
+];
+
+// ─── Meeting Facilitator detail ───────────────────────────────────────────────
+
+const MeetingFacilitatorDetail = ({ onBack }) => {
+  const tool = PLATFORM_TOOLS_DATA.find(t => t.id === "meeting-facilitator");
+  const [listenMode, setListenMode] = useState("transcript");
+  const [outputMode, setOutputMode] = useState("sidebar");
+  const [responseMode, setResponseMode] = useState("suggest");
+  const [triggerToggles, setTriggerToggles] = useState({ "long-monologue": true, "cross-talk": false, "tension-signal": true, "silence": false });
+  const [heartsCheck, setHeartsCheck] = useState(true);
+  const [saveState, setSaveState] = useState(null);
+
+  const triggerLabels = {
+    "long-monologue": { label: "Long Monologue", hint: "One voice speaking for more than 90 seconds without acknowledgment" },
+    "cross-talk": { label: "Cross-Talk", hint: "Multiple participants speaking simultaneously for more than 5 seconds" },
+    "tension-signal": { label: "Tension Signal", hint: "Language patterns indicating conflict, defensiveness, or distress" },
+    "silence": { label: "Extended Silence", hint: "No speech detected for more than 30 seconds after an open question" },
+  };
+  const outputLabels = {
+    sidebar: "Sidebar (visible to all)",
+    "facilitator-dm": "DM to Facilitator only",
+    "chat-overlay": "Chat overlay (all participants)",
+  };
+  const responseModeLabels = {
+    suggest: { label: "Suggest", desc: "Kaytee offers guidance but participants decide whether to act" },
+    intervene: { label: "Intervene", desc: "Kaytee can speak directly in the meeting channel when a trigger fires" },
+    "observe-only": { label: "Observe Only", desc: "Kaytee tracks patterns silently — no output during the meeting" },
+  };
+
+  return (
+    <div style={{ maxWidth: 680 }}>
+      <PageHeader title={`${tool.icon} ${tool.name}`} subtitle={tool.desc} onBack={onBack}>
+        <StatusPill status={tool.status} />
+      </PageHeader>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 24 }}>
+        {[
+          { label: "Category", value: tool.category },
+          { label: "Version", value: tool.version },
+          { label: "Cycles Using", value: `${tool.cyclesUsing} active` },
+          { label: "Can Add To", value: tool.canAddTo.join(", ") },
+          { label: "Added By", value: tool.addedBy },
+          { label: "Added On", value: tool.addedOn },
+        ].map((f, i) => (
+          <div key={i} style={{ padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+            <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>{f.label}</div>
+            <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>{f.value}</div>
           </div>
-        );
-      })}
+        ))}
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>HEARTS Alignment</div>
+        <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Facets this tool actively monitors and supports during meetings</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {["H","E","A","R","T","Si","So"].map(f => {
+            const active = tool.heartsAligned.includes(f);
+            return (
+              <span key={f} style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, background: active ? colors.accent + "20" : "rgba(255,255,255,0.04)", border: `1px solid ${active ? colors.accent + "60" : colors.border}`, color: active ? colors.accent : colors.textDim }}>
+                {f}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4 }}>How it Works</div>
+        <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.7, marginBottom: 16 }}>
+          When added to a Cycle or Scene, Meeting Facilitator attaches to the active session's audio or transcript feed. It runs continuous analysis in the background, tracking the conversational dynamics between participants. When configured triggers fire, it routes guidance to the selected output channel — either subtly (DM to facilitator) or openly (sidebar or chat).
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.4 }}>Input Mode</div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+          {[["transcript", "📝 Live Transcript", "Works with auto-generated captions — no audio access required"], ["audio", "🎤 Audio Stream", "Direct audio analysis — richer signal detection, requires permission"]].map(([val, label, hint]) => (
+            <div key={val} onClick={() => setListenMode(val)}
+              style={{ flex: 1, padding: "12px 14px", background: listenMode === val ? colors.accent + "12" : colors.bg, border: `1px solid ${listenMode === val ? colors.accent + "60" : colors.border}`, borderRadius: 8, cursor: "pointer" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: listenMode === val ? colors.accent : colors.textMuted, marginBottom: 4 }}>{label}</div>
+              <div style={{ fontSize: 11, color: colors.textDim }}>{hint}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Triggers</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+          <div onClick={() => setHeartsCheck(!heartsCheck)}
+            style={{ width: 36, height: 20, borderRadius: 10, background: heartsCheck ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s" }}>
+            <div style={{ position: "absolute", top: 3, left: heartsCheck ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>HEARTS alignment detection</div>
+            <div style={{ fontSize: 11, color: colors.textDim }}>Flags when the conversation's overall emotional tone diverges from the configured facets</div>
+          </div>
+        </div>
+        {Object.entries(triggerLabels).map(([key, { label, hint }]) => (
+          <div key={key} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}>
+            <div onClick={() => setTriggerToggles(t => ({ ...t, [key]: !t[key] }))}
+              style={{ width: 36, height: 20, borderRadius: 10, background: triggerToggles[key] ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s", flexShrink: 0, marginTop: 2 }}>
+              <div style={{ position: "absolute", top: 3, left: triggerToggles[key] ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>{label}</div>
+              <div style={{ fontSize: 11, color: colors.textDim }}>{hint}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Output & Response</div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>Where guidance appears</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 18 }}>
+          {Object.entries(outputLabels).map(([val, label]) => (
+            <div key={val} onClick={() => setOutputMode(val)}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: outputMode === val ? colors.accent + "10" : colors.bg, border: `1px solid ${outputMode === val ? colors.accent + "50" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+              <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${outputMode === val ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {outputMode === val && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+              </div>
+              <span style={{ fontSize: 13, color: outputMode === val ? colors.text : colors.textMuted }}>{label}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>Response mode</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {Object.entries(responseModeLabels).map(([val, { label, desc }]) => (
+            <div key={val} onClick={() => setResponseMode(val)}
+              style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: responseMode === val ? colors.accent + "10" : colors.bg, border: `1px solid ${responseMode === val ? colors.accent + "50" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+              <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${responseMode === val ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                {responseMode === val && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: responseMode === val ? colors.text : colors.textMuted, fontWeight: 500 }}>{label}</div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4 }}>Platform Availability</div>
+        <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 14 }}>Meeting Facilitator is available for creators to add to any Cycle or Scene. Creators configure per-cycle settings themselves.</div>
+        <div style={{ padding: "10px 14px", background: colors.blue + "08", border: `1px solid ${colors.blue}33`, borderRadius: 8 }}>
+          <div style={{ fontSize: 12, color: colors.blue }}>ℹ️ This tool is active in <strong>3 cycles</strong> — Mountain Temple, Ocean Depths, and CATFAWN Ceremony. Creators control their own trigger and output settings per cycle.</div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+        <Btn onClick={() => setSaveState("saved")}>
+          {saveState === "saved" ? "✓ Saved" : "Save Settings"}
+        </Btn>
+        <Btn variant="secondary">View Usage Across Platform</Btn>
+      </div>
     </div>
-  </div>
-);
+  );
+};
+
+// ─── Add Connector flow ───────────────────────────────────────────────────────
+
+const AVAILABLE_CONNECTORS = [
+  { id: "discord", name: "Discord", icon: "💬", category: "Messaging", auth: "OAuth", desc: "Bot-based messaging, channels, threads, and voice rooms" },
+  { id: "slack", name: "Slack", icon: "🟣", category: "Messaging", auth: "OAuth", desc: "Workspace messaging and workflow automation" },
+  { id: "whatsapp", name: "WhatsApp", icon: "📱", category: "Messaging", auth: "API Key", desc: "Messaging via the WhatsApp Business API" },
+  { id: "zoom", name: "Zoom", icon: "📹", category: "Video", auth: "OAuth", desc: "Meeting scheduling, recordings, and in-session chat" },
+  { id: "notion", name: "Notion", icon: "📓", category: "Productivity", auth: "OAuth", desc: "Read and write to Notion pages and databases" },
+  { id: "airtable", name: "Airtable", icon: "🗃️", category: "Productivity", auth: "API Key", desc: "Structured data in tables — great for tracking and records" },
+  { id: "stripe", name: "Stripe", icon: "💳", category: "Commerce", auth: "API Key", desc: "Payment processing, subscriptions, and invoicing" },
+  { id: "calendly", name: "Calendly", icon: "📅", category: "Scheduling", auth: "OAuth", desc: "Book sessions and sync availability with members" },
+  { id: "youtube", name: "YouTube", icon: "▶️", category: "Media", auth: "OAuth", desc: "Publish content, read comments, and manage the channel" },
+  { id: "spotify", name: "Spotify", icon: "🎵", category: "Media", auth: "OAuth", desc: "Surface playlists and ambient music cues in sessions" },
+  { id: "github", name: "GitHub", icon: "🐙", category: "Developer", auth: "OAuth", desc: "Trigger workflows from commits and pull requests" },
+  { id: "webhook", name: "Custom Webhook", icon: "🔗", category: "Developer", auth: "Webhook URL", desc: "Send and receive arbitrary payloads to any endpoint" },
+];
+const connectorCategories = ["All", "Messaging", "Video", "Productivity", "Commerce", "Scheduling", "Media", "Developer"];
+const authColors = { OAuth: colors.blue, "API Key": colors.purple, "Webhook URL": colors.cyan };
+
+const AddConnectorFlow = ({ onBack }) => {
+  const [catFilter, setCatFilter] = useState("All");
+  const [selected, setSelected] = useState(null);
+  const [authStep, setAuthStep] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [connectorName, setConnectorName] = useState("");
+  const [connecting, setConnecting] = useState(false);
+  const [connected, setConnected] = useState(false);
+
+  const filtered = catFilter === "All" ? AVAILABLE_CONNECTORS : AVAILABLE_CONNECTORS.filter(c => c.category === catFilter);
+
+  if (connected && selected) {
+    const conn = AVAILABLE_CONNECTORS.find(c => c.id === selected);
+    return (
+      <div style={{ maxWidth: 560 }}>
+        <div style={{ textAlign: "center", padding: "40px 20px" }}>
+          <div style={{ fontSize: 56, marginBottom: 16 }}>{conn.icon}</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Connected!</div>
+          <div style={{ fontSize: 14, color: colors.textDim, marginBottom: 28 }}>{conn.name} is now connected to Platform Core. Creators can start adding it to their cycles.</div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+            <Btn onClick={onBack}>Back to Tools & Connectors</Btn>
+            <Btn variant="secondary" onClick={() => { setConnected(false); setSelected(null); setAuthStep(false); setApiKey(""); }}>Add Another</Btn>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (authStep && selected) {
+    const conn = AVAILABLE_CONNECTORS.find(c => c.id === selected);
+    return (
+      <div style={{ maxWidth: 560 }}>
+        <button onClick={() => { setAuthStep(false); }} style={{ background: "none", border: "none", color: colors.accent, fontSize: 12, cursor: "pointer", marginBottom: 16, fontFamily: "inherit" }}>← Back to connector list</button>
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, overflow: "hidden" }}>
+          <div style={{ padding: "20px 24px", borderBottom: `1px solid ${colors.border}`, display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontSize: 32 }}>{conn.icon}</span>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>{conn.name}</div>
+              <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{conn.desc}</div>
+            </div>
+          </div>
+          <div style={{ padding: "20px 24px" }}>
+            {conn.auth === "OAuth" && (
+              <div>
+                <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 16, lineHeight: 1.6 }}>You'll be redirected to {conn.name} to authorize Kinship. We'll request the minimum permissions needed.</div>
+                <div style={{ padding: "10px 14px", background: colors.blue + "08", border: `1px solid ${colors.blue}33`, borderRadius: 8, marginBottom: 20, fontSize: 12, color: colors.blue }}>
+                  🔒 Kinship will request read and write access to your {conn.name} account on behalf of Platform Core.
+                </div>
+                <Btn onClick={() => { setConnecting(true); setTimeout(() => { setConnecting(false); setConnected(true); }, 1600); }}>
+                  {connecting ? "Connecting..." : `Connect with ${conn.name}`}
+                </Btn>
+              </div>
+            )}
+            {conn.auth === "API Key" && (
+              <div>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ fontSize: 11, color: colors.textDim, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Display Name</label>
+                  <input value={connectorName} onChange={e => setConnectorName(e.target.value)} placeholder={`e.g. ${conn.name} Production`}
+                    style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+                </div>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: 11, color: colors.textDim, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>API Key</label>
+                  <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="Paste your API key here"
+                    style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "monospace", boxSizing: "border-box" }} />
+                  <div style={{ fontSize: 11, color: colors.textDim, marginTop: 6 }}>Keys are encrypted at rest and never shown again after saving.</div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Btn onClick={() => { setConnecting(true); setTimeout(() => { setConnecting(false); setConnected(true); }, 1200); }}>
+                    {connecting ? "Verifying..." : "Verify & Connect"}
+                  </Btn>
+                  <Btn variant="secondary" onClick={() => setAuthStep(false)}>Cancel</Btn>
+                </div>
+              </div>
+            )}
+            {conn.auth === "Webhook URL" && (
+              <div>
+                <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 16, lineHeight: 1.6 }}>Copy the webhook URL below and paste it into your external system's outbound webhook settings.</div>
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ fontSize: 11, color: colors.textDim, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Your Webhook Endpoint</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1, padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, fontFamily: "monospace", fontSize: 12, color: colors.textMuted }}>
+                      https://api.kinship.systems/hooks/platform/incoming/abc123xyz
+                    </div>
+                    <Btn variant="secondary">Copy</Btn>
+                  </div>
+                </div>
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ fontSize: 11, color: colors.textDim, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Signing Secret (optional)</label>
+                  <input placeholder="From your external service"
+                    style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "monospace", boxSizing: "border-box" }} />
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Btn onClick={() => { setConnecting(true); setTimeout(() => { setConnecting(false); setConnected(true); }, 900); }}>Save Webhook</Btn>
+                  <Btn variant="secondary" onClick={() => setAuthStep(false)}>Cancel</Btn>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <PageHeader title="Add Connector" subtitle="Connect an external service to the platform. Connected services are available to all creators." onBack={onBack} />
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 20 }}>
+        {connectorCategories.map(c => <FilterPill key={c} label={c} active={catFilter === c} onClick={() => setCatFilter(c)} />)}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        {filtered.map(conn => {
+          const [hovered, setHovered] = useState(false);
+          return (
+            <div key={conn.id} onClick={() => { setSelected(conn.id); setAuthStep(true); }}
+              onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+              style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+              <span style={{ fontSize: 26 }}>{conn.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{conn.name}</span>
+                  <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: (authColors[conn.auth] || colors.accent) + "18", color: authColors[conn.auth] || colors.accent, fontWeight: 700 }}>{conn.auth}</span>
+                </div>
+                <div style={{ fontSize: 11, color: colors.textDim }}>{conn.desc}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ─── Add Tool flow ────────────────────────────────────────────────────────────
+
+const AddToolFlow = ({ onBack }) => {
+  const [toolType, setToolType] = useState(null);
+  const [name, setName] = useState("");
+  const [desc, setDesc] = useState("");
+  const [category, setCategory] = useState("Communication");
+  const [inputType, setInputType] = useState("transcript");
+  const [addTo, setAddTo] = useState({ Cycle: true, Scene: true });
+  const [heartsSelected, setHeartsSelected] = useState(["H"]);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const builtinTools = PLATFORM_TOOLS_DATA.map(t => ({ ...t }));
+  const categories = ["Communication", "Facilitation", "Analytics", "Learning", "Commerce", "Wellness"];
+  const inputTypes = [
+    { id: "transcript", label: "📝 Transcript / Text", hint: "Reads live text, captions, or transcripts from sessions" },
+    { id: "audio", label: "🎤 Audio Stream", hint: "Analyzes live audio — requires mic permission" },
+    { id: "event-hook", label: "⚡ Event Hook", hint: "Responds to platform events (member joins, scene change, checkpoint reached)" },
+    { id: "schedule", label: "⏰ Scheduled", hint: "Runs on a timer or at configured moments in a session" },
+    { id: "api-call", label: "🔌 API Call", hint: "Triggered by an external system sending data to a webhook" },
+  ];
+
+  if (saved) {
+    return (
+      <div style={{ textAlign: "center", padding: "48px 24px" }}>
+        <div style={{ fontSize: 56, marginBottom: 16 }}>🛠️</div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Tool Created</div>
+        <div style={{ fontSize: 14, color: colors.textDim, marginBottom: 28 }}>"{name}" is now available for creators to add to their cycles and scenes. You can configure it further from the tool detail page.</div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+          <Btn onClick={onBack}>Back to Tools & Connectors</Btn>
+          <Btn variant="secondary" onClick={() => { setSaved(false); setName(""); setDesc(""); setToolType(null); }}>Create Another</Btn>
+        </div>
+      </div>
+    );
+  }
+
+  if (!toolType) {
+    return (
+      <div>
+        <PageHeader title="Add Platform Tool" subtitle="Add an existing built-in tool or create a custom one for your platform" onBack={onBack} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {[
+            { id: "builtin", icon: "📦", label: "Built-in Tool", desc: "Enable an existing Kinship tool — Meeting Facilitator, Pattern Tracker, Ritual Timer, and more. Fully configured, ready to use." },
+            { id: "custom", icon: "🛠️", label: "Custom Tool", desc: "Define a new tool specific to your platform — set its inputs, HEARTS alignment, trigger logic, and where creators can add it." },
+          ].map(opt => {
+            const [hovered, setHovered] = useState(false);
+            return (
+              <div key={opt.id} onClick={() => setToolType(opt.id)} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+                style={{ padding: "24px 22px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.accent + "60" : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
+                <div style={{ fontSize: 36, marginBottom: 12 }}>{opt.icon}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: colors.text, marginBottom: 6 }}>{opt.label}</div>
+                <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.6 }}>{opt.desc}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (toolType === "builtin") {
+    return (
+      <div>
+        <PageHeader title="Enable Built-in Tool" subtitle="Choose a Kinship tool to make available across your platform" onBack={() => setToolType(null)} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[
+            { icon: "🎙️", name: "Meeting Facilitator", desc: "Real-time communication guidance during live sessions", available: false },
+            { icon: "🔁", name: "Pattern Tracker", desc: "Surfaces recurring interaction patterns across member sessions", available: false },
+            { icon: "⏱️", name: "Ritual Timer", desc: "Timed ritual structures with configurable pacing and cues", available: false },
+            { icon: "🌡️", name: "Mood Barometer", desc: "Tracks emotional temperature of a group in real time", available: true },
+            { icon: "🪞", name: "Reflection Prompter", desc: "Injects guided reflection questions at configured session moments", available: true },
+            { icon: "📊", name: "Engagement Lens", desc: "Tracks participation balance and surfaces quieter voices", available: true },
+          ].map((t, i) => {
+            const [hovered, setHovered] = useState(false);
+            return (
+              <div key={i} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: hovered && t.available ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered && t.available ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: t.available ? "pointer" : "default", transition: "all 0.15s", opacity: t.available ? 1 : 0.55 }}>
+                <span style={{ fontSize: 22 }}>{t.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{t.name}</div>
+                  <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{t.desc}</div>
+                </div>
+                {t.available ? <Btn variant="secondary" style={{ fontSize: 11 }}>Enable</Btn> : <StatusPill status="Active" />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 640 }}>
+      <PageHeader title="Create Custom Tool" subtitle="Define a new platform-wide tool creators can add to cycles and scenes" onBack={() => setToolType(null)} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 16 }}>Identity</div>
+          <Field label="Tool Name" hint="What is this tool called? Keep it short and descriptive.">
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Meeting Facilitator"
+              style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+          </Field>
+          <div style={{ marginTop: 14 }}>
+            <Field label="Description" hint="One or two sentences on what this tool does and when it's useful.">
+              <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} placeholder="e.g. Listens to live meetings and offers real-time guidance on communication patterns and HEARTS alignment."
+                style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+            </Field>
+          </div>
+          <div style={{ marginTop: 14 }}>
+            <Field label="Category" hint="Used to organize tools in the creator's library.">
+              <select value={category} onChange={e => setCategory(e.target.value)}
+                style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                {categories.map(c => <option key={c}>{c}</option>)}
+              </select>
+            </Field>
+          </div>
+        </div>
+
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>Input Source</div>
+          <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 14 }}>How does this tool receive information to act on?</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {inputTypes.map(it => (
+              <div key={it.id} onClick={() => setInputType(it.id)}
+                style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: inputType === it.id ? colors.accent + "10" : colors.bg, border: `1px solid ${inputType === it.id ? colors.accent + "50" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+                <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${inputType === it.id ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                  {inputType === it.id && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, color: inputType === it.id ? colors.text : colors.textMuted, fontWeight: 500 }}>{it.label}</div>
+                  <div style={{ fontSize: 11, color: colors.textDim }}>{it.hint}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>HEARTS Alignment</div>
+          <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Which HEARTS facets does this tool monitor or support?</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {["H","E","A","R","T","Si","So"].map(f => {
+              const on = heartsSelected.includes(f);
+              return (
+                <div key={f} onClick={() => setHeartsSelected(prev => on ? prev.filter(x => x !== f) : [...prev, f])}
+                  style={{ width: 36, height: 36, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, cursor: "pointer", background: on ? colors.accent + "20" : "rgba(255,255,255,0.04)", border: `1px solid ${on ? colors.accent + "60" : colors.border}`, color: on ? colors.accent : colors.textDim }}>
+                  {f}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>Where Can Creators Add It?</div>
+          <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 14 }}>Choose the contexts where this tool can be attached.</div>
+          <div style={{ display: "flex", gap: 12 }}>
+            {["Cycle", "Scene", "Actor"].map(ctx => {
+              const on = addTo[ctx];
+              return (
+                <div key={ctx} onClick={() => setAddTo(prev => ({ ...prev, [ctx]: !prev[ctx] }))}
+                  style={{ display: "flex", align: "center", gap: 8, padding: "10px 16px", background: on ? colors.accent + "10" : colors.bg, border: `1px solid ${on ? colors.accent + "50" : colors.border}`, borderRadius: 8, cursor: "pointer" }}>
+                  <span style={{ fontSize: 13, color: on ? colors.text : colors.textMuted, fontWeight: on ? 600 : 400 }}>{ctx}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <Btn onClick={() => { setSaving(true); setTimeout(() => { setSaving(false); setSaved(true); }, 1000); }}>
+            {saving ? "Creating..." : "Create Tool"}
+          </Btn>
+          <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Platform Tools list (connectors + tools) ─────────────────────────────────
+
+const PlatformToolsList = ({ onSelectTool, onAddConnector, onAddTool, onSelectPlatformTool }) => {
+  const [tab, setTab] = useState("connectors");
+  return (
+    <div>
+      <PageHeader title="Platform Tools & Connectors" subtitle="External services and internal tools available across all cycles">
+        <div style={{ display: "flex", gap: 8 }}>
+          {tab === "connectors" && <Btn onClick={onAddConnector}>+ Add Connector</Btn>}
+          {tab === "tools" && <Btn onClick={onAddTool}>+ Add Tool</Btn>}
+        </div>
+      </PageHeader>
+
+      <div style={{ display: "flex", gap: 0, marginBottom: 20, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden", alignSelf: "flex-start", width: "fit-content" }}>
+        {[{ id: "connectors", label: "🔌 Connectors", count: CONNECTORS.length }, { id: "tools", label: "🛠️ Platform Tools", count: PLATFORM_TOOLS_DATA.length }].map((t, i) => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{ padding: "10px 20px", background: tab === t.id ? colors.accent + "18" : "transparent", border: "none", borderRight: i === 0 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s" }}>
+            <span style={{ fontSize: 13, fontWeight: tab === t.id ? 600 : 400, color: tab === t.id ? colors.accent : colors.textMuted }}>{t.label}</span>
+            <span style={{ marginLeft: 6, fontSize: 11, color: colors.textDim }}>({t.count})</span>
+          </button>
+        ))}
+      </div>
+
+      {tab === "connectors" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {CONNECTORS.map(t => {
+            const [hovered, setHovered] = useState(false);
+            return (
+              <div key={t.id} onClick={() => onSelectTool(t.id)}
+                onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                <span style={{ fontSize: 22 }}>{t.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{t.name}</div>
+                  <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{t.account}</div>
+                </div>
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: colors.textDim, border: `1px solid ${colors.border}` }}>{t.category}</span>
+                <StatusPill status={t.status} />
+                <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {tab === "tools" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {PLATFORM_TOOLS_DATA.map(t => {
+            const [hovered, setHovered] = useState(false);
+            return (
+              <div key={t.id} onClick={() => onSelectPlatformTool(t.id)}
+                onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                <span style={{ fontSize: 22 }}>{t.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{t.name}</div>
+                  <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{t.desc}</div>
+                </div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {t.heartsAligned.map(f => (
+                    <span key={f} style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: colors.accent + "14", color: colors.accent, fontWeight: 700 }}>{f}</span>
+                  ))}
+                </div>
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: colors.textDim, border: `1px solid ${colors.border}` }}>{t.category}</span>
+                <StatusPill status={t.status} />
+                <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PlatformToolsContent = () => {
+  const [view, setView] = useState("list");
   const [selectedTool, setSelectedTool] = useState(null);
+  const [selectedPlatformTool, setSelectedPlatformTool] = useState(null);
+
+  if (view === "add-connector") return <AddConnectorFlow onBack={() => setView("list")} />;
+  if (view === "add-tool") return <AddToolFlow onBack={() => setView("list")} />;
+  if (selectedPlatformTool === "meeting-facilitator") return <MeetingFacilitatorDetail onBack={() => { setSelectedPlatformTool(null); setView("list"); }} />;
   if (selectedTool === "bluesky") return <BlueSkyDetail onBack={() => setSelectedTool(null)} />;
   if (selectedTool === "telegram") return <TelegramDetail onBack={() => setSelectedTool(null)} />;
   if (selectedTool === "google") return <GoogleDetail onBack={() => setSelectedTool(null)} />;
   if (selectedTool === "linkedin") return <LinkedInDetail onBack={() => setSelectedTool(null)} />;
   if (selectedTool === "solana") return <SolanaDetail onBack={() => setSelectedTool(null)} />;
-  return <PlatformToolsList onSelectTool={setSelectedTool} />;
+  return (
+    <PlatformToolsList
+      onSelectTool={id => setSelectedTool(id)}
+      onAddConnector={() => setView("add-connector")}
+      onAddTool={() => setView("add-tool")}
+      onSelectPlatformTool={id => setSelectedPlatformTool(id)}
+    />
+  );
 };
 
 // ─── Platform System Prompts ──────────────────────────────────────────────────
@@ -2409,7 +3013,7 @@ function App() {
   const platformNav = [
     { id: "p-users", icon: "👤", label: "Users", count: 12 },
     { id: "p-bots", icon: "🤖", label: "Bots (Global)", count: 8 },
-    { id: "p-tools", icon: "🔧", label: "Tools & Connectors", count: 5 },
+    { id: "p-tools", icon: "🔧", label: "Tools & Connectors", count: 8 },
     { id: "p-prompts", icon: "💬", label: "System Prompts", count: 3 },
     { id: "p-knowledge", icon: "📚", label: "Knowledge Base", count: 3 },
     { id: "p-databases", icon: "🗄️", label: "Databases", count: 4 },
