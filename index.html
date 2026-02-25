@@ -5906,6 +5906,931 @@ const CycleContent = ({ page, context }) => {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // QUESTS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const QUEST_DATA_INIT = [
+    {
+      id: "first-steps",
+      name: "First Steps",
+      status: "Active",
+      type: "Onboarding",
+      scene: "Mountain Temple Gardens",
+      actor: "Elder Sage",
+      description: "An opening quest that guides new members through their first encounter with the cycle. The Elder Sage orients them, asks a reflective question, and sets the tone for what this space is for.",
+      xp: 50,
+      estimatedTime: "10 min",
+      visibility: "Members only",
+      completion: 68,
+      members: 24,
+      completedBy: 16,
+      steps: [
+        { id: "s1", type: "dialogue", label: "Arrival greeting", prompt: "Welcome the member warmly. Ask them what brought them here today and what they're hoping to find. Listen openly.", actorId: "elder-sage", done: true },
+        { id: "s2", type: "reflection", label: "Opening reflection", prompt: "Ask the member to take a breath and describe their current state in one word.", actorId: "elder-sage", done: true },
+        { id: "s3", type: "choice", label: "Choose your path", prompt: "Offer three paths: Stillness, Challenge, or Connection. Each will shape the next quests they encounter.", actorId: null, done: false },
+        { id: "s4", type: "milestone", label: "Quest complete", prompt: "Acknowledge the member's choice. Tell them what comes next.", actorId: "elder-sage", done: false },
+      ],
+      tags: ["onboarding", "reflection", "hearts"],
+      notes: "Keep this gentle. It's the first impression.",
+    },
+    {
+      id: "inner-mirror",
+      name: "Inner Mirror",
+      status: "Active",
+      type: "Reflection",
+      scene: "Mountain Temple Gardens",
+      actor: "Forest Spirit",
+      description: "A deeper reflective arc that surfaces patterns from the member's previous sessions and invites them to look more closely at recurring themes.",
+      xp: 120,
+      estimatedTime: "20 min",
+      visibility: "Members only",
+      completion: 41,
+      members: 17,
+      completedBy: 7,
+      steps: [
+        { id: "s1", type: "dialogue", label: "Recall & surface", prompt: "Draw on the member's session history to reflect back a pattern you've noticed. Ask if it resonates.", actorId: "forest-spirit", done: false },
+        { id: "s2", type: "reflection", label: "Sit with it", prompt: "Invite the member to sit quietly with what's been surfaced. Offer a short somatic prompt.", actorId: "forest-spirit", done: false },
+        { id: "s3", type: "journal", label: "Write it down", prompt: "Prompt the member to write 2–3 sentences about what they noticed. No judgment, just witnessing.", actorId: null, done: false },
+      ],
+      tags: ["reflection", "depth", "hearts", "synthesis"],
+      notes: "Requires at least 2 prior sessions to run effectively.",
+    },
+    {
+      id: "the-first-trial",
+      name: "The First Trial",
+      status: "Pending Setup",
+      type: "Challenge",
+      scene: "Training Grounds",
+      actor: "Challenge Master",
+      description: "An introductory challenge quest that tests focus and endurance. Members complete a timed task sequence and receive feedback from the Challenge Master.",
+      xp: 200,
+      estimatedTime: "30 min",
+      visibility: "Members only",
+      completion: 0,
+      members: 0,
+      completedBy: 0,
+      steps: [
+        { id: "s1", type: "briefing", label: "Challenge briefing", prompt: "Explain the trial structure. Set expectations. Ask if the member is ready.", actorId: "challenge-master", done: false },
+        { id: "s2", type: "task", label: "Task sequence", prompt: "Walk the member through three timed micro-tasks. Adjust difficulty based on their pace.", actorId: "challenge-master", done: false },
+        { id: "s3", type: "debrief", label: "Debrief", prompt: "Reflect back what you observed. Celebrate effort. Note areas for growth.", actorId: "challenge-master", done: false },
+      ],
+      tags: ["challenge", "growth", "timed"],
+      notes: "Training Grounds must be Active before this can launch.",
+    },
+  ];
+
+  const STEP_TYPES = [
+    { id: "dialogue", label: "Dialogue", icon: "lucide:message-circle", desc: "Actor speaks to the member based on a prompt", color: "#7C6FFF" },
+    { id: "reflection", label: "Reflection", icon: "lucide:heart", desc: "Member is invited to sit with a feeling or thought", color: "#FF6FAE" },
+    { id: "journal", label: "Journal", icon: "lucide:pen-line", desc: "Member writes a response that gets saved", color: "#6FC3FF" },
+    { id: "choice", label: "Choice", icon: "lucide:git-branch", desc: "Member selects from options that branch the quest", color: "#FFB347" },
+    { id: "task", label: "Task", icon: "lucide:check-square", desc: "Member performs a concrete action or challenge", color: "#4ECDC4" },
+    { id: "milestone", label: "Milestone", icon: "lucide:flag", desc: "Marks completion and optionally triggers rewards", color: "#A8E063" },
+    { id: "briefing", label: "Briefing", icon: "lucide:file-text", desc: "Actor delivers structured information or instructions", color: "#C3A6FF" },
+    { id: "debrief", label: "Debrief", icon: "lucide:bar-chart-2", desc: "Actor reviews and responds to what happened", color: "#FFD166" },
+  ];
+
+  const QUEST_TYPES = ["Onboarding", "Reflection", "Challenge", "Commerce", "Social", "Lore", "Custom"];
+
+  const [questList, setQuestList] = useState(QUEST_DATA_INIT);
+  const [selectedQuest, setSelectedQuest] = useState(null);
+  const [showNewQuest, setShowNewQuest] = useState(false);
+  const [questSearch, setQuestSearch] = useState("");
+  const [questTypeFilter, setQuestTypeFilter] = useState("All");
+
+  // ── New Quest Wizard ────────────────────────────────────────────────────────
+  const NewQuestModal = ({ onClose, onCreate }) => {
+    const [step, setStep] = useState(1);
+    const TOTAL = 3;
+    const [form, setForm] = useState({
+      name: "", type: "", scene: "", actor: "", description: "",
+      xp: 100, estimatedTime: "15 min", visibility: "Members only",
+      generatedSteps: [],
+    });
+    const [designMode, setDesignMode] = useState("prompt"); // "prompt" | "manual"
+    const [promptInput, setPromptInput] = useState("");
+    const [generating, setGenerating] = useState(false);
+    const [generatedSteps, setGeneratedSteps] = useState([]);
+    const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+    const SCENES_LIST = ["Mountain Temple Gardens", "Crystal Caves", "Training Grounds", "Market Square"];
+    const ACTORS_LIST = ["Elder Sage", "Forest Spirit", "Challenge Master", "Market Keeper", "Echo Guide", "Crystal Keeper"];
+
+    const canAdvance = () => {
+      if (step === 1) return form.name.trim().length > 0 && form.type.length > 0;
+      if (step === 2) return true;
+      return true;
+    };
+
+    // Simulate AI generation of quest steps from a prompt
+    const handleGenerate = () => {
+      if (!promptInput.trim()) return;
+      setGenerating(true);
+      setTimeout(() => {
+        const typeToSteps = {
+          Onboarding: [
+            { id: "g1", type: "dialogue", label: "Welcome & orientation", prompt: `As ${form.actor || "the actor"}, warmly greet the member. Introduce this space and ask what brought them here today.`, actorId: form.actor || null, done: false },
+            { id: "g2", type: "reflection", label: "Opening check-in", prompt: "Ask the member to describe their current state in one word or one breath.", actorId: form.actor || null, done: false },
+            { id: "g3", type: "choice", label: "Choose your intention", prompt: "Offer 3 simple intentions for this session. Invite the member to choose the one that resonates.", actorId: null, done: false },
+            { id: "g4", type: "milestone", label: "Quest complete", prompt: "Acknowledge the member's readiness. Let them know what's ahead.", actorId: form.actor || null, done: false },
+          ],
+          Reflection: [
+            { id: "g1", type: "dialogue", label: "Surface the pattern", prompt: `Draw on the member's recent sessions. Identify one recurring theme and reflect it back gently. Ask if it resonates.`, actorId: form.actor || null, done: false },
+            { id: "g2", type: "reflection", label: "Sit with it", prompt: "Invite the member into 60 seconds of stillness. Offer a somatic anchor: feet on the floor, one slow breath.", actorId: form.actor || null, done: false },
+            { id: "g3", type: "journal", label: "Write it down", prompt: "Ask the member to write 2–3 sentences about what emerged. No editing — raw and true.", actorId: null, done: false },
+            { id: "g4", type: "milestone", label: "Integration", prompt: "Reflect back what the member shared. Name one thing worth carrying forward.", actorId: form.actor || null, done: false },
+          ],
+          Challenge: [
+            { id: "g1", type: "briefing", label: "Challenge intro", prompt: `Explain today's challenge. Be clear about structure, time, and what success looks like. Ask if the member is ready.`, actorId: form.actor || null, done: false },
+            { id: "g2", type: "task", label: "Round one", prompt: "Walk the member through the first task. Adjust pacing based on their responses.", actorId: form.actor || null, done: false },
+            { id: "g3", type: "task", label: "Round two", prompt: "Introduce a second, slightly harder task. Acknowledge effort from the first round.", actorId: form.actor || null, done: false },
+            { id: "g4", type: "debrief", label: "Debrief & close", prompt: "Review what happened. Celebrate what was strong. Offer one specific observation for growth.", actorId: form.actor || null, done: false },
+          ],
+        };
+        const baseSteps = typeToSteps[form.type] || typeToSteps["Reflection"];
+        // Inject the user's prompt context into step descriptions
+        const steps = baseSteps.map((s, i) => ({ ...s, prompt: i === 0 ? `${s.prompt}\n\nContext from creator: ${promptInput}` : s.prompt }));
+        setGeneratedSteps(steps);
+        setGenerating(false);
+      }, 1200);
+    };
+
+    const handleCreate = () => {
+      const steps = generatedSteps.length > 0 ? generatedSteps : [];
+      const q = {
+        id: form.name.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now(),
+        name: form.name, status: "Pending Setup", type: form.type,
+        scene: form.scene, actor: form.actor, description: form.description,
+        xp: form.xp, estimatedTime: form.estimatedTime, visibility: form.visibility,
+        completion: 0, members: 0, completedBy: 0, steps, tags: [], notes: "",
+      };
+      setQuestList(ql => [...ql, q]);
+      onClose();
+      setSelectedQuest(q);
+      onCreate && onCreate(q);
+    };
+
+    const STEP_LABELS = ["Basics", "Design Steps", "Review"];
+
+    return (
+      <div style={{ position: "fixed", inset: 0, background: "rgba(5,5,18,0.88)", backdropFilter: "blur(10px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 16, width: 640, maxHeight: "92vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          {/* Header */}
+          <div style={{ padding: "20px 24px 14px", borderBottom: `1px solid ${colors.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>New Quest</div>
+              <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{step} of {TOTAL} — {STEP_LABELS[step - 1]}</div>
+            </div>
+            <button onClick={onClose} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer" }}><Icon name="lucide:x" size={18} /></button>
+          </div>
+          {/* Progress bar */}
+          <div style={{ display: "flex", gap: 6, padding: "10px 24px 0" }}>
+            {Array.from({ length: TOTAL }, (_, i) => (
+              <div key={i} style={{ height: 3, flex: 1, borderRadius: 3, background: i < step ? colors.purple : colors.border, transition: "background 0.2s" }} />
+            ))}
+          </div>
+
+          {/* Body */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
+
+            {/* Step 1: Basics */}
+            {step === 1 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div style={{ gridColumn: "1/-1" }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>QUEST NAME *</label>
+                    <input value={form.name} onChange={e => setF("name", e.target.value)} placeholder="e.g. The Opening Gate" style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>TYPE *</label>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
+                      {QUEST_TYPES.map(t => (
+                        <div key={t} onClick={() => setF("type", t)} style={{ padding: "8px 10px", border: `1px solid ${form.type === t ? colors.purple : colors.border}`, borderRadius: 8, cursor: "pointer", background: form.type === t ? colors.purple + "18" : colors.bg, fontSize: 12, color: form.type === t ? colors.purple : colors.textDim, textAlign: "center", transition: "all 0.12s" }}>{t}</div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>SCENE</label>
+                      <select value={form.scene} onChange={e => setF("scene", e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: form.scene ? colors.text : colors.textDim, fontSize: 13, outline: "none" }}>
+                        <option value="">Choose scene...</option>
+                        {SCENES_LIST.map(s => <option key={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>LEAD ACTOR</label>
+                      <select value={form.actor} onChange={e => setF("actor", e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: form.actor ? colors.text : colors.textDim, fontSize: 13, outline: "none" }}>
+                        <option value="">Choose actor...</option>
+                        {ACTORS_LIST.map(a => <option key={a}>{a}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>VISIBILITY</label>
+                      <select value={form.visibility} onChange={e => setF("visibility", e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }}>
+                        <option>Members only</option><option>All visitors</option><option>Invite only</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>DESCRIPTION</label>
+                  <textarea value={form.description} onChange={e => setF("description", e.target.value)} rows={3} placeholder="What is this quest? What will the member experience?" style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none", resize: "vertical" }} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>XP REWARD</label>
+                    <input type="number" value={form.xp} onChange={e => setF("xp", Number(e.target.value))} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>ESTIMATED TIME</label>
+                    <select value={form.estimatedTime} onChange={e => setF("estimatedTime", e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }}>
+                      {["5 min","10 min","15 min","20 min","30 min","45 min","60 min+"].map(t => <option key={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Design Steps */}
+            {step === 2 && (
+              <div>
+                {/* Mode toggle */}
+                <div style={{ display: "flex", gap: 4, marginBottom: 20, background: colors.bg, borderRadius: 8, padding: 4 }}>
+                  {[{ id: "prompt", label: "Design with AI", icon: "lucide:sparkles" }, { id: "manual", label: "Build manually", icon: "lucide:list" }].map(m => (
+                    <button key={m.id} onClick={() => setDesignMode(m.id)} style={{ flex: 1, padding: "8px 0", background: designMode === m.id ? colors.surface : "transparent", border: `1px solid ${designMode === m.id ? colors.border : "transparent"}`, borderRadius: 6, color: designMode === m.id ? colors.text : colors.textDim, fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <Icon name={m.icon} size={13} />{m.label}
+                    </button>
+                  ))}
+                </div>
+
+                {designMode === "prompt" && (
+                  <div>
+                    <div style={{ padding: "14px 16px", background: colors.accent + "10", border: `1px solid ${colors.accent}30`, borderRadius: 10, marginBottom: 16, display: "flex", gap: 10 }}>
+                      <Icon name="lucide:sparkles" size={14} style={{ color: colors.accent, flexShrink: 0, marginTop: 2 }} />
+                      <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.6 }}>
+                        Describe what you want to happen in this quest. An AI will draft the step-by-step structure for you. You can edit any step after.
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>DESCRIBE YOUR QUEST</label>
+                      <textarea
+                        value={promptInput} onChange={e => setPromptInput(e.target.value)}
+                        rows={5}
+                        placeholder={`e.g. A grounding exercise where ${form.actor || "the guide"} walks the member through three body-awareness prompts, then invites them to name one thing they're carrying today that they'd like to set down.`}
+                        style={{ width: "100%", boxSizing: "border-box", padding: "12px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }}
+                      />
+                    </div>
+                    <Btn onClick={handleGenerate} disabled={!promptInput.trim() || generating}>
+                      {generating
+                        ? <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Icon name="lucide:loader-2" size={13} style={{ animation: "spin 1s linear infinite" }} />Generating...</span>
+                        : <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Icon name="lucide:sparkles" size={13} />Generate Steps</span>}
+                    </Btn>
+                    {generatedSteps.length > 0 && (
+                      <div style={{ marginTop: 20 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: colors.textDim, marginBottom: 10, letterSpacing: 0.5 }}>GENERATED STEPS — review and edit below</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {generatedSteps.map((s, i) => {
+                            const sType = STEP_TYPES.find(t => t.id === s.type) || STEP_TYPES[0];
+                            return (
+                              <div key={s.id} style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 10, padding: "12px 14px" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                                  <div style={{ width: 24, height: 24, borderRadius: 6, background: sType.color + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                    <Icon name={sType.icon} size={12} style={{ color: sType.color }} />
+                                  </div>
+                                  <span style={{ fontSize: 11, fontWeight: 700, color: sType.color, textTransform: "uppercase", letterSpacing: 0.5 }}>{sType.label}</span>
+                                  <span style={{ fontSize: 12, color: colors.textDim, marginLeft: 4 }}>·</span>
+                                  <input
+                                    value={s.label}
+                                    onChange={e => setGeneratedSteps(gs => gs.map((g, gi) => gi === i ? { ...g, label: e.target.value } : g))}
+                                    style={{ fontSize: 12, fontWeight: 600, color: colors.text, background: "none", border: "none", outline: "none", flex: 1 }}
+                                  />
+                                </div>
+                                <textarea
+                                  value={s.prompt}
+                                  onChange={e => setGeneratedSteps(gs => gs.map((g, gi) => gi === i ? { ...g, prompt: e.target.value } : g))}
+                                  rows={3}
+                                  style={{ width: "100%", boxSizing: "border-box", fontSize: 12, color: colors.textDim, background: "none", border: "none", outline: "none", resize: "none", lineHeight: 1.6, fontFamily: "inherit" }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {designMode === "manual" && (
+                  <ManualStepBuilder steps={generatedSteps} onChange={setGeneratedSteps} />
+                )}
+              </div>
+            )}
+
+            {/* Step 3: Review */}
+            {step === 3 && (
+              <div>
+                <div style={{ padding: "14px 16px", background: colors.bg, borderRadius: 10, border: `1px solid ${colors.border}`, marginBottom: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: colors.textDim, marginBottom: 12, letterSpacing: 0.5 }}>SUMMARY</div>
+                  {[
+                    ["Name", form.name || "—"], ["Type", form.type || "—"], ["Scene", form.scene || "—"],
+                    ["Actor", form.actor || "—"], ["XP", `${form.xp} XP`], ["Time", form.estimatedTime],
+                    ["Steps", generatedSteps.length ? `${generatedSteps.length} steps` : "0 — add after creating"],
+                    ["Visibility", form.visibility],
+                  ].map(([k, v]) => (
+                    <div key={k} style={{ display: "flex", gap: 8, fontSize: 12, marginBottom: 6 }}>
+                      <span style={{ color: colors.textDim, width: 90, flexShrink: 0 }}>{k}</span>
+                      <span style={{ color: colors.text }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+                {form.description && (
+                  <div style={{ padding: "12px 14px", background: colors.bg, borderRadius: 10, border: `1px solid ${colors.border}`, fontSize: 13, color: colors.textDim, lineHeight: 1.6 }}>{form.description}</div>
+                )}
+              </div>
+            )}
+
+          </div>
+
+          {/* Footer */}
+          <div style={{ padding: "14px 24px", borderTop: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <button onClick={() => step > 1 ? setStep(s => s - 1) : onClose()} style={{ background: "none", border: `1px solid ${colors.border}`, borderRadius: 8, padding: "8px 18px", color: colors.textDim, fontSize: 13, cursor: "pointer" }}>
+              {step === 1 ? "Cancel" : "Back"}
+            </button>
+            {step < TOTAL
+              ? <Btn disabled={!canAdvance()} onClick={() => canAdvance() && setStep(s => s + 1)} style={{ background: colors.purple }}>Continue</Btn>
+              : <Btn onClick={handleCreate} style={{ background: colors.purple }}><Icon name="lucide:plus" size={14} style={{ marginRight: 6 }} />Create Quest</Btn>}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ── Manual Step Builder (shared by wizard + quest detail) ──────────────────
+  const ManualStepBuilder = ({ steps, onChange }) => {
+    const [adding, setAdding] = useState(false);
+    const [newType, setNewType] = useState("dialogue");
+    const [newLabel, setNewLabel] = useState("");
+    const [newPrompt, setNewPrompt] = useState("");
+    const [newActor, setNewActor] = useState("");
+    const ACTORS_LIST = ["Elder Sage", "Forest Spirit", "Challenge Master", "Market Keeper", "Echo Guide", "Crystal Keeper"];
+
+    const addStep = () => {
+      if (!newLabel.trim()) return;
+      onChange(prev => [...prev, { id: "s" + Date.now(), type: newType, label: newLabel, prompt: newPrompt, actorId: newActor || null, done: false }]);
+      setNewLabel(""); setNewPrompt(""); setNewActor(""); setAdding(false);
+    };
+    const removeStep = (id) => onChange(prev => prev.filter(s => s.id !== id));
+    const moveStep = (i, dir) => {
+      const arr = [...steps];
+      const j = i + dir;
+      if (j < 0 || j >= arr.length) return;
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+      onChange(arr);
+    };
+
+    return (
+      <div>
+        {steps.length === 0 && !adding && (
+          <div style={{ padding: 32, textAlign: "center", background: colors.bg, border: `1px dashed ${colors.border}`, borderRadius: 10, color: colors.textDim, fontSize: 13, marginBottom: 12 }}>
+            No steps yet. Add the first step below.
+          </div>
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+          {steps.map((s, i) => {
+            const sType = STEP_TYPES.find(t => t.id === s.type) || STEP_TYPES[0];
+            return (
+              <div key={s.id} style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 10, padding: "12px 14px", display: "flex", gap: 10, alignItems: "flex-start" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingTop: 2 }}>
+                  <button onClick={() => moveStep(i, -1)} disabled={i === 0} style={{ background: "none", border: "none", color: i === 0 ? colors.border : colors.textDim, cursor: i === 0 ? "default" : "pointer", padding: 0, lineHeight: 1 }}><Icon name="lucide:chevron-up" size={12} /></button>
+                  <button onClick={() => moveStep(i, 1)} disabled={i === steps.length - 1} style={{ background: "none", border: "none", color: i === steps.length - 1 ? colors.border : colors.textDim, cursor: i === steps.length - 1 ? "default" : "pointer", padding: 0, lineHeight: 1 }}><Icon name="lucide:chevron-down" size={12} /></button>
+                </div>
+                <div style={{ width: 28, height: 28, borderRadius: 7, background: sType.color + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+                  <Icon name={sType.icon} size={13} style={{ color: sType.color }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: sType.color, textTransform: "uppercase", letterSpacing: 0.5 }}>{sType.label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{s.label}</span>
+                  </div>
+                  {s.prompt && <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{s.prompt.length > 120 ? s.prompt.slice(0, 120) + "…" : s.prompt}</div>}
+                  {s.actorId && <div style={{ fontSize: 11, color: colors.accent, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}><Icon name="lucide:user-round" size={10} />{s.actorId}</div>}
+                </div>
+                <button onClick={() => removeStep(s.id)} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", padding: 2, flexShrink: 0 }}><Icon name="lucide:trash-2" size={13} /></button>
+              </div>
+            );
+          })}
+        </div>
+
+        {adding ? (
+          <div style={{ background: colors.bg, border: `1px solid ${colors.accent}40`, borderRadius: 10, padding: 14 }}>
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ fontSize: 11, color: colors.textDim, marginBottom: 6, display: "block" }}>STEP TYPE</label>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+                {STEP_TYPES.map(t => (
+                  <div key={t.id} onClick={() => setNewType(t.id)} style={{ padding: "7px 6px", border: `1px solid ${newType === t.id ? t.color : colors.border}`, borderRadius: 7, cursor: "pointer", background: newType === t.id ? t.color + "18" : colors.surface, textAlign: "center" }}>
+                    <Icon name={t.icon} size={13} style={{ color: newType === t.id ? t.color : colors.textDim, marginBottom: 3 }} />
+                    <div style={{ fontSize: 10, color: newType === t.id ? t.color : colors.textDim }}>{t.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+              <div>
+                <label style={{ fontSize: 11, color: colors.textDim, marginBottom: 4, display: "block" }}>STEP LABEL</label>
+                <input value={newLabel} onChange={e => setNewLabel(e.target.value)} placeholder="e.g. Opening check-in" style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: colors.textDim, marginBottom: 4, display: "block" }}>ACTOR (optional)</label>
+                <select value={newActor} onChange={e => setNewActor(e.target.value)} style={{ width: "100%", padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: newActor ? colors.text : colors.textDim, fontSize: 12, outline: "none" }}>
+                  <option value="">No actor</option>
+                  {ACTORS_LIST.map(a => <option key={a}>{a}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <label style={{ fontSize: 11, color: colors.textDim, marginBottom: 4, display: "block" }}>ACTOR PROMPT</label>
+              <textarea value={newPrompt} onChange={e => setNewPrompt(e.target.value)} rows={4} placeholder="What should the actor say or do at this step? Be specific — this becomes the actor's instruction." style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none", resize: "vertical", lineHeight: 1.6 }} />
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn onClick={addStep}><Icon name="lucide:plus" size={13} style={{ marginRight: 4 }} />Add Step</Btn>
+              <button onClick={() => { setAdding(false); setNewLabel(""); setNewPrompt(""); }} style={{ background: "none", border: `1px solid ${colors.border}`, borderRadius: 6, padding: "7px 14px", color: colors.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => setAdding(true)} style={{ width: "100%", padding: "10px", background: "transparent", border: `1px dashed ${colors.border}`, borderRadius: 8, color: colors.textDim, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <Icon name="lucide:plus" size={13} />Add Step
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  // ── Quest Detail (edit view) ───────────────────────────────────────────────
+  const QuestDetail = ({ quest, onBack, onSave }) => {
+    const [tab, setTab] = useState("overview");
+    const [form, setForm] = useState({ ...quest });
+    const [steps, setSteps] = useState(quest.steps || []);
+    const [dirty, setDirty] = useState(false);
+    const [editingStep, setEditingStep] = useState(null); // step id currently expanded
+    const [promptMode, setPromptMode] = useState(false);
+    const [refinePrompt, setRefinePrompt] = useState("");
+    const [refining, setRefining] = useState(false);
+    const [tagInput, setTagInput] = useState("");
+    const setF = (k, v) => { setForm(f => ({ ...f, [k]: v })); setDirty(true); };
+    const setStepsAndDirty = (s) => { setSteps(s); setDirty(true); };
+
+    const TABS = [
+      { id: "overview", label: "Overview", icon: "lucide:layout-dashboard" },
+      { id: "steps", label: "Steps", icon: "lucide:list-ordered", badge: steps.length },
+      { id: "prompts", label: "Prompt Designer", icon: "lucide:sparkles" },
+      { id: "analytics", label: "Analytics", icon: "lucide:bar-chart-2" },
+    ];
+
+    const SCENES_LIST = ["Mountain Temple Gardens", "Crystal Caves", "Training Grounds", "Market Square"];
+    const ACTORS_LIST = ["Elder Sage", "Forest Spirit", "Challenge Master", "Market Keeper", "Echo Guide", "Crystal Keeper"];
+
+    const handleSave = () => { onSave({ ...form, steps }); setDirty(false); };
+
+    const addTag = () => {
+      const t = tagInput.trim().toLowerCase().replace(/\s+/g, "-");
+      if (t && !(form.tags || []).includes(t)) { setF("tags", [...(form.tags || []), t]); }
+      setTagInput("");
+    };
+    const removeTag = (t) => setF("tags", (form.tags || []).filter(x => x !== t));
+
+    // Simulate AI prompt refinement
+    const handleRefine = () => {
+      if (!refinePrompt.trim()) return;
+      setRefining(true);
+      setTimeout(() => {
+        setSteps(prev => prev.map((s, i) => i === 0
+          ? { ...s, prompt: s.prompt + "\n\n[Refined based on: \"" + refinePrompt + "\"]" }
+          : s
+        ));
+        setRefinePrompt("");
+        setRefining(false);
+        setDirty(true);
+      }, 900);
+    };
+
+    const completionPct = quest.members > 0 ? Math.round((quest.completedBy / quest.members) * 100) : 0;
+
+    return (
+      <div>
+        <PageHeader title={form.name} subtitle={`${form.type} · ${form.scene || "No scene"}`} onBack={onBack}>
+          {dirty && <Btn onClick={handleSave} style={{ background: colors.purple }}><Icon name="lucide:save" size={14} style={{ marginRight: 6 }} />Save Changes</Btn>}
+          <StatusPill status={form.status} />
+        </PageHeader>
+
+        {/* Tab bar */}
+        <div style={{ display: "flex", gap: 2, marginBottom: 20, background: colors.bg, borderRadius: 10, padding: 4 }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: "8px 0", background: tab === t.id ? colors.surface : "transparent", border: `1px solid ${tab === t.id ? colors.border : "transparent"}`, borderRadius: 8, color: tab === t.id ? colors.text : colors.textDim, fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, position: "relative" }}>
+              <Icon name={t.icon} size={13} />{t.label}
+              {t.badge != null && t.badge > 0 && <span style={{ fontSize: 10, background: colors.purple + "33", color: colors.purple, borderRadius: 10, padding: "1px 5px", marginLeft: 2 }}>{t.badge}</span>}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab: Overview */}
+        {tab === "overview" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>QUEST NAME</label>
+                <input value={form.name} onChange={e => setF("name", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>TYPE</label>
+                <select value={form.type} onChange={e => setF("type", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }}>
+                  {QUEST_TYPES.map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>SCENE</label>
+                <select value={form.scene} onChange={e => setF("scene", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }}>
+                  <option value="">None</option>
+                  {SCENES_LIST.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>LEAD ACTOR</label>
+                <select value={form.actor} onChange={e => setF("actor", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }}>
+                  <option value="">None</option>
+                  {ACTORS_LIST.map(a => <option key={a}>{a}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>XP REWARD</label>
+                <input type="number" value={form.xp} onChange={e => setF("xp", Number(e.target.value))} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>ESTIMATED TIME</label>
+                <select value={form.estimatedTime} onChange={e => setF("estimatedTime", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }}>
+                  {["5 min","10 min","15 min","20 min","30 min","45 min","60 min+"].map(t => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>DESCRIPTION</label>
+              <textarea value={form.description} onChange={e => setF("description", e.target.value)} rows={3} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>STATUS</label>
+                <select value={form.status} onChange={e => setF("status", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }}>
+                  <option>Active</option><option>Pending Setup</option><option>Paused</option><option>Archived</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>VISIBILITY</label>
+                <select value={form.visibility} onChange={e => setF("visibility", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }}>
+                  <option>Members only</option><option>All visitors</option><option>Invite only</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 8, display: "block", letterSpacing: 0.5 }}>TAGS</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                {(form.tags || []).map(t => (
+                  <span key={t} style={{ display: "flex", alignItems: "center", gap: 4, padding: "3px 10px", background: colors.purple + "20", border: `1px solid ${colors.purple}40`, borderRadius: 20, fontSize: 11, color: colors.purple }}>
+                    {t}
+                    <button onClick={() => removeTag(t)} style={{ background: "none", border: "none", color: colors.purple, cursor: "pointer", padding: 0, lineHeight: 1, fontSize: 13 }}>×</button>
+                  </span>
+                ))}
+                <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => e.key === "Enter" && addTag()} placeholder="add tag…" style={{ padding: "3px 8px", background: "none", border: `1px dashed ${colors.border}`, borderRadius: 20, color: colors.textDim, fontSize: 11, outline: "none", width: 80 }} />
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>NOTES (internal)</label>
+              <textarea value={form.notes} onChange={e => setF("notes", e.target.value)} rows={2} placeholder="Internal notes for your team..." style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none", resize: "vertical" }} />
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Steps */}
+        {tab === "steps" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: colors.textDim }}>{steps.length} step{steps.length !== 1 ? "s" : ""} in this quest</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <Btn variant="secondary" onClick={() => setTab("prompts")}><Icon name="lucide:sparkles" size={13} style={{ marginRight: 6 }} />AI Assist</Btn>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+              {steps.map((s, i) => {
+                const sType = STEP_TYPES.find(t => t.id === s.type) || STEP_TYPES[0];
+                const isEditing = editingStep === s.id;
+                return (
+                  <div key={s.id} style={{ background: colors.bg, border: `1px solid ${isEditing ? colors.purple + "60" : colors.border}`, borderRadius: 12, overflow: "hidden", transition: "border 0.15s" }}>
+                    {/* Step header */}
+                    <div onClick={() => setEditingStep(isEditing ? null : s.id)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", cursor: "pointer" }}>
+                      <div style={{ width: 24, height: 24, borderRadius: 6, background: sType.color + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Icon name={sType.icon} size={12} style={{ color: sType.color }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: sType.color, textTransform: "uppercase", letterSpacing: 0.5 }}>{sType.label}</span>
+                          <span style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>{s.label}</span>
+                        </div>
+                        {s.actorId && !isEditing && <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{s.actorId}</div>}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 11, color: s.done ? colors.green : colors.textDim }}>{s.done ? "Done" : `Step ${i + 1}`}</span>
+                        <Icon name={isEditing ? "lucide:chevron-up" : "lucide:chevron-down"} size={14} style={{ color: colors.textDim }} />
+                      </div>
+                    </div>
+                    {/* Step expanded editor */}
+                    {isEditing && (
+                      <div style={{ padding: "0 14px 14px", borderTop: `1px solid ${colors.border}` }}>
+                        <div style={{ paddingTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                            <div>
+                              <label style={{ fontSize: 11, color: colors.textDim, marginBottom: 4, display: "block" }}>STEP TYPE</label>
+                              <select value={s.type} onChange={e => { setSteps(prev => prev.map(x => x.id === s.id ? { ...x, type: e.target.value } : x)); setDirty(true); }} style={{ width: "100%", padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }}>
+                                {STEP_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 11, color: colors.textDim, marginBottom: 4, display: "block" }}>ACTOR</label>
+                              <select value={s.actorId || ""} onChange={e => { setSteps(prev => prev.map(x => x.id === s.id ? { ...x, actorId: e.target.value || null } : x)); setDirty(true); }} style={{ width: "100%", padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: s.actorId ? colors.text : colors.textDim, fontSize: 12, outline: "none" }}>
+                                <option value="">No actor</option>
+                                {["Elder Sage","Forest Spirit","Challenge Master","Market Keeper","Echo Guide","Crystal Keeper"].map(a => <option key={a}>{a}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 11, color: colors.textDim, marginBottom: 4, display: "block" }}>LABEL</label>
+                            <input value={s.label} onChange={e => { setSteps(prev => prev.map(x => x.id === s.id ? { ...x, label: e.target.value } : x)); setDirty(true); }} style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }} />
+                          </div>
+                          <div>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                              <label style={{ fontSize: 11, color: colors.textDim }}>ACTOR PROMPT</label>
+                              <span style={{ fontSize: 10, color: colors.textDim }}>{s.prompt?.length || 0} chars</span>
+                            </div>
+                            <textarea value={s.prompt} onChange={e => { setSteps(prev => prev.map(x => x.id === s.id ? { ...x, prompt: e.target.value } : x)); setDirty(true); }} rows={5} style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none", resize: "vertical", lineHeight: 1.6 }} />
+                          </div>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button onClick={() => { setSteps(prev => prev.filter(x => x.id !== s.id)); setEditingStep(null); setDirty(true); }} style={{ background: "none", border: `1px solid ${colors.red}44`, borderRadius: 6, padding: "6px 12px", color: colors.red, fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                              <Icon name="lucide:trash-2" size={12} />Remove step
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <ManualStepBuilder steps={steps} onChange={setStepsAndDirty} />
+          </div>
+        )}
+
+        {/* Tab: Prompt Designer */}
+        {tab === "prompts" && (
+          <div>
+            <div style={{ padding: "14px 16px", background: colors.purple + "10", border: `1px solid ${colors.purple}30`, borderRadius: 10, marginBottom: 20, display: "flex", gap: 10 }}>
+              <Icon name="lucide:sparkles" size={14} style={{ color: colors.purple, flexShrink: 0, marginTop: 2 }} />
+              <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.6 }}>
+                The Prompt Designer helps you refine how your actors speak throughout this quest. Each step's prompt becomes the actor's instruction at that moment. You can revise individual steps or give high-level guidance and let AI redistribute it.
+              </div>
+            </div>
+
+            {/* AI refine panel */}
+            <div style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="lucide:wand-2" size={14} style={{ color: colors.purple }} />Refine with AI
+              </div>
+              <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Tell the AI what you want to adjust across this quest — tone, depth, actor voice, or a specific outcome — and it will revise the first step prompt as a preview.</div>
+              <textarea
+                value={refinePrompt}
+                onChange={e => setRefinePrompt(e.target.value)}
+                rows={3}
+                placeholder={`e.g. Make ${form.actor || "the actor"}'s voice warmer and slower. Less instruction, more presence. Add more silence-holding.`}
+                style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 12, outline: "none", resize: "none", lineHeight: 1.6, marginBottom: 10 }}
+              />
+              <Btn onClick={handleRefine} disabled={!refinePrompt.trim() || refining} style={{ background: colors.purple }}>
+                {refining
+                  ? <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Icon name="lucide:loader-2" size={13} />Refining...</span>
+                  : <span style={{ display: "flex", alignItems: "center", gap: 8 }}><Icon name="lucide:wand-2" size={13} />Apply Refinement</span>}
+              </Btn>
+            </div>
+
+            {/* Step-by-step prompt editor */}
+            <div style={{ fontSize: 12, fontWeight: 700, color: colors.textDim, marginBottom: 10, letterSpacing: 0.5 }}>ALL STEP PROMPTS</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {steps.length === 0 && (
+                <div style={{ padding: 24, textAlign: "center", background: colors.bg, border: `1px dashed ${colors.border}`, borderRadius: 10, color: colors.textDim, fontSize: 13 }}>
+                  No steps yet. Add steps in the Steps tab first.
+                </div>
+              )}
+              {steps.map((s, i) => {
+                const sType = STEP_TYPES.find(t => t.id === s.type) || STEP_TYPES[0];
+                return (
+                  <div key={s.id} style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 12, overflow: "hidden" }}>
+                    <div style={{ padding: "10px 14px", borderBottom: `1px solid ${colors.border}`, display: "flex", alignItems: "center", gap: 8, background: colors.surface }}>
+                      <div style={{ width: 22, height: 22, borderRadius: 5, background: sType.color + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Icon name={sType.icon} size={11} style={{ color: sType.color }} />
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: sType.color, textTransform: "uppercase", letterSpacing: 0.5 }}>{sType.label}</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{s.label}</span>
+                      {s.actorId && <span style={{ marginLeft: "auto", fontSize: 11, color: colors.accent, display: "flex", alignItems: "center", gap: 4 }}><Icon name="lucide:user-round" size={10} />{s.actorId}</span>}
+                    </div>
+                    <div style={{ padding: "12px 14px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <label style={{ fontSize: 11, color: colors.textDim, fontWeight: 600, letterSpacing: 0.3 }}>ACTOR PROMPT</label>
+                        <span style={{ fontSize: 10, color: colors.textDim }}>{s.prompt?.length || 0} chars</span>
+                      </div>
+                      <textarea
+                        value={s.prompt}
+                        onChange={e => { setSteps(prev => prev.map(x => x.id === s.id ? { ...x, prompt: e.target.value } : x)); setDirty(true); }}
+                        rows={4}
+                        style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 12, outline: "none", resize: "vertical", lineHeight: 1.7, fontFamily: "inherit" }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Analytics */}
+        {tab === "analytics" && (
+          <div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 24 }}>
+              {[
+                { label: "Members Assigned", value: quest.members, icon: "lucide:users", color: colors.blue },
+                { label: "Completions", value: quest.completedBy, icon: "lucide:check-circle-2", color: colors.green },
+                { label: "Completion Rate", value: `${completionPct}%`, icon: "lucide:percent", color: colors.purple },
+              ].map((s, i) => (
+                <div key={i} style={{ padding: "16px 18px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <Icon name={s.icon} size={14} style={{ color: s.color }} />
+                    <span style={{ fontSize: 11, color: colors.textDim }}>{s.label}</span>
+                  </div>
+                  <div style={{ fontSize: 26, fontWeight: 700, color: s.color }}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+            {/* Completion bar */}
+            <div style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Completion Rate</span>
+                <span style={{ fontSize: 13, color: colors.purple, fontWeight: 700 }}>{completionPct}%</span>
+              </div>
+              <div style={{ height: 8, background: colors.surface, borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ width: `${completionPct}%`, height: "100%", background: colors.purple, borderRadius: 4, transition: "width 0.4s" }} />
+              </div>
+            </div>
+            {/* Step progress */}
+            <div style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 12, padding: "16px 18px" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 12 }}>Step-by-Step Breakdown</div>
+              {steps.length === 0
+                ? <div style={{ fontSize: 13, color: colors.textDim }}>No steps defined yet.</div>
+                : steps.map((s, i) => {
+                  const sType = STEP_TYPES.find(t => t.id === s.type) || STEP_TYPES[0];
+                  const pct = Math.max(5, completionPct - i * 8);
+                  return (
+                    <div key={s.id} style={{ marginBottom: 14 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                        <Icon name={sType.icon} size={12} style={{ color: sType.color }} />
+                        <span style={{ fontSize: 12, color: colors.text, flex: 1 }}>{s.label}</span>
+                        <span style={{ fontSize: 11, color: colors.textDim }}>{pct}%</span>
+                      </div>
+                      <div style={{ height: 4, background: colors.surface, borderRadius: 2, overflow: "hidden" }}>
+                        <div style={{ width: `${pct}%`, height: "100%", background: sType.color + "88", borderRadius: 2 }} />
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ── Quests list view ──────────────────────────────────────────────────────
+  if (page === "quests") {
+    if (selectedQuest) {
+      return (
+        <QuestDetail
+          quest={selectedQuest}
+          onBack={() => setSelectedQuest(null)}
+          onSave={(updated) => { setQuestList(ql => ql.map(q => q.id === updated.id ? updated : q)); setSelectedQuest(updated); }}
+        />
+      );
+    }
+
+    const filtered = questList.filter(q => {
+      const matchText = !questSearch || q.name.toLowerCase().includes(questSearch.toLowerCase()) || q.description.toLowerCase().includes(questSearch.toLowerCase());
+      const matchType = questTypeFilter === "All" || q.type === questTypeFilter;
+      return matchText && matchType;
+    });
+
+    const TYPE_COLORS = { Onboarding: colors.cyan, Reflection: colors.pink, Challenge: colors.warning, Commerce: colors.accent, Social: colors.purple, Lore: colors.blue, Custom: colors.textDim };
+    const TYPE_ICONS = { Onboarding: "lucide:door-open", Reflection: "lucide:heart", Challenge: "lucide:zap", Commerce: "lucide:store", Social: "lucide:users", Lore: "lucide:book-open", Custom: "lucide:layers" };
+
+    return (
+      <div>
+        {showNewQuest && <NewQuestModal onClose={() => setShowNewQuest(false)} onCreate={(q) => setSelectedQuest(q)} />}
+        <PageHeader title="Quests" subtitle="Guided narrative arcs that run across scenes and actors">
+          <Btn onClick={() => setShowNewQuest(true)} style={{ background: colors.purple }}><Icon name="lucide:plus" size={13} style={{ marginRight: 6 }} />New Quest</Btn>
+        </PageHeader>
+
+        {/* Stats row */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
+          {[
+            { label: "Total", value: questList.length, color: colors.text },
+            { label: "Active", value: questList.filter(q => q.status === "Active").length, color: colors.green },
+            { label: "Pending Setup", value: questList.filter(q => q.status === "Pending Setup").length, color: colors.warning },
+            { label: "Avg. Completion", value: questList.length ? Math.round(questList.reduce((a, q) => a + (q.members > 0 ? (q.completedBy / q.members) * 100 : 0), 0) / questList.length) + "%" : "—", color: colors.purple },
+          ].map((s, i) => (
+            <div key={i} style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+              <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 4 }}>{s.label}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Search + filter */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 20, alignItems: "center" }}>
+          <div style={{ flex: 1, position: "relative" }}>
+            <Icon name="lucide:search" size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: colors.textDim, pointerEvents: "none" }} />
+            <input value={questSearch} onChange={e => setQuestSearch(e.target.value)} placeholder="Search quests..." style={{ width: "100%", boxSizing: "border-box", padding: "8px 14px 8px 30px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {["All", ...QUEST_TYPES].map(t => (
+              <FilterPill key={t} label={t} active={questTypeFilter === t} onClick={() => setQuestTypeFilter(t)} />
+            ))}
+          </div>
+        </div>
+
+        {/* Quest list */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.map(q => {
+            const [h, setH] = useState(false);
+            const tc = TYPE_COLORS[q.type] || colors.textDim;
+            const ti = TYPE_ICONS[q.type] || "lucide:flag";
+            const pct = q.members > 0 ? Math.round((q.completedBy / q.members) * 100) : 0;
+            return (
+              <div key={q.id} onClick={() => setSelectedQuest(q)} style={{ background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 12, padding: "14px 16px", cursor: "pointer", transition: "all 0.15s" }}
+                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  {/* Type icon */}
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: tc + "18", border: `1px solid ${tc}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                    <Icon name={ti} size={17} style={{ color: tc }} />
+                  </div>
+                  {/* Main content */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{q.name}</span>
+                      <StatusPill status={q.status} />
+                    </div>
+                    <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 8, lineHeight: 1.4 }}>{q.description.length > 90 ? q.description.slice(0, 90) + "…" : q.description}</div>
+                    {/* Meta row */}
+                    <div style={{ display: "flex", gap: 14, fontSize: 11, color: colors.textDim, flexWrap: "wrap" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Icon name="lucide:map" size={11} />{q.scene || "No scene"}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Icon name="lucide:user-round" size={11} />{q.actor || "No actor"}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Icon name="lucide:list-ordered" size={11} />{q.steps.length} steps</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Icon name="lucide:sparkles" size={11} />{q.xp} XP</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Icon name="lucide:clock" size={11} />{q.estimatedTime}</span>
+                    </div>
+                    {/* Completion bar (only if members > 0) */}
+                    {q.members > 0 && (
+                      <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ flex: 1, height: 3, background: colors.bg, borderRadius: 2, overflow: "hidden" }}>
+                          <div style={{ width: `${pct}%`, height: "100%", background: colors.purple + "80", borderRadius: 2 }} />
+                        </div>
+                        <span style={{ fontSize: 10, color: colors.textDim, flexShrink: 0 }}>{q.completedBy}/{q.members} complete</span>
+                      </div>
+                    )}
+                    {/* Tags */}
+                    {(q.tags || []).length > 0 && (
+                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 8 }}>
+                        {q.tags.map(t => <span key={t} style={{ fontSize: 10, padding: "2px 7px", background: colors.purple + "18", color: colors.purple, borderRadius: 10 }}>{t}</span>)}
+                      </div>
+                    )}
+                  </div>
+                  <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim, flexShrink: 0, marginTop: 10 }} />
+                </div>
+              </div>
+            );
+          })}
+          {filtered.length === 0 && (
+            <div style={{ padding: 48, textAlign: "center", background: colors.surface, border: `1px dashed ${colors.border}`, borderRadius: 12, color: colors.textDim }}>
+              <Icon name="lucide:flag" size={32} style={{ opacity: 0.3, marginBottom: 12, display: "block", margin: "0 auto 12px" }} />
+              <div style={{ fontSize: 14, fontWeight: 500 }}>No quests found</div>
+              <div style={{ fontSize: 12, marginTop: 4 }}>{questSearch ? "Try a different search" : "Create your first quest to get started"}</div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (page === "actors") {
     const [activeFilter, setActiveFilter] = useState("All");
     return (
