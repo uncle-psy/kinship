@@ -15,7 +15,7 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
-  input, select { font-family: inherit; }
+  input, select, textarea { font-family: inherit; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -45,8 +45,11 @@ const colors = {
   blue: "#3B82F6",
   cyan: "#06B6D4",
   green: "#10B981",
+  red: "#EF4444",
   white: "#FFFFFF",
 };
+
+// ─── Shared primitives ───────────────────────────────────────────────────────
 
 const Badge = ({ count, color = colors.accent }) => (
   count > 0 ? (
@@ -62,13 +65,10 @@ const SectionLabel = ({ children }) => (
   </div>
 );
 
-const NavItem = ({ icon, label, active, count, onClick, locked = false }) => {
+const NavItem = ({ icon, label, active, count, onClick }) => {
   const [hovered, setHovered] = useState(false);
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{
         display: "flex", alignItems: "center", gap: 10, width: "100%",
         padding: "8px 12px 8px 14px",
@@ -76,15 +76,10 @@ const NavItem = ({ icon, label, active, count, onClick, locked = false }) => {
         border: "none",
         borderLeft: active ? `2px solid ${colors.accent}` : "2px solid transparent",
         borderRadius: "0 6px 6px 0",
-        cursor: "pointer",
-        transition: "all 0.15s",
-      }}
-    >
-      <span style={{ fontSize: 15, opacity: locked ? 0.35 : 0.75 }}>{icon}</span>
-      <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? colors.accent : locked ? colors.textDim : colors.textMuted, flex: 1, textAlign: "left" }}>
-        {label}
-      </span>
-      {locked && <span style={{ fontSize: 10, color: colors.textDim }}>🔒</span>}
+        cursor: "pointer", transition: "all 0.15s",
+      }}>
+      <span style={{ fontSize: 15, opacity: 0.75 }}>{icon}</span>
+      <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? colors.accent : colors.textMuted, flex: 1, textAlign: "left" }}>{label}</span>
       <Badge count={count} />
     </button>
   );
@@ -99,42 +94,19 @@ const CycleSelector = ({ current, onSwitch, isWizard }) => {
     { id: "forest", name: "🌲  Dark Forest", type: "cycle" },
   ];
   const selected = cycles.find(c => c.id === current) || cycles[1];
-
   return (
-    <div style={{ position: "relative", margin: "8px 12px 4px", userSelect: "none" }}>
-      <button
-        onClick={() => setOpen(!open)}
-        style={{
-          display: "flex", alignItems: "center", gap: 8, width: "100%",
-          padding: "10px 12px",
-          background: "rgba(255,255,255,0.06)",
-          border: `1px solid ${colors.borderHover}`,
-          borderRadius: 9999,
-          cursor: "pointer", color: colors.text,
-          transition: "border-color 0.15s",
-        }}
-      >
+    <div style={{ position: "relative", margin: "10px 12px 4px", userSelect: "none" }}>
+      <button onClick={() => setOpen(!open)}
+        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.borderHover}`, borderRadius: 9999, cursor: "pointer", color: colors.text }}>
         <span style={{ fontSize: 13, flex: 1, textAlign: "left", fontWeight: 600 }}>{selected.name}</span>
         <span style={{ fontSize: 10, color: colors.textDim }}>{open ? "▲" : "▼"}</span>
       </button>
       {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
-          background: "#0D0B4A",
-          border: `1px solid ${colors.borderHover}`,
-          borderRadius: 12,
-          overflow: "hidden", zIndex: 100,
-          boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
-          backdropFilter: "blur(8px)",
-        }}>
+        <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#0D0B4A", border: `1px solid ${colors.borderHover}`, borderRadius: 12, overflow: "hidden", zIndex: 100, boxShadow: "0 12px 40px rgba(0,0,0,0.6)" }}>
           {isWizard && (
-            <DropdownItem
-              label="⚙️  Platform Settings"
-              active={current === "platform"}
+            <DropdownItem label="⚙️  Platform Settings" active={current === "platform"}
               badge={<span style={{ fontSize: 10, marginLeft: 8, color: colors.warning, background: colors.warning + "22", padding: "2px 6px", borderRadius: 4 }}>WIZARD</span>}
-              onClick={() => { onSwitch("platform"); setOpen(false); }}
-              borderBottom
-            />
+              onClick={() => { onSwitch("platform"); setOpen(false); }} borderBottom />
           )}
           <div style={{ padding: "6px 0" }}>
             {cycles.filter(c => c.type === "cycle").map(c => (
@@ -151,73 +123,38 @@ const CycleSelector = ({ current, onSwitch, isWizard }) => {
 const DropdownItem = ({ label, active, badge, onClick, borderBottom, borderTop, accentColor }) => {
   const [hovered, setHovered] = useState(false);
   return (
-    <div
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        padding: "10px 14px", cursor: "pointer", fontSize: 13,
-        background: active ? colors.accent + "18" : hovered ? colors.surfaceHover : "transparent",
-        color: accentColor || (active ? colors.accent : colors.textMuted),
-        borderBottom: borderBottom ? `1px solid ${colors.border}` : "none",
-        borderTop: borderTop ? `1px solid ${colors.border}` : "none",
-        transition: "background 0.1s",
-      }}
-    >
+    <div onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+      style={{ padding: "10px 14px", cursor: "pointer", fontSize: 13, background: active ? colors.accent + "18" : hovered ? colors.surfaceHover : "transparent", color: accentColor || (active ? colors.accent : colors.textMuted), borderBottom: borderBottom ? `1px solid ${colors.border}` : "none", borderTop: borderTop ? `1px solid ${colors.border}` : "none", transition: "background 0.1s" }}>
       {label}{badge}
     </div>
   );
 };
 
 const StatusPill = ({ status }) => {
-  const isGood = ["Connected","Active","Ingested","Published"].includes(status);
-  const color = isGood ? colors.green : colors.warning;
+  const isGood = ["Connected","Active","Ingested","Published","Installed"].includes(status);
+  const isPending = ["Pending Setup","Draft","Not Installed"].includes(status);
+  const color = isGood ? colors.green : isPending ? colors.warning : colors.textDim;
   return (
-    <span style={{
-      fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99,
-      background: color + "22", color,
-      border: `1px solid ${color}33`,
-    }}>{status}</span>
+    <span style={{ fontSize: 11, fontWeight: 500, padding: "3px 9px", borderRadius: 99, background: color + "22", color, border: `1px solid ${color}33` }}>{status}</span>
   );
 };
 
-const ListItem = ({ icon, name, account, status, onClick }) => {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
-        background: hovered ? colors.surfaceHover : colors.surface,
-        border: `1px solid ${hovered ? colors.borderHover : colors.border}`,
-        borderRadius: 10, cursor: "pointer", transition: "all 0.15s",
-      }}
-    >
-      <span style={{ fontSize: 20 }}>{icon}</span>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{name}</div>
-        {account && <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{account}</div>}
-      </div>
-      {status && <StatusPill status={status} />}
-      <span style={{ color: colors.textDim, fontSize: 14 }}>›</span>
-    </div>
-  );
-};
-
-const Btn = ({ children, onClick, variant = "primary", size = "md" }) => {
+const Btn = ({ children, onClick, variant = "primary", size = "md", danger = false }) => {
   const [hovered, setHovered] = useState(false);
   const pad = size === "sm" ? "6px 14px" : "8px 18px";
   const fs = size === "sm" ? 12 : 13;
-  if (variant === "primary") {
-    return (
-      <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-        style={{ padding: pad, background: hovered ? colors.accentHover : colors.accent, color: "#fff", border: "none", borderRadius: 7, fontSize: fs, fontWeight: 600, cursor: "pointer", transition: "background 0.15s", fontFamily: "inherit" }}>
-        {children}
-      </button>
-    );
-  }
+  if (danger) return (
+    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+      style={{ padding: pad, background: hovered ? colors.red + "33" : "transparent", color: colors.red, border: `1px solid ${colors.red}44`, borderRadius: 7, fontSize: fs, fontWeight: 500, cursor: "pointer", transition: "all 0.15s", fontFamily: "inherit" }}>
+      {children}
+    </button>
+  );
+  if (variant === "primary") return (
+    <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+      style={{ padding: pad, background: hovered ? colors.accentHover : colors.accent, color: "#fff", border: "none", borderRadius: 7, fontSize: fs, fontWeight: 600, cursor: "pointer", transition: "background 0.15s", fontFamily: "inherit" }}>
+      {children}
+    </button>
+  );
   return (
     <button onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{ padding: pad, background: hovered ? "rgba(255,255,255,0.06)" : "transparent", color: colors.textMuted, border: `1px solid ${colors.border}`, borderRadius: 7, fontSize: fs, cursor: "pointer", transition: "all 0.15s", fontFamily: "inherit" }}>
@@ -226,51 +163,515 @@ const Btn = ({ children, onClick, variant = "primary", size = "md" }) => {
   );
 };
 
-const PageHeader = ({ title, subtitle, children }) => (
+const PageHeader = ({ title, subtitle, children, onBack }) => (
   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
     <div>
+      {onBack && (
+        <button onClick={onBack} style={{ background: "none", border: "none", color: colors.textDim, fontSize: 12, cursor: "pointer", padding: "0 0 8px", display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit" }}>
+          ‹ Back to Tools & Connectors
+        </button>
+      )}
       <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0, letterSpacing: -0.3 }}>{title}</h1>
       {subtitle && <p style={{ fontSize: 13, color: colors.textDim, margin: "5px 0 0" }}>{subtitle}</p>}
     </div>
-    {children && <div style={{ display: "flex", gap: 8 }}>{children}</div>}
+    {children && <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>{children}</div>}
   </div>
 );
 
-const Card = ({ children, hover = false, active = false, onClick, style = {} }) => {
-  const [hovered, setHovered] = useState(false);
+const Field = ({ label, children, hint }) => (
+  <div style={{ marginBottom: 20 }}>
+    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 6, letterSpacing: 0.2 }}>{label}</label>
+    {children}
+    {hint && <p style={{ fontSize: 11, color: colors.textDim, marginTop: 5 }}>{hint}</p>}
+  </div>
+);
+
+const Input = ({ value, placeholder, type = "text", readOnly, onChange }) => (
+  <input
+    type={type} value={value} placeholder={placeholder} readOnly={readOnly} onChange={onChange}
+    style={{ width: "100%", padding: "9px 12px", background: readOnly ? colors.surfaceActive : colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: readOnly ? colors.textDim : colors.text, fontSize: 13, outline: "none", cursor: readOnly ? "default" : "text" }}
+  />
+);
+
+const Toggle = ({ label, enabled, onChange, hint }) => (
+  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, marginBottom: 8 }}>
+    <div>
+      <div style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted }}>{label}</div>
+      {hint && <div style={{ fontSize: 11, color: colors.textDim, marginTop: 3 }}>{hint}</div>}
+    </div>
+    <div onClick={() => onChange(!enabled)}
+      style={{ width: 40, height: 22, borderRadius: 11, background: enabled ? colors.accent : "rgba(255,255,255,0.1)", cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0, marginLeft: 16 }}>
+      <div style={{ position: "absolute", top: 3, left: enabled ? 21 : 3, width: 16, height: 16, borderRadius: 8, background: "#fff", transition: "left 0.2s" }} />
+    </div>
+  </div>
+);
+
+const SectionDivider = ({ label }) => (
+  <div style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", margin: "28px 0 14px", paddingBottom: 8, borderBottom: `1px solid ${colors.border}` }}>
+    {label}
+  </div>
+);
+
+const DangerZone = ({ children }) => (
+  <div style={{ marginTop: 36, padding: "16px 20px", background: colors.red + "0A", border: `1px solid ${colors.red}33`, borderRadius: 10 }}>
+    <div style={{ fontSize: 11, fontWeight: 700, color: colors.red, letterSpacing: 1.1, textTransform: "uppercase", marginBottom: 12 }}>Danger Zone</div>
+    {children}
+  </div>
+);
+
+const InfoBox = ({ children, color = colors.warning }) => (
+  <div style={{ padding: "12px 16px", background: color + "0D", border: `1px solid ${color}33`, borderRadius: 8, marginBottom: 20 }}>
+    <span style={{ fontSize: 12, color }}>{children}</span>
+  </div>
+);
+
+// ─── Tool detail pages ────────────────────────────────────────────────────────
+
+const BlueSkyDetail = ({ onBack }) => {
+  const [handle, setHandle] = useState("@kinship.bsky.social");
+  const [autoPost, setAutoPost] = useState(true);
+  const [mentions, setMentions] = useState(true);
+  const [dms, setDms] = useState(false);
+  const [replies, setReplies] = useState(true);
+
   return (
-    <div
-      onClick={onClick}
-      onMouseEnter={() => hover && setHovered(true)}
-      onMouseLeave={() => hover && setHovered(false)}
-      style={{
-        background: colors.surface,
-        border: `1px solid ${hovered || active ? colors.borderHover : colors.border}`,
-        borderRadius: 12,
-        cursor: onClick ? "pointer" : "default",
-        transition: "border-color 0.15s, background 0.15s",
-        ...(hovered ? { background: colors.surfaceHover } : {}),
-        ...style,
-      }}
-    >
-      {children}
+    <div style={{ maxWidth: 640 }}>
+      <PageHeader
+        title="🦋 BlueSky"
+        subtitle="Social posting and mention monitoring for Kinship actors"
+        onBack={onBack}
+      >
+        <StatusPill status="Connected" />
+      </PageHeader>
+
+      <SectionDivider label="Account" />
+      <Field label="Connected Handle" hint="The account actors will post and respond as.">
+        <Input value={handle} onChange={e => setHandle(e.target.value)} />
+      </Field>
+      <Field label="App Password" hint="Generated in BlueSky settings → Privacy and security → App passwords.">
+        <div style={{ display: "flex", gap: 8 }}>
+          <Input value="••••••••••••••••••••••" type="password" readOnly />
+          <Btn variant="secondary" size="sm">Rotate</Btn>
+        </div>
+      </Field>
+      <Field label="DID (Decentralized Identifier)" hint="Auto-resolved from your handle. Read-only.">
+        <Input value="did:plc:z72i7hdynmk6r22z27h6tvur" readOnly />
+      </Field>
+
+      <SectionDivider label="Permissions" />
+      <Toggle label="Post to feed" enabled={autoPost} onChange={setAutoPost} hint="Actors can post on behalf of this account" />
+      <Toggle label="Read mentions" enabled={mentions} onChange={setMentions} hint="Actors receive and respond to @mentions" />
+      <Toggle label="Send & receive DMs" enabled={dms} onChange={setDms} hint="Actors can handle direct messages" />
+      <Toggle label="Reply to threads" enabled={replies} onChange={setReplies} hint="Actors can participate in reply chains" />
+
+      <SectionDivider label="Test Connection" />
+      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        <Btn variant="secondary">Send Test Post</Btn>
+        <Btn variant="secondary">Verify Credentials</Btn>
+      </div>
+      <p style={{ fontSize: 12, color: colors.textDim }}>Last verified: 2 hours ago — OK</p>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
+        <Btn>Save Changes</Btn>
+        <Btn variant="secondary">Cancel</Btn>
+      </div>
+
+      <DangerZone>
+        <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Disconnecting BlueSky will prevent all actors from posting or receiving mentions on this platform. Any queued posts will be dropped.</p>
+        <Btn danger>Disconnect BlueSky</Btn>
+      </DangerZone>
     </div>
   );
 };
 
+const TelegramDetail = ({ onBack }) => {
+  const [botName, setBotName] = useState("KinshipBot");
+  const [webhook, setWebhook] = useState("https://api.kinship.today/webhooks/telegram");
+  const [groupReply, setGroupReply] = useState(true);
+  const [privateMsg, setPrivateMsg] = useState(true);
+  const [commands, setCommands] = useState(true);
+
+  const channels = [
+    { name: "Kinship Community", type: "Group", members: 234, status: "Active" },
+    { name: "Creator Updates", type: "Channel", members: 89, status: "Active" },
+    { name: "Support", type: "Group", members: 45, status: "Active" },
+  ];
+
+  return (
+    <div style={{ maxWidth: 640 }}>
+      <PageHeader
+        title="✈️ Telegram"
+        subtitle="Bot-based messaging for actors to reach players via Telegram"
+        onBack={onBack}
+      >
+        <StatusPill status="Connected" />
+      </PageHeader>
+
+      <SectionDivider label="Bot Configuration" />
+      <Field label="Bot Username">
+        <Input value={botName} onChange={e => setBotName(e.target.value)} />
+      </Field>
+      <Field label="Bot Token" hint="Get this from @BotFather on Telegram. Changing this will disconnect all active sessions.">
+        <div style={{ display: "flex", gap: 8 }}>
+          <Input value="7412••••••••••••••••••••••••••••••••••" readOnly />
+          <Btn variant="secondary" size="sm">Replace</Btn>
+        </div>
+      </Field>
+      <Field label="Webhook URL" hint="Telegram will POST updates to this endpoint. Auto-configured.">
+        <Input value={webhook} readOnly />
+      </Field>
+
+      <SectionDivider label="Capabilities" />
+      <Toggle label="Respond in group chats" enabled={groupReply} onChange={setGroupReply} hint="Bot participates in groups it has been added to" />
+      <Toggle label="Handle private messages" enabled={privateMsg} onChange={setPrivateMsg} hint="Users can DM the bot directly" />
+      <Toggle label="Respond to slash commands" enabled={commands} onChange={setCommands} hint="/ask, /status, /help and custom commands" />
+
+      <SectionDivider label="Connected Channels & Groups" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
+        {channels.map((c, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+            <span style={{ fontSize: 16 }}>{c.type === "Channel" ? "📢" : "👥"}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>{c.name}</div>
+              <div style={{ fontSize: 11, color: colors.textDim }}>{c.type} · {c.members} members</div>
+            </div>
+            <StatusPill status={c.status} />
+            <button style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 12 }}>Remove</button>
+          </div>
+        ))}
+      </div>
+      <Btn variant="secondary" size="sm">+ Add Channel or Group</Btn>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
+        <Btn>Save Changes</Btn>
+        <Btn variant="secondary">Cancel</Btn>
+      </div>
+
+      <DangerZone>
+        <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Disconnecting Telegram removes the bot from all groups and stops all message handling. Active conversations will not receive a goodbye message.</p>
+        <Btn danger>Disconnect Telegram</Btn>
+      </DangerZone>
+    </div>
+  );
+};
+
+const GoogleDetail = ({ onBack }) => {
+  const [gmail, setGmail] = useState(true);
+  const [calendar, setCalendar] = useState(true);
+  const [meet, setMeet] = useState(false);
+  const [drive, setDrive] = useState(false);
+
+  const scopes = [
+    { scope: "gmail.send", description: "Send email as connected account", active: gmail },
+    { scope: "gmail.readonly", description: "Read inbox for replies and context", active: gmail },
+    { scope: "calendar.events", description: "Create and read calendar events", active: calendar },
+    { scope: "calendar.readonly", description: "Check availability", active: calendar },
+    { scope: "meet.readonly", description: "Access meeting links and schedules", active: meet },
+    { scope: "drive.file", description: "Read and create files actors generate", active: drive },
+  ];
+
+  return (
+    <div style={{ maxWidth: 640 }}>
+      <PageHeader
+        title="📧 Google Workspace"
+        subtitle="Gmail, Calendar, Meet, and Drive access for Kinship actors"
+        onBack={onBack}
+      >
+        <StatusPill status="Connected" />
+      </PageHeader>
+
+      <SectionDivider label="Connected Account" />
+      <Field label="Google Account">
+        <div style={{ display: "flex", gap: 8 }}>
+          <Input value="admin@kinship.today" readOnly />
+          <Btn variant="secondary" size="sm">Switch Account</Btn>
+        </div>
+      </Field>
+      <Field label="OAuth Status" hint="Authorization was last granted 14 days ago.">
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <Input value="Authorized — expires in 16 days" readOnly />
+          <Btn variant="secondary" size="sm">Re-authorize</Btn>
+        </div>
+      </Field>
+
+      <SectionDivider label="Enabled Services" />
+      <Toggle label="Gmail" enabled={gmail} onChange={setGmail} hint="Actors can send and read emails on behalf of this account" />
+      <Toggle label="Google Calendar" enabled={calendar} onChange={setCalendar} hint="Actors can check availability and create events" />
+      <Toggle label="Google Meet" enabled={meet} onChange={setMeet} hint="Actors can generate Meet links and join schedules" />
+      <Toggle label="Google Drive" enabled={drive} onChange={setDrive} hint="Actors can create and access files in Drive" />
+
+      <SectionDivider label="Active OAuth Scopes" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {scopes.filter(s => s.active).map((s, i) => (
+          <div key={i} style={{ display: "flex", gap: 12, padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+            <code style={{ fontSize: 11, color: colors.accent, background: colors.accent + "12", padding: "2px 8px", borderRadius: 4, whiteSpace: "nowrap" }}>{s.scope}</code>
+            <span style={{ fontSize: 12, color: colors.textDim, alignSelf: "center" }}>{s.description}</span>
+          </div>
+        ))}
+        {scopes.filter(s => s.active).length === 0 && (
+          <p style={{ fontSize: 13, color: colors.textDim }}>No services enabled — enable a service above to see its scopes.</p>
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
+        <Btn>Save & Re-authorize</Btn>
+        <Btn variant="secondary">Cancel</Btn>
+      </div>
+
+      <DangerZone>
+        <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Revoking access will immediately stop all actors from sending email, accessing calendars, or interacting with Drive on behalf of this Google account.</p>
+        <Btn danger>Revoke Google Access</Btn>
+      </DangerZone>
+    </div>
+  );
+};
+
+const LinkedInDetail = ({ onBack }) => {
+  const [mode, setMode] = useState("personal");
+  const [pluginInstalled, setPluginInstalled] = useState(false);
+
+  return (
+    <div style={{ maxWidth: 640 }}>
+      <PageHeader
+        title="💼 LinkedIn"
+        subtitle="LinkedIn posting and outreach via Chrome plugin"
+        onBack={onBack}
+      >
+        <StatusPill status="Pending Setup" />
+      </PageHeader>
+
+      <InfoBox color={colors.blue}>
+        ℹ️  LinkedIn requires the Kinship Chrome Extension to be installed and signed in. This is because LinkedIn's API does not support automated posting for most account types.
+      </InfoBox>
+
+      <SectionDivider label="Chrome Extension" />
+      <div style={{ padding: "20px", background: colors.surface, border: `1px solid ${pluginInstalled ? colors.green + "44" : colors.border}`, borderRadius: 10, marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <span style={{ fontSize: 32 }}>🧩</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>Kinship Chrome Extension</div>
+            <div style={{ fontSize: 12, color: colors.textDim, marginTop: 3 }}>
+              {pluginInstalled ? "Detected — signed in as David Levine" : "Not detected in this browser"}
+            </div>
+          </div>
+          <StatusPill status={pluginInstalled ? "Installed" : "Not Installed"} />
+        </div>
+        {!pluginInstalled && (
+          <div style={{ marginTop: 16, display: "flex", gap: 8 }}>
+            <Btn>Install from Chrome Web Store</Btn>
+            <button onClick={() => setPluginInstalled(true)}
+              style={{ background: "none", border: "none", color: colors.textDim, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+              Simulate install →
+            </button>
+          </div>
+        )}
+        {pluginInstalled && (
+          <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+            <Btn variant="secondary" size="sm">View Extension Settings</Btn>
+            <Btn variant="secondary" size="sm">Sign Out</Btn>
+          </div>
+        )}
+      </div>
+
+      <SectionDivider label="Account Type" />
+      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+        {["personal", "company"].map(m => (
+          <div key={m} onClick={() => setMode(m)}
+            style={{ flex: 1, padding: "14px 16px", background: mode === m ? colors.accent + "18" : colors.surface, border: `1px solid ${mode === m ? colors.accent : colors.border}`, borderRadius: 9, cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}>
+            <div style={{ fontSize: 20, marginBottom: 6 }}>{m === "personal" ? "👤" : "🏢"}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: mode === m ? colors.accent : colors.textMuted }}>{m === "personal" ? "Personal Profile" : "Company Page"}</div>
+            <div style={{ fontSize: 11, color: colors.textDim, marginTop: 4 }}>
+              {m === "personal" ? "Post as an individual" : "Post as your organization"}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {pluginInstalled && (
+        <>
+          <SectionDivider label="Connected Profile" />
+          <Field label={mode === "personal" ? "LinkedIn Profile" : "Company Page"}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Input value={mode === "personal" ? "David Levine — linkedin.com/in/davidlevine" : "Select a company page..."} readOnly={mode === "personal"} />
+              {mode === "company" && <Btn variant="secondary" size="sm">Browse</Btn>}
+            </div>
+          </Field>
+
+          <SectionDivider label="Capabilities" />
+          <Toggle label="Publish posts" enabled={true} onChange={() => {}} hint="Actors can draft and publish posts to LinkedIn" />
+          <Toggle label="Comment on posts" enabled={false} onChange={() => {}} hint="Actors can reply to comments and engage threads" />
+          <Toggle label="Send connection requests" enabled={false} onChange={() => {}} hint="Actors can send invitations on behalf of this account" />
+
+          <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
+            <Btn>Save Configuration</Btn>
+            <Btn variant="secondary">Cancel</Btn>
+          </div>
+        </>
+      )}
+
+      {!pluginInstalled && (
+        <div style={{ padding: "24px", background: colors.surface, border: `1px dashed ${colors.border}`, borderRadius: 10, textAlign: "center", marginTop: 8 }}>
+          <p style={{ fontSize: 13, color: colors.textDim }}>Install the Chrome Extension to continue LinkedIn setup.</p>
+        </div>
+      )}
+
+      {pluginInstalled && (
+        <DangerZone>
+          <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Disconnecting LinkedIn removes all actor permissions and stops all posting activity. The Chrome Extension will remain installed.</p>
+          <Btn danger>Disconnect LinkedIn</Btn>
+        </DangerZone>
+      )}
+    </div>
+  );
+};
+
+const SolanaDetail = ({ onBack }) => {
+  const [network, setNetwork] = useState("mainnet-beta");
+  const [customRpc, setCustomRpc] = useState(false);
+  const [rpcUrl, setRpcUrl] = useState("https://api.mainnet-beta.solana.com");
+  const [walletVisible, setWalletVisible] = useState(false);
+  const [embeddedWallet, setEmbeddedWallet] = useState(true);
+  const [custodial, setCustodial] = useState(true);
+
+  const networks = [
+    { id: "mainnet-beta", label: "Mainnet Beta", hint: "Live production network" },
+    { id: "devnet", label: "Devnet", hint: "Testing with free SOL" },
+    { id: "testnet", label: "Testnet", hint: "Staging environment" },
+  ];
+
+  return (
+    <div style={{ maxWidth: 640 }}>
+      <PageHeader
+        title="◎ Solana"
+        subtitle="Blockchain wallet, coin infrastructure, and on-chain transactions"
+        onBack={onBack}
+      >
+        <StatusPill status="Connected" />
+      </PageHeader>
+
+      <SectionDivider label="Network" />
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {networks.map(n => (
+          <div key={n.id} onClick={() => setNetwork(n.id)}
+            style={{ flex: 1, padding: "12px 14px", background: network === n.id ? colors.accent + "18" : colors.surface, border: `1px solid ${network === n.id ? colors.accent : colors.border}`, borderRadius: 9, cursor: "pointer", transition: "all 0.15s" }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: network === n.id ? colors.accent : colors.textMuted }}>{n.label}</div>
+            <div style={{ fontSize: 11, color: colors.textDim, marginTop: 3 }}>{n.hint}</div>
+          </div>
+        ))}
+      </div>
+
+      <Toggle label="Use custom RPC endpoint" enabled={customRpc} onChange={v => { setCustomRpc(v); if (!v) setRpcUrl("https://api.mainnet-beta.solana.com"); }}
+        hint="Override the default public RPC with your own (recommended for production)" />
+      {customRpc && (
+        <Field label="RPC Endpoint URL" hint="Helius, QuickNode, Triton, or your own node.">
+          <Input value={rpcUrl} onChange={e => setRpcUrl(e.target.value)} placeholder="https://your-rpc.helius.xyz/?api-key=..." />
+        </Field>
+      )}
+
+      <SectionDivider label="Platform Wallet" />
+      <Field label="Platform Hot Wallet Address" hint="Used for paying transaction fees on behalf of users. Keep funded.">
+        <div style={{ display: "flex", gap: 8 }}>
+          <Input value={walletVisible ? "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU" : "7xKXtg•••••••••••••••••••••••••••••sgAsU"} readOnly />
+          <Btn variant="secondary" size="sm" onClick={() => setWalletVisible(!walletVisible)}>{walletVisible ? "Hide" : "Show"}</Btn>
+        </div>
+      </Field>
+      <Field label="Current Balance">
+        <Input value="12.45 SOL  ·  ~$1,892 USD" readOnly />
+      </Field>
+      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        <Btn variant="secondary" size="sm">Fund Wallet</Btn>
+        <Btn variant="secondary" size="sm">View on Explorer</Btn>
+        <Btn variant="secondary" size="sm">Export Keys</Btn>
+      </div>
+
+      <SectionDivider label="Embedded Wallet Settings" />
+      <Toggle label="Enable embedded wallets for players" enabled={embeddedWallet} onChange={setEmbeddedWallet}
+        hint="Each player gets a non-custodial wallet created on signup" />
+      <Toggle label="Custodial mode for new players" enabled={custodial} onChange={setCustodial}
+        hint="Platform holds keys until player opts into self-custody. Reduces friction for onboarding." />
+
+      <SectionDivider label="Kinship Coin (KNSHP)" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+        {[
+          { label: "Token Mint Address", value: "KNSHPxM7...9aB3" },
+          { label: "Total Supply", value: "1,000,000,000 KNSHP" },
+          { label: "Circulating Supply", value: "234,500,000 KNSHP" },
+          { label: "Current Price", value: "$0.0042 USD" },
+          { label: "Default Bonding Curve", value: "Linear (slope: 0.000001)" },
+        ].map((r, i) => (
+          <div key={i} style={{ display: "flex", padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, gap: 16 }}>
+            <span style={{ fontSize: 12, color: colors.textDim, width: 180, flexShrink: 0 }}>{r.label}</span>
+            <span style={{ fontSize: 12, color: colors.text, fontWeight: 500 }}>{r.value}</span>
+          </div>
+        ))}
+      </div>
+      <Btn variant="secondary" size="sm">Configure Bonding Curve</Btn>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
+        <Btn>Save Changes</Btn>
+        <Btn variant="secondary">Cancel</Btn>
+      </div>
+
+      <DangerZone>
+        <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Disconnecting Solana will disable all on-chain transactions, coin creation, and embedded wallets across the platform. This will break Commerce for all cycles.</p>
+        <Btn danger>Disconnect Solana</Btn>
+      </DangerZone>
+    </div>
+  );
+};
+
+// ─── Platform tools list ──────────────────────────────────────────────────────
+
+const TOOLS = [
+  { id: "bluesky", name: "BlueSky", icon: "🦋", account: "@kinship.bsky.social", status: "Connected" },
+  { id: "telegram", name: "Telegram", icon: "✈️", account: "KinshipBot", status: "Connected" },
+  { id: "google", name: "Google Workspace", icon: "📧", account: "admin@kinship.today", status: "Connected" },
+  { id: "linkedin", name: "LinkedIn", icon: "💼", account: "Chrome plugin required", status: "Pending Setup" },
+  { id: "solana", name: "Solana", icon: "◎", account: "mainnet-beta", status: "Connected" },
+];
+
+const PlatformToolsList = ({ onSelectTool }) => (
+  <div>
+    <PageHeader title="Platform Tools & Connectors" subtitle="Manage integrations available to all creators across all cycles">
+      <Btn>+ Add Connector</Btn>
+    </PageHeader>
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {TOOLS.map(t => {
+        const [hovered, setHovered] = useState(false);
+        return (
+          <div key={t.id} onClick={() => onSelectTool(t.id)}
+            onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+            style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+            <span style={{ fontSize: 22 }}>{t.icon}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{t.name}</div>
+              <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{t.account}</div>
+            </div>
+            <StatusPill status={t.status} />
+            <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+          </div>
+        );
+      })}
+    </div>
+  </div>
+);
+
+const PlatformToolsContent = () => {
+  const [selectedTool, setSelectedTool] = useState(null);
+  if (selectedTool === "bluesky") return <BlueSkyDetail onBack={() => setSelectedTool(null)} />;
+  if (selectedTool === "telegram") return <TelegramDetail onBack={() => setSelectedTool(null)} />;
+  if (selectedTool === "google") return <GoogleDetail onBack={() => setSelectedTool(null)} />;
+  if (selectedTool === "linkedin") return <LinkedInDetail onBack={() => setSelectedTool(null)} />;
+  if (selectedTool === "solana") return <SolanaDetail onBack={() => setSelectedTool(null)} />;
+  return <PlatformToolsList onSelectTool={setSelectedTool} />;
+};
+
+// ─── Other platform pages ─────────────────────────────────────────────────────
+
 const PlatformContent = ({ page }) => {
+  if (page === "p-tools") return <PlatformToolsContent />;
+
   const pages = {
-    "p-tools": {
-      title: "Platform Tools & Connectors",
-      subtitle: "Manage integrations available to all creators across all cycles",
-      items: [
-        { name: "BlueSky", status: "Connected", icon: "🦋", account: "@kinship.bsky.social" },
-        { name: "Telegram", status: "Connected", icon: "✈️", account: "KinshipBot" },
-        { name: "Google Workspace", status: "Connected", icon: "📧", account: "admin@kinship.today" },
-        { name: "LinkedIn", status: "Pending Setup", icon: "💼", account: "Chrome plugin required" },
-        { name: "Solana RPC", status: "Connected", icon: "◎", account: "mainnet-beta" },
-      ]
-    },
     "p-prompts": {
       title: "Platform System Prompts",
       subtitle: "Base-layer prompts inherited by all cycles unless overridden",
@@ -328,181 +729,172 @@ const PlatformContent = ({ page }) => {
       ]
     },
   };
-  const p = pages[page] || pages["p-tools"];
+
+  const p = pages[page] || pages["p-prompts"];
   return (
     <div>
       <PageHeader title={p.title} subtitle={p.subtitle}>
         <Btn>+ Add New</Btn>
       </PageHeader>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {p.items.map((item, i) => <ListItem key={i} {...item} />)}
+        {p.items.map((item, i) => {
+          const [hovered, setHovered] = useState(false);
+          return (
+            <div key={i} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+              <span style={{ fontSize: 20 }}>{item.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{item.name}</div>
+                {item.account && <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{item.account}</div>}
+              </div>
+              <StatusPill status={item.status} />
+              <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
+// ─── Cycle content ────────────────────────────────────────────────────────────
+
 const FilterPill = ({ label, active, onClick }) => {
   const [hovered, setHovered] = useState(false);
   return (
     <span onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{
-        padding: "4px 12px", borderRadius: 9999, fontSize: 11, fontWeight: 600, cursor: "pointer",
-        background: active ? colors.accent : hovered ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)",
-        color: active ? "#fff" : colors.textMuted,
-        border: `1px solid ${active ? colors.accent : colors.border}`,
-        transition: "all 0.15s",
-      }}>
+      style={{ padding: "4px 12px", borderRadius: 9999, fontSize: 11, fontWeight: 600, cursor: "pointer", background: active ? colors.accent : hovered ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.06)", color: active ? "#fff" : colors.textMuted, border: `1px solid ${active ? colors.accent : colors.border}`, transition: "all 0.15s" }}>
       {label}
     </span>
   );
 };
 
+const Card = ({ children, style = {} }) => (
+  <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, ...style }}>{children}</div>
+);
+
 const CycleContent = ({ page, context }) => {
   const cycleName = { mountain: "Mountain Temple", ocean: "Ocean Depths", forest: "Dark Forest" }[context] || "Cycle";
   const cycleEmoji = { mountain: "🏔️", ocean: "🌊", forest: "🌲" }[context] || "🔵";
 
-  if (page === "overview") {
-    return (
-      <div>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
-          <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0, letterSpacing: -0.3 }}>{cycleEmoji} {cycleName}</h1>
-            <p style={{ fontSize: 13, color: colors.textDim, margin: "5px 0 0" }}>Cycle overview and quick actions</p>
-          </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <Btn variant="secondary">Transfer Ownership</Btn>
-            <Btn>Preview Cycle</Btn>
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 32 }}>
-          {[
-            { label: "Scenes", count: 4, icon: "🗺️", color: colors.blue },
-            { label: "Quests", count: 2, icon: "⚔️", color: colors.purple },
-            { label: "Actors", count: 7, icon: "🎭", color: colors.pink },
-            { label: "Challenges", count: 3, icon: "⚡", color: colors.warning },
-            { label: "Assets", count: 69, icon: "🎨", color: colors.cyan },
-            { label: "Offerings", count: 5, icon: "🏪", color: colors.accent },
-          ].map((s, i) => {
-            const [h, setH] = useState(false);
-            return (
-              <div key={i}
-                style={{ padding: 20, background: colors.surface, border: `1px solid ${h ? s.color + "55" : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s", ...(h ? { background: colors.surfaceHover } : {}) }}
-                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 26 }}>{s.icon}</span>
-                  <span style={{ fontSize: 26, fontWeight: 700, color: s.color }}>{s.count}</span>
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted, marginTop: 12 }}>{s.label}</div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ marginBottom: 32 }}>
-          <h3 style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }}>Getting Started</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {[
-              { step: "1", text: "Create your first Scene — the environment where players explore", done: true },
-              { step: "2", text: "Add Actors — characters that players can interact and chat with", done: true },
-              { step: "3", text: "Design Quests — narrative arcs that thread through your scenes", done: false },
-              { step: "4", text: "Connect Tools — give your actors access to external services", done: false },
-              { step: "5", text: "Set up Offerings — things players can buy, earn, or trade", done: false },
-              { step: "6", text: "Configure your Cycle's coin and economy", done: false },
-            ].map((s, i) => (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
-                background: s.done ? colors.accent + "0D" : colors.surface,
-                border: `1px solid ${s.done ? colors.accent + "33" : colors.border}`,
-                borderRadius: 8,
-              }}>
-                <span style={{
-                  width: 24, height: 24, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 11, fontWeight: 700, flexShrink: 0,
-                  background: s.done ? colors.accent : "rgba(255,255,255,0.08)",
-                  color: s.done ? "#fff" : colors.textDim,
-                }}>{s.done ? "✓" : s.step}</span>
-                <span style={{ fontSize: 13, color: s.done ? colors.textDim : colors.textMuted, textDecoration: s.done ? "line-through" : "none" }}>{s.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
+  if (page === "overview") return (
+    <div>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28 }}>
         <div>
-          <h3 style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }}>Team</h3>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            {[{ i: "DL", c: colors.accent }, { i: "SK", c: colors.purple }, { i: "MR", c: colors.pink }].map(({ i, c }, idx) => (
-              <div key={idx} style={{ width: 36, height: 36, borderRadius: 18, background: c + "33", border: `1px solid ${c}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: c }}>{i}</div>
-            ))}
-            <div style={{ width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: colors.textDim, cursor: "pointer", border: `1px dashed ${colors.border}` }}>+</div>
-          </div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0, letterSpacing: -0.3 }}>{cycleEmoji} {cycleName}</h1>
+          <p style={{ fontSize: 13, color: colors.textDim, margin: "5px 0 0" }}>Cycle overview and quick actions</p>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Btn variant="secondary">Transfer Ownership</Btn>
+          <Btn>Preview Cycle</Btn>
         </div>
       </div>
-    );
-  }
-
-  if (page === "scenes") {
-    return (
-      <div>
-        <PageHeader title="Scenes" subtitle="Isometric environments where players explore and interact">
-          <Btn variant="secondary">From Template</Btn>
-          <Btn>+ New Scene</Btn>
-        </PageHeader>
-        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-          <input placeholder="Search scenes..." style={{ flex: 1, padding: "8px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
-          <select style={{ padding: "8px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.textDim, fontSize: 13, outline: "none" }}>
-            <option>All Types</option><option>Meditation</option><option>Exploration</option><option>Commerce</option>
-          </select>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 32 }}>
+        {[
+          { label: "Scenes", count: 4, icon: "🗺️", color: colors.blue },
+          { label: "Quests", count: 2, icon: "⚔️", color: colors.purple },
+          { label: "Actors", count: 7, icon: "🎭", color: colors.pink },
+          { label: "Challenges", count: 3, icon: "⚡", color: colors.warning },
+          { label: "Assets", count: 69, icon: "🎨", color: colors.cyan },
+          { label: "Offerings", count: 5, icon: "🏪", color: colors.accent },
+        ].map((s, i) => {
+          const [h, setH] = useState(false);
+          return (
+            <div key={i} style={{ padding: 20, background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? s.color + "55" : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}
+              onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 26 }}>{s.icon}</span>
+                <span style={{ fontSize: 26, fontWeight: 700, color: s.color }}>{s.count}</span>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted, marginTop: 12 }}>{s.label}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ marginBottom: 32 }}>
+        <h3 style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }}>Getting Started</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {[
-            { name: "Mountain Temple Gardens", type: "Meditation", status: "Active", actors: 3, assets: 12 },
-            { name: "Crystal Caves", type: "Exploration", status: "Active", actors: 2, assets: 8 },
-            { name: "Training Grounds", type: "Challenge", status: "Pending Setup", actors: 4, assets: 15 },
-            { name: "Market Square", type: "Commerce", status: "Pending Setup", actors: 5, assets: 22 },
-          ].map((s, i) => {
-            const [h, setH] = useState(false);
-            const isActive = s.status === "Active";
-            return (
-              <div key={i} style={{ background: colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 12, overflow: "hidden", cursor: "pointer", transition: "all 0.15s", ...(h ? { background: colors.surfaceHover } : {}) }}
-                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
-                <div style={{ height: 110, background: `linear-gradient(135deg, ${colors.surfaceActive}, ${colors.bg})`, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: `1px solid ${colors.border}` }}>
-                  <span style={{ fontSize: 38, opacity: 0.35 }}>🗺️</span>
+            { step: "1", text: "Create your first Scene — the environment where players explore", done: true },
+            { step: "2", text: "Add Actors — characters that players can interact and chat with", done: true },
+            { step: "3", text: "Design Quests — narrative arcs that thread through your scenes", done: false },
+            { step: "4", text: "Connect Tools — give your actors access to external services", done: false },
+            { step: "5", text: "Set up Offerings — things players can buy, earn, or trade", done: false },
+            { step: "6", text: "Configure your Cycle's coin and economy", done: false },
+          ].map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: s.done ? colors.accent + "0D" : colors.surface, border: `1px solid ${s.done ? colors.accent + "33" : colors.border}`, borderRadius: 8 }}>
+              <span style={{ width: 24, height: 24, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0, background: s.done ? colors.accent : "rgba(255,255,255,0.08)", color: s.done ? "#fff" : colors.textDim }}>{s.done ? "✓" : s.step}</span>
+              <span style={{ fontSize: 13, color: s.done ? colors.textDim : colors.textMuted, textDecoration: s.done ? "line-through" : "none" }}>{s.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <h3 style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }}>Team</h3>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {[{ i: "DL", c: colors.accent }, { i: "SK", c: colors.purple }, { i: "MR", c: colors.pink }].map(({ i, c }, idx) => (
+            <div key={idx} style={{ width: 36, height: 36, borderRadius: 18, background: c + "33", border: `1px solid ${c}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: c }}>{i}</div>
+          ))}
+          <div style={{ width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: colors.textDim, cursor: "pointer", border: `1px dashed ${colors.border}` }}>+</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (page === "scenes") return (
+    <div>
+      <PageHeader title="Scenes" subtitle="Isometric environments where players explore and interact">
+        <Btn variant="secondary">From Template</Btn>
+        <Btn>+ New Scene</Btn>
+      </PageHeader>
+      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        <input placeholder="Search scenes..." style={{ flex: 1, padding: "8px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+        <select style={{ padding: "8px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.textDim, fontSize: 13, outline: "none" }}>
+          <option>All Types</option><option>Meditation</option><option>Exploration</option><option>Commerce</option>
+        </select>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+        {[
+          { name: "Mountain Temple Gardens", type: "Meditation", status: "Active", actors: 3, assets: 12 },
+          { name: "Crystal Caves", type: "Exploration", status: "Active", actors: 2, assets: 8 },
+          { name: "Training Grounds", type: "Challenge", status: "Pending Setup", actors: 4, assets: 15 },
+          { name: "Market Square", type: "Commerce", status: "Pending Setup", actors: 5, assets: 22 },
+        ].map((s, i) => {
+          const [h, setH] = useState(false);
+          return (
+            <div key={i} style={{ background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 12, overflow: "hidden", cursor: "pointer", transition: "all 0.15s" }}
+              onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
+              <div style={{ height: 110, background: `linear-gradient(135deg, ${colors.surfaceActive}, ${colors.bg})`, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: `1px solid ${colors.border}` }}>
+                <span style={{ fontSize: 38, opacity: 0.35 }}>🗺️</span>
+              </div>
+              <div style={{ padding: "14px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{s.name}</span>
+                  <StatusPill status={s.status} />
                 </div>
-                <div style={{ padding: "14px 16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{s.name}</span>
-                    <StatusPill status={s.status} />
-                  </div>
-                  <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 10 }}>{s.type}</div>
-                  <div style={{ display: "flex", gap: 16, fontSize: 11, color: colors.textDim }}>
-                    <span>🎭 {s.actors} actors</span>
-                    <span>🎨 {s.assets} assets</span>
-                  </div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 10 }}>{s.type}</div>
+                <div style={{ display: "flex", gap: 16, fontSize: 11, color: colors.textDim }}>
+                  <span>🎭 {s.actors} actors</span><span>🎨 {s.assets} assets</span>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
-    );
-  }
+    </div>
+  );
 
   if (page === "actors") {
     const [activeFilter, setActiveFilter] = useState("All");
     return (
       <div>
-        <PageHeader title="Actors" subtitle="AI characters that interact with players — reusable across scenes and cycles">
+        <PageHeader title="Actors" subtitle="AI characters — reusable across scenes and cycles">
           <Btn>+ New Actor</Btn>
         </PageHeader>
         <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-          {["All","H","E","A","R","T","Si","So"].map((f, i) => (
-            <FilterPill key={i} label={f} active={activeFilter === f} onClick={() => setActiveFilter(f)} />
-          ))}
+          {["All","H","E","A","R","T","Si","So"].map((f, i) => <FilterPill key={i} label={f} active={activeFilter === f} onClick={() => setActiveFilter(f)} />)}
           <span style={{ color: colors.textDim, margin: "0 4px" }}>·</span>
-          {["Active","Draft","Shared"].map((f, i) => (
-            <FilterPill key={i} label={f} active={activeFilter === f} onClick={() => setActiveFilter(f)} />
-          ))}
+          {["Active","Draft","Shared"].map((f, i) => <FilterPill key={i} label={f} active={activeFilter === f} onClick={() => setActiveFilter(f)} />)}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {[
@@ -543,54 +935,44 @@ const CycleContent = ({ page, context }) => {
     );
   }
 
-  if (page === "tools") {
-    return (
-      <div>
-        <PageHeader title="Cycle Tools" subtitle="Connectors and integrations specific to this cycle">
-          <Btn variant="secondary">Create Custom Tool</Btn>
-          <Btn>+ Connect Tool</Btn>
-        </PageHeader>
-        <div style={{ marginBottom: 20, padding: "12px 16px", background: colors.warning + "0D", border: `1px solid ${colors.warning}33`, borderRadius: 10 }}>
-          <span style={{ fontSize: 12, color: colors.warning }}>ℹ️  Platform-level tools (BlueSky, Telegram, Google, Solana) are inherited automatically. Add cycle-specific connections below.</span>
-        </div>
-        <h3 style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 24, marginBottom: 10 }}>Inherited from Platform</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, opacity: 0.55 }}>
-          {[
-            { name: "BlueSky", icon: "🦋" },
-            { name: "Telegram", icon: "✈️" },
-            { name: "Google Workspace", icon: "📧" },
-            { name: "Solana", icon: "◎" },
-          ].map((t, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: colors.surface, border: `1px solid ${colors.borderSubtle}`, borderRadius: 8 }}>
-              <span style={{ fontSize: 16 }}>{t.icon}</span>
-              <span style={{ flex: 1, fontSize: 13, color: colors.textMuted }}>{t.name}</span>
-              <span style={{ fontSize: 10, color: colors.textDim, background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 4, border: `1px solid ${colors.border}` }}>🔒 Platform</span>
-            </div>
-          ))}
-        </div>
-        <h3 style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", marginTop: 28, marginBottom: 10 }}>Cycle-Specific</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {[
-            { name: "Meditation Timer API", icon: "🧘", type: "Custom" },
-            { name: "Weather Service", icon: "🌤️", type: "REST API" },
-          ].map((t, i) => {
-            const [h, setH] = useState(false);
-            return (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s" }}
-                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
-                <span style={{ fontSize: 16 }}>{t.icon}</span>
-                <div style={{ flex: 1 }}>
-                  <span style={{ fontSize: 13, color: colors.text }}>{t.name}</span>
-                  <span style={{ fontSize: 11, color: colors.textDim, marginLeft: 8 }}>{t.type}</span>
-                </div>
-                <StatusPill status="Connected" />
-              </div>
-            );
-          })}
-        </div>
+  if (page === "tools") return (
+    <div>
+      <PageHeader title="Cycle Tools" subtitle="Connectors and integrations specific to this cycle">
+        <Btn variant="secondary">Create Custom Tool</Btn>
+        <Btn>+ Connect Tool</Btn>
+      </PageHeader>
+      <div style={{ marginBottom: 20, padding: "12px 16px", background: colors.warning + "0D", border: `1px solid ${colors.warning}33`, borderRadius: 10 }}>
+        <span style={{ fontSize: 12, color: colors.warning }}>ℹ️  Platform-level tools are inherited automatically. Add cycle-specific connections below.</span>
       </div>
-    );
-  }
+      <h3 style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>Inherited from Platform</h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, opacity: 0.55, marginBottom: 24 }}>
+        {[{ name: "BlueSky", icon: "🦋" }, { name: "Telegram", icon: "✈️" }, { name: "Google Workspace", icon: "📧" }, { name: "Solana", icon: "◎" }].map((t, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: colors.surface, border: `1px solid ${colors.borderSubtle}`, borderRadius: 8 }}>
+            <span style={{ fontSize: 16 }}>{t.icon}</span>
+            <span style={{ flex: 1, fontSize: 13, color: colors.textMuted }}>{t.name}</span>
+            <span style={{ fontSize: 10, color: colors.textDim, background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 4, border: `1px solid ${colors.border}` }}>🔒 Platform</span>
+          </div>
+        ))}
+      </div>
+      <h3 style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>Cycle-Specific</h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {[{ name: "Meditation Timer API", icon: "🧘", type: "Custom" }, { name: "Weather Service", icon: "🌤️", type: "REST API" }].map((t, i) => {
+          const [h, setH] = useState(false);
+          return (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s" }}
+              onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
+              <span style={{ fontSize: 16 }}>{t.icon}</span>
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: 13, color: colors.text }}>{t.name}</span>
+                <span style={{ fontSize: 11, color: colors.textDim, marginLeft: 8 }}>{t.type}</span>
+              </div>
+              <StatusPill status="Connected" />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   if (page === "offerings") {
     const [activeFilter, setActiveFilter] = useState("All");
@@ -600,9 +982,7 @@ const CycleContent = ({ page, context }) => {
           <Btn>+ New Offering</Btn>
         </PageHeader>
         <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
-          {["All","Digital","Physical","Service","Subscription"].map((f, i) => (
-            <FilterPill key={i} label={f} active={activeFilter === f} onClick={() => setActiveFilter(f)} />
-          ))}
+          {["All","Digital","Physical","Service","Subscription"].map((f, i) => <FilterPill key={i} label={f} active={activeFilter === f} onClick={() => setActiveFilter(f)} />)}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
           {[
@@ -634,40 +1014,25 @@ const CycleContent = ({ page, context }) => {
     );
   }
 
-  if (page === "economy") {
-    return (
-      <div>
-        <PageHeader title="Cycle Economy" subtitle="Coin, wallet, and economic settings for this cycle" />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
-          <Card style={{ padding: 22 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.1, textTransform: "uppercase", marginBottom: 10 }}>Cycle Coin</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: colors.text }}>◎ Temple Coin (TMPL)</div>
-            <div style={{ fontSize: 12, color: colors.textDim, marginTop: 10, lineHeight: 1.8 }}>
-              Supply: 100M<br/>
-              Bonding Curve: Exponential<br/>
-              Traded against: KNSHP
-            </div>
-            <div style={{ marginTop: 16 }}>
-              <Btn variant="secondary" size="sm">Configure</Btn>
-            </div>
-          </Card>
-          <Card style={{ padding: 22 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.1, textTransform: "uppercase", marginBottom: 10 }}>Wallet Balance</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: colors.accent }}>12,450 KNSHP</div>
-            <div style={{ fontSize: 12, color: colors.textDim, marginTop: 10, lineHeight: 1.8 }}>
-              250,000 TMPL<br/>
-              0.45 SOL
-            </div>
-            <div style={{ marginTop: 16 }}>
-              <Btn variant="secondary" size="sm">View Wallet</Btn>
-            </div>
-          </Card>
-        </div>
+  if (page === "economy") return (
+    <div>
+      <PageHeader title="Cycle Economy" subtitle="Coin, wallet, and economic settings for this cycle" />
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
+        {[
+          { label: "Cycle Coin", main: "◎ Temple Coin (TMPL)", details: ["Supply: 100M", "Bonding Curve: Exponential", "Traded against: KNSHP"], btn: "Configure" },
+          { label: "Wallet Balance", main: "12,450 KNSHP", mainColor: colors.accent, details: ["250,000 TMPL", "0.45 SOL"], btn: "View Wallet" },
+        ].map((c, i) => (
+          <div key={i} style={{ padding: 22, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.1, textTransform: "uppercase", marginBottom: 10 }}>{c.label}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: c.mainColor || colors.text }}>{c.main}</div>
+            <div style={{ fontSize: 12, color: colors.textDim, marginTop: 10, lineHeight: 1.9 }}>{c.details.map((d,j) => <div key={j}>{d}</div>)}</div>
+            <div style={{ marginTop: 16 }}><Btn variant="secondary" size="sm">{c.btn}</Btn></div>
+          </div>
+        ))}
       </div>
-    );
-  }
+    </div>
+  );
 
-  // Fallback placeholder
   return (
     <div>
       <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, letterSpacing: -0.3 }}>{page.charAt(0).toUpperCase() + page.slice(1)}</h1>
@@ -679,6 +1044,8 @@ const CycleContent = ({ page, context }) => {
     </div>
   );
 };
+
+// ─── App shell ────────────────────────────────────────────────────────────────
 
 function App() {
   const [context, setContext] = useState("mountain");
@@ -724,12 +1091,9 @@ function App() {
   const contextName = { mountain: "Mountain Temple", ocean: "Ocean Depths", forest: "Dark Forest", platform: "Platform" }[context] || context;
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: colors.bg, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif", color: colors.text, overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100vh", background: colors.bg, fontFamily: "'Inter', -apple-system, sans-serif", color: colors.text, overflow: "hidden" }}>
 
-      {/* Sidebar */}
       <div style={{ width: 228, minWidth: 228, height: "100%", background: colors.surface, borderRight: `1px solid ${colors.border}`, display: "flex", flexDirection: "column", overflowY: "auto" }}>
-
-        {/* Logo */}
         <div style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${colors.border}` }}>
           <div style={{ width: 30, height: 30, borderRadius: 8, background: colors.accent + "22", border: `1px solid ${colors.accent}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🦘</div>
           <div>
@@ -738,19 +1102,15 @@ function App() {
           </div>
         </div>
 
-        {/* Cycle Selector */}
         <div style={{ padding: "10px 0 4px" }}>
           <CycleSelector current={context} onSwitch={(id) => { setContext(id); setPage(id === "platform" ? "p-tools" : "overview"); }} isWizard={isWizard} />
         </div>
 
-        {/* Nav */}
         <div style={{ flex: 1, padding: "4px 0", overflowY: "auto" }}>
           {isPlatform ? (
             <>
               <SectionLabel>Platform Administration</SectionLabel>
-              {platformNav.map(item => (
-                <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />
-              ))}
+              {platformNav.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />)}
             </>
           ) : (
             <>
@@ -766,7 +1126,6 @@ function App() {
           )}
         </div>
 
-        {/* User footer */}
         <div style={{ padding: "12px 14px", borderTop: `1px solid ${colors.border}`, display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 32, height: 32, borderRadius: 16, background: colors.accent + "28", border: `1px solid ${colors.accent}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: colors.accent }}>DL</div>
           <div style={{ flex: 1 }}>
@@ -774,19 +1133,16 @@ function App() {
             <div style={{ fontSize: 10, color: isWizard ? colors.warning : colors.accent, fontWeight: 500 }}>{isWizard ? "⚡ Wizard" : "✏️ Creator"}</div>
           </div>
           <button onClick={() => { setIsWizard(!isWizard); if (!isWizard && isPlatform) { setContext("mountain"); setPage("overview"); } }}
-            title={isWizard ? "Switch to Creator view" : "Switch to Wizard view"}
             style={{ fontSize: 12, background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 6, padding: "4px 8px", color: colors.textDim, cursor: "pointer", fontFamily: "inherit" }}>
             {isWizard ? "👑" : "✏️"}
           </button>
         </div>
       </div>
 
-      {/* Main content */}
       <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px", background: colors.bg }}>
-        {/* Breadcrumb */}
         <div style={{ marginBottom: 22, fontSize: 12, color: colors.textDim, display: "flex", alignItems: "center", gap: 6 }}>
           {isPlatform ? (
-            <span style={{ color: colors.accent }}>⚙️ Platform Settings</span>
+            <span style={{ color: colors.textMuted }}>⚙️ Platform Settings</span>
           ) : (
             <>
               <span>Studio</span>
@@ -797,7 +1153,6 @@ function App() {
             </>
           )}
         </div>
-
         {isPlatform ? <PlatformContent page={page} /> : <CycleContent page={page} context={context} />}
       </div>
     </div>
