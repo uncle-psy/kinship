@@ -1058,12 +1058,298 @@ const PlatformActorsContent = () => {
   );
 };
 
+// ─── Platform Users ───────────────────────────────────────────────────────────
+
+const PLATFORM_USERS = [
+  { id: "moto", name: "moto", email: "motodave@gmail.com", role: "Wizard", status: "Active", joined: "2024-03-15", lastLogin: "2026-02-25" },
+  { id: "eloy", name: "Eloy", email: "andres.lara@kinship.systems", role: "Creator", status: "Active", joined: "2024-04-02", lastLogin: "2026-02-20" },
+  { id: "aashik", name: "Aashik", email: "aashik200227@gmail.com", role: "Player", status: "Active", joined: "2024-05-10", lastLogin: "2026-01-14" },
+  { id: "chastity", name: "Chastity", email: "lightsaltfire144@gmail.com", role: "Player", status: "Active", joined: "2024-06-01", lastLogin: "2026-02-18" },
+  { id: "zach", name: "Zach", email: "Zachfisher1974@gmail.com", role: "Player", status: "Active", joined: "2024-07-22", lastLogin: "2025-12-30" },
+  { id: "kinship", name: "Kinship", email: "test.kinship@kinship.systems", role: "Creator", status: "Active", joined: "2024-08-01", lastLogin: "2026-02-24" },
+  { id: "syren", name: "Syren", email: "syrenwind@gmail.com", role: "Player", status: "Active", joined: "2024-09-15", lastLogin: "2026-01-03" },
+  { id: "danin", name: "Danin", email: "themaster3194@protonmail.com", role: "Player", status: "Active", joined: "2024-10-08", lastLogin: "2026-02-01" },
+  { id: "gino", name: "Gino Why Files", email: "Gino@thewhyfiles.com", role: "Creator", status: "Active", joined: "2024-11-12", lastLogin: "2026-01-28" },
+  { id: "nova", name: "Nova", email: "Bloominglotus@protonmail.com", role: "Player", status: "Pending", joined: "2026-02-20", lastLogin: "—" },
+  { id: "solonets", name: "solonets", email: "solonetsserhii@gmail.com", role: "Player", status: "Active", joined: "2025-01-05", lastLogin: "2026-02-10" },
+  { id: "david2", name: "David AppTest", email: "motodave+apptest2@gmail.com", role: "Player", status: "Suspended", joined: "2024-12-01", lastLogin: "2025-11-30" },
+];
+
+const roleColors = { Wizard: colors.accent, Creator: colors.purple, Player: colors.cyan, Moderator: colors.green };
+
+const UserDetail = ({ user, isNew, onBack }) => {
+  const [name, setName] = useState(user?.name || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [role, setRole] = useState(user?.role || "Player");
+  const [status, setStatus] = useState(user?.status || "Active");
+  return (
+    <div style={{ maxWidth: 640 }}>
+      <PageHeader
+        title={isNew ? "Invite User" : user.name}
+        subtitle={isNew ? "Send an invitation to a new platform user" : `ID: ${user.id} · Joined ${user.joined}`}
+        onBack={onBack}
+      >
+        {!isNew && <StatusPill status={user.status} />}
+      </PageHeader>
+      <SectionDivider label="Account Details" />
+      <Field label="Name"><Input value={name} onChange={e => setName(e.target.value)} placeholder="Display name" /></Field>
+      <Field label="Email"><Input value={email} onChange={e => setEmail(e.target.value)} placeholder="email@example.com" /></Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Role">
+          <select value={role} onChange={e => setRole(e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" }}>
+            <option>Player</option><option>Creator</option><option>Moderator</option><option>Wizard</option>
+          </select>
+        </Field>
+        <Field label="Account Status">
+          <select value={status} onChange={e => setStatus(e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" }}>
+            <option>Active</option><option>Pending</option><option>Suspended</option><option>Banned</option>
+          </select>
+        </Field>
+      </div>
+      {!isNew && (
+        <>
+          <SectionDivider label="Activity" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="Sign Up Date"><Input value={user.joined} readOnly /></Field>
+            <Field label="Last Login"><Input value={user.lastLogin} readOnly /></Field>
+          </div>
+          <SectionDivider label="Security" />
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>Password Reset</div>
+                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>Send a reset email to {user.email}</div>
+              </div>
+              <Btn variant="secondary" size="sm">Send Reset Email</Btn>
+            </div>
+            <div style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>Active Sessions</div>
+                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>Revoke all active login sessions</div>
+              </div>
+              <Btn variant="secondary" size="sm">Revoke Sessions</Btn>
+            </div>
+          </div>
+        </>
+      )}
+      <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
+        <Btn>{isNew ? "Send Invitation" : "Save Changes"}</Btn>
+        <Btn variant="secondary">Cancel</Btn>
+      </div>
+      {!isNew && (
+        <DangerZone>
+          <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
+            {user.status === "Suspended"
+              ? "This account is suspended. You can reactivate it or permanently delete it."
+              : "Suspending this account immediately revokes access. Deletion is permanent and cannot be undone."}
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            {user.status !== "Suspended" && <Btn danger>Suspend Account</Btn>}
+            {user.status === "Suspended" && <Btn variant="secondary" size="sm">Reactivate</Btn>}
+            <Btn danger>Delete Account</Btn>
+          </div>
+        </DangerZone>
+      )}
+    </div>
+  );
+};
+
+const PlatformUsersContent = () => {
+  const [view, setView] = useState(null);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("All");
+
+  if (view === "new") return <UserDetail isNew onBack={() => setView(null)} />;
+  const editing = PLATFORM_USERS.find(u => u.id === view);
+  if (editing) return <UserDetail user={editing} onBack={() => setView(null)} />;
+
+  const filtered = PLATFORM_USERS.filter(u => {
+    const matchSearch = !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
+    const matchFilter = filter === "All" || u.status === filter;
+    return matchSearch && matchFilter;
+  });
+
+  return (
+    <div>
+      <PageHeader title="Users" subtitle={`${PLATFORM_USERS.length} registered accounts on this platform`}>
+        <Btn onClick={() => setView("new")}>+ Invite User</Btn>
+      </PageHeader>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 200, position: "relative" }}>
+          <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: colors.textDim, fontSize: 13, pointerEvents: "none" }}>🔍</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or email..."
+            style={{ width: "100%", padding: "8px 12px 8px 32px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {["All", "Active", "Pending", "Suspended"].map(f => <FilterPill key={f} label={f} active={filter === f} onClick={() => setFilter(f)} />)}
+        </div>
+      </div>
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 2.5fr 1fr 1fr 1.2fr 72px", padding: "9px 16px", borderBottom: `1px solid ${colors.borderSubtle}` }}>
+          {["Name", "Email", "Role", "Status", "Last Login", ""].map((h, i) => (
+            <div key={i} style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase" }}>{h}</div>
+          ))}
+        </div>
+        {filtered.map((u, i) => {
+          const [hovered, setHovered] = useState(false);
+          return (
+            <div key={u.id} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+              style={{ display: "grid", gridTemplateColumns: "2fr 2.5fr 1fr 1fr 1.2fr 72px", padding: "11px 16px", alignItems: "center", background: hovered ? colors.surfaceHover : "transparent", borderBottom: i < filtered.length - 1 ? `1px solid ${colors.borderSubtle}` : "none", transition: "background 0.12s" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: (roleColors[u.role] || colors.blue) + "28", border: `1px solid ${(roleColors[u.role] || colors.blue) + "55"}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: roleColors[u.role] || colors.blue, flexShrink: 0 }}>
+                  {u.name.charAt(0).toUpperCase()}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>{u.name}</span>
+              </div>
+              <div style={{ fontSize: 12, color: colors.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>
+              <div><span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 9999, background: (roleColors[u.role] || colors.blue) + "22", color: roleColors[u.role] || colors.blue }}>{u.role}</span></div>
+              <div><StatusPill status={u.status} /></div>
+              <div style={{ fontSize: 12, color: colors.textDim }}>{u.lastLogin}</div>
+              <button onClick={() => setView(u.id)} style={{ padding: "4px 10px", background: "none", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Manage</button>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <div style={{ padding: "32px 16px", textAlign: "center", color: colors.textDim, fontSize: 13 }}>No users match your search.</div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ─── Platform Bots (Global) ───────────────────────────────────────────────────
+
+const PLATFORM_BOTS = [
+  { id: "catfawn", name: "CAT FAWN Connection", symbol: "CATFAWN", model: "claude-sonnet-4-5-20250929", status: "Active", owner: "moto", cycles: 2 },
+  { id: "fdn", name: "FULL Disclosure NOW", symbol: "FDN", model: "claude-sonnet-4-5-20250929", status: "Active", owner: "Eloy", cycles: 1 },
+  { id: "kin", name: "Kinship Bot", symbol: "KIN", model: "claude-sonnet-4-5-20250929", status: "Active", owner: "moto", cycles: 5 },
+  { id: "couples", name: "Couple's bot", symbol: "COUPLES", model: "claude-haiku-4-5-20251001", status: "Active", owner: "moto", cycles: 1 },
+  { id: "pace", name: "PACE AI", symbol: "PACE", model: "claude-sonnet-4-5-20250929", status: "Active", owner: "Kinship", cycles: 3 },
+  { id: "saan", name: "Ahsaan", symbol: "SAAN", model: "claude-haiku-4-5-20251001", status: "Inactive", owner: "Aashik", cycles: 0 },
+  { id: "sports", name: "Sports", symbol: "SPORTS", model: "claude-haiku-4-5-20251001", status: "Active", owner: "Zach", cycles: 1 },
+  { id: "cosmo", name: "Cosmic Humanity", symbol: "COSMO", model: "claude-sonnet-4-5-20250929", status: "Active", owner: "moto", cycles: 2 },
+];
+
+const modelLabels = {
+  "claude-opus-4-5-20251101": "Opus 4.5",
+  "claude-sonnet-4-5-20250929": "Sonnet 4.5",
+  "claude-haiku-4-5-20251001": "Haiku 4.5",
+};
+
+const BotDetail = ({ bot, isNew, onBack }) => {
+  const [name, setName] = useState(bot?.name || "");
+  const [symbol, setSymbol] = useState(bot?.symbol || "");
+  const [model, setModel] = useState(bot?.model || "claude-sonnet-4-5-20250929");
+  const [status, setStatus] = useState(bot?.status || "Active");
+  return (
+    <div style={{ maxWidth: 640 }}>
+      <PageHeader
+        title={isNew ? "Register New Bot" : bot.name}
+        subtitle={isNew ? "Add a bot to the global platform registry" : `${bot.symbol} · Owner: ${bot.owner} · ${bot.cycles} active cycle${bot.cycles !== 1 ? "s" : ""}`}
+        onBack={onBack}
+      >
+        {!isNew && <StatusPill status={bot.status} />}
+      </PageHeader>
+      <SectionDivider label="Bot Identity" />
+      <Field label="Bot Name"><Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Cosmic Humanity" /></Field>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <Field label="Symbol" hint="Short uppercase identifier used across the platform.">
+          <Input value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())} placeholder="e.g. COSMO" />
+        </Field>
+        <Field label="Bot Status">
+          <select value={status} onChange={e => setStatus(e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" }}>
+            <option>Active</option><option>Inactive</option><option>Suspended</option>
+          </select>
+        </Field>
+      </div>
+      <SectionDivider label="Model Configuration" />
+      <Field label="Default Model" hint="The Claude model this bot uses by default. Can be overridden per-cycle.">
+        <select value={model} onChange={e => setModel(e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" }}>
+          <option value="claude-opus-4-5-20251101">claude-opus-4-5-20251101 — Opus 4.5 (most capable)</option>
+          <option value="claude-sonnet-4-5-20250929">claude-sonnet-4-5-20250929 — Sonnet 4.5 (balanced)</option>
+          <option value="claude-haiku-4-5-20251001">claude-haiku-4-5-20251001 — Haiku 4.5 (fastest)</option>
+        </select>
+      </Field>
+      {!isNew && (
+        <>
+          <SectionDivider label="Ownership & Usage" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <Field label="Owner"><Input value={bot.owner} readOnly /></Field>
+            <Field label="Active Cycles"><Input value={bot.cycles === 0 ? "Not deployed in any cycles" : `${bot.cycles} cycle${bot.cycles !== 1 ? "s" : ""}`} readOnly /></Field>
+          </div>
+        </>
+      )}
+      <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
+        <Btn>{isNew ? "Register Bot" : "Save Changes"}</Btn>
+        <Btn variant="secondary">Cancel</Btn>
+      </div>
+      {!isNew && (
+        <DangerZone>
+          <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
+            Deactivating this bot suspends it in all cycles where it is deployed. Removal is permanent and will disconnect it from {bot.cycles} active cycle{bot.cycles !== 1 ? "s" : ""}.
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn danger>Deactivate Bot</Btn>
+            <Btn danger>Remove from Platform</Btn>
+          </div>
+        </DangerZone>
+      )}
+    </div>
+  );
+};
+
+const PlatformBotsContent = () => {
+  const [view, setView] = useState(null);
+  const [filter, setFilter] = useState("All");
+
+  if (view === "new") return <BotDetail isNew onBack={() => setView(null)} />;
+  const editing = PLATFORM_BOTS.find(b => b.id === view);
+  if (editing) return <BotDetail bot={editing} onBack={() => setView(null)} />;
+
+  const filtered = filter === "All" ? PLATFORM_BOTS : PLATFORM_BOTS.filter(b => b.status === filter);
+
+  return (
+    <div>
+      <PageHeader title="Bots (Global)" subtitle="All bots registered on this platform across all cycles">
+        <Btn onClick={() => setView("new")}>+ Register Bot</Btn>
+      </PageHeader>
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        {["All", "Active", "Inactive", "Suspended"].map(f => <FilterPill key={f} label={f} active={filter === f} onClick={() => setFilter(f)} />)}
+      </div>
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "90px 2fr 2fr 1fr 70px 1fr 72px", padding: "9px 16px", borderBottom: `1px solid ${colors.borderSubtle}` }}>
+          {["Symbol", "Name", "Model", "Owner", "Cycles", "Status", ""].map((h, i) => (
+            <div key={i} style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase" }}>{h}</div>
+          ))}
+        </div>
+        {filtered.map((b, i) => {
+          const [hovered, setHovered] = useState(false);
+          return (
+            <div key={b.id} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+              style={{ display: "grid", gridTemplateColumns: "90px 2fr 2fr 1fr 70px 1fr 72px", padding: "12px 16px", alignItems: "center", background: hovered ? colors.surfaceHover : "transparent", borderBottom: i < filtered.length - 1 ? `1px solid ${colors.borderSubtle}` : "none", transition: "background 0.12s" }}>
+              <div><span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, padding: "3px 7px", borderRadius: 5, background: colors.accent + "22", color: colors.accent, fontFamily: "monospace" }}>{b.symbol}</span></div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>{b.name}</div>
+              <div><span style={{ fontSize: 11, color: colors.textDim, padding: "2px 7px", background: colors.surfaceHover, borderRadius: 4, border: `1px solid ${colors.borderSubtle}`, fontFamily: "monospace" }}>{modelLabels[b.model] || b.model}</span></div>
+              <div style={{ fontSize: 12, color: colors.textDim }}>{b.owner}</div>
+              <div style={{ fontSize: 12, color: b.cycles === 0 ? colors.textDim : colors.text }}>{b.cycles === 0 ? "—" : b.cycles}</div>
+              <div><StatusPill status={b.status} /></div>
+              <button onClick={() => setView(b.id)} style={{ padding: "4px 10px", background: "none", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Manage</button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ─── Other platform pages ─────────────────────────────────────────────────────
 
 const PlatformContent = ({ page }) => {
   if (page === "p-tools") return <PlatformToolsContent />;
   if (page === "p-prompts") return <PlatformPromptsContent />;
   if (page === "p-actors") return <PlatformActorsContent />;
+  if (page === "p-users") return <PlatformUsersContent />;
+  if (page === "p-bots") return <PlatformBotsContent />;
 
   const pages = {
     "p-knowledge": {
@@ -1439,6 +1725,8 @@ function App() {
   const isPlatform = context === "platform";
 
   const platformNav = [
+    { id: "p-users", icon: "👤", label: "Users", count: 12 },
+    { id: "p-bots", icon: "🤖", label: "Bots (Global)", count: 8 },
     { id: "p-tools", icon: "🔧", label: "Tools & Connectors", count: 5 },
     { id: "p-prompts", icon: "💬", label: "System Prompts", count: 3 },
     { id: "p-knowledge", icon: "📚", label: "Knowledge Base", count: 3 },
