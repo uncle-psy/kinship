@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kinship Studio — Information Architecture Prototype</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0B1121; overflow: hidden; }
+  button { font-family: inherit; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #334155; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+const colors = {
+  bg: "#0B1121", surface: "#111827", surfaceHover: "#1A2332", surfaceActive: "#1E293B",
+  border: "#1E293B", borderSubtle: "#162031", text: "#E2E8F0", textMuted: "#94A3B8",
+  textDim: "#64748B", accent: "#10B981", accentHover: "#34D399", accentDim: "#065F46",
+  warning: "#F59E0B", pink: "#EC4899", purple: "#8B5CF6", blue: "#3B82F6",
+  cyan: "#06B6D4", white: "#FFFFFF",
+};
+
+const Badge = ({ count, color = colors.accent }) => (
+  count > 0 ? (
+    <span style={{ fontSize: 11, fontWeight: 600, background: color + "22", color, borderRadius: 10, padding: "1px 7px", marginLeft: 8, minWidth: 20, textAlign: "center" }}>
+      {count}
+    </span>
+  ) : null
+);
+
+const SectionLabel = ({ children }) => (
+  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: colors.textDim, textTransform: "uppercase", padding: "16px 16px 6px", userSelect: "none" }}>
+    {children}
+  </div>
+);
+
+const NavItem = ({ icon, label, active, count, onClick, locked = false }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 10, width: "100%",
+        padding: "8px 16px",
+        background: active ? colors.accentDim + "44" : hovered ? colors.surfaceHover : "transparent",
+        border: "none", borderRadius: 6, cursor: "pointer",
+        borderLeft: active ? `2px solid ${colors.accent}` : "2px solid transparent",
+        transition: "all 0.15s",
+      }}
+    >
+      <span style={{ fontSize: 16, opacity: locked ? 0.4 : 0.8 }}>{icon}</span>
+      <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? colors.accent : locked ? colors.textDim : colors.text, flex: 1, textAlign: "left" }}>
+        {label}
+      </span>
+      {locked && <span style={{ fontSize: 10, color: colors.textDim }}>🔒</span>}
+      <Badge count={count} />
+    </button>
+  );
+};
+
+const CycleSelector = ({ current, onSwitch, isWizard }) => {
+  const [open, setOpen] = useState(false);
+  const cycles = [
+    { id: "platform", name: "⚙️  Platform Settings", type: "platform" },
+    { id: "mountain", name: "🏔️  Mountain Temple", type: "cycle" },
+    { id: "ocean", name: "🌊  Ocean Depths", type: "cycle" },
+    { id: "forest", name: "🌲  Dark Forest", type: "cycle" },
+  ];
+  const selected = cycles.find(c => c.id === current) || cycles[1];
+
+  return (
+    <div style={{ position: "relative", margin: "8px 12px", userSelect: "none" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex", alignItems: "center", gap: 8, width: "100%",
+          padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`,
+          borderRadius: 8, cursor: "pointer", color: colors.text,
+        }}
+      >
+        <span style={{ fontSize: 14, flex: 1, textAlign: "left", fontWeight: 600 }}>{selected.name}</span>
+        <span style={{ fontSize: 10, color: colors.textDim }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4,
+          background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8,
+          overflow: "hidden", zIndex: 100, boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+        }}>
+          {isWizard && (
+            <DropdownItem
+              label="⚙️  Platform Settings"
+              active={current === "platform"}
+              badge={<span style={{ fontSize: 10, marginLeft: 8, color: colors.warning, background: colors.warning + "22", padding: "2px 6px", borderRadius: 4 }}>WIZARD</span>}
+              onClick={() => { onSwitch("platform"); setOpen(false); }}
+              borderBottom
+            />
+          )}
+          <div style={{ padding: "6px 0" }}>
+            {cycles.filter(c => c.type === "cycle").map(c => (
+              <DropdownItem key={c.id} label={c.name} active={current === c.id} onClick={() => { onSwitch(c.id); setOpen(false); }} />
+            ))}
+          </div>
+          <DropdownItem label="+ New Cycle" onClick={() => setOpen(false)} borderTop accentColor={colors.accent} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+const DropdownItem = ({ label, active, badge, onClick, borderBottom, borderTop, accentColor }) => {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        padding: "10px 12px", cursor: "pointer", fontSize: 13,
+        background: active ? colors.accentDim + "44" : hovered ? colors.surfaceHover : "transparent",
+        color: accentColor || (active ? colors.accent : colors.text),
+        borderBottom: borderBottom ? `1px solid ${colors.border}` : "none",
+        borderTop: borderTop ? `1px solid ${colors.border}` : "none",
+      }}
+    >
+      {label}{badge}
+    </div>
+  );
+};
+
+const ListItem = ({ icon, name, account, status, statusColor, onClick }) => {
+  const [hovered, setHovered] = useState(false);
+  const isGood = ["Connected","Active","Ingested","Published"].includes(status);
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "flex", alignItems: "center", gap: 12, padding: "14px 16px",
+        background: colors.surface, border: `1px solid ${hovered ? (statusColor || colors.accent) + "44" : colors.border}`,
+        borderRadius: 8, cursor: "pointer", transition: "border-color 0.15s",
+      }}
+    >
+      <span style={{ fontSize: 20 }}>{icon}</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{name}</div>
+        {account && <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{account}</div>}
+      </div>
+      {status && <span style={{
+        fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 4,
+        background: (isGood ? colors.accent : colors.warning) + "22",
+        color: isGood ? colors.accent : colors.warning,
+      }}>{status}</span>}
+      <span style={{ color: colors.textDim, fontSize: 14 }}>→</span>
+    </div>
+  );
+};
+
+const PlatformContent = ({ page }) => {
+  const pages = {
+    "p-tools": {
+      title: "Platform Tools & Connectors",
+      subtitle: "Manage integrations available to all creators across all cycles",
+      items: [
+        { name: "BlueSky", status: "Connected", icon: "🦋", account: "@kinship.bsky.social" },
+        { name: "Telegram", status: "Connected", icon: "✈️", account: "KinshipBot" },
+        { name: "Google Workspace", status: "Connected", icon: "📧", account: "admin@kinship.today" },
+        { name: "LinkedIn", status: "Pending Setup", icon: "💼", account: "Chrome plugin required" },
+        { name: "Solana RPC", status: "Connected", icon: "◎", account: "mainnet-beta" },
+      ]
+    },
+    "p-prompts": {
+      title: "Platform System Prompts",
+      subtitle: "Base-layer prompts inherited by all cycles unless overridden",
+      items: [
+        { name: "Global Safety & Guardrails", status: "Active", icon: "🛡️" },
+        { name: "HEARTS Framework Base", status: "Active", icon: "💚" },
+        { name: "Actor Behavioral Defaults", status: "Draft", icon: "🎭" },
+      ]
+    },
+    "p-knowledge": {
+      title: "Platform Knowledge Base",
+      subtitle: "Shared knowledge documents and databases available to all cycles",
+      items: [
+        { name: "HEARTS Framework Reference", status: "Ingested", icon: "📚" },
+        { name: "Platform Policies", status: "Ingested", icon: "📋" },
+        { name: "Kinship Systems Overview", status: "Ingested", icon: "🏛️" },
+      ]
+    },
+    "p-databases": {
+      title: "Platform Databases",
+      subtitle: "Vector stores and structured databases shared across all cycles",
+      items: [
+        { name: "Pinecone — Platform Knowledge", status: "Active", icon: "🌲", account: "3 namespaces, 12K vectors" },
+        { name: "Supabase — Users & Auth", status: "Active", icon: "⚡", account: "24 tables" },
+        { name: "Supabase — Commerce", status: "Active", icon: "💰", account: "8 tables" },
+      ]
+    },
+    "p-templates": {
+      title: "Templates & Starters",
+      subtitle: "Pre-built components creators can use in their cycles",
+      items: [
+        { name: "Quest: Introduction Arc", status: "Published", icon: "📖" },
+        { name: "Scene: Meditation Garden", status: "Published", icon: "🏞️" },
+        { name: "Actor: Wise Guide", status: "Draft", icon: "🧙" },
+        { name: "Scene: Trading Post", status: "Published", icon: "🏪" },
+      ]
+    },
+    "p-teams": {
+      title: "Teams & Roles",
+      subtitle: "Manage team membership and permissions across the platform",
+      items: [
+        { name: "Core Team", status: "5 members", icon: "👥" },
+        { name: "Content Creators", status: "12 members", icon: "✏️" },
+        { name: "Guest Builders", status: "3 members", icon: "🎫" },
+      ]
+    },
+    "p-commerce": {
+      title: "Platform Commerce",
+      subtitle: "Solana integration, coins, and marketplace settings",
+      items: [
+        { name: "Kinship Coin (KNSHP)", status: "Active", icon: "◎", account: "Supply: 1B, Price: $0.0042" },
+        { name: "Embedded Wallet Config", status: "Active", icon: "👛" },
+        { name: "Marketplace Fees", status: "2.5% platform fee", icon: "📊" },
+        { name: "Bonding Curve Defaults", status: "Linear", icon: "📈" },
+      ]
+    },
+  };
+  const p = pages[page] || pages["p-tools"];
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0 }}>{p.title}</h1>
+          <p style={{ fontSize: 13, color: colors.textDim, margin: "4px 0 0" }}>{p.subtitle}</p>
+        </div>
+        <button style={{ padding: "8px 16px", background: colors.accent, color: colors.bg, border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>+ Add New</button>
+      </div>
+      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 8 }}>
+        {p.items.map((item, i) => <ListItem key={i} {...item} />)}
+      </div>
+    </div>
+  );
+};
+
+const CycleContent = ({ page, context }) => {
+  const cycleName = { mountain: "Mountain Temple", ocean: "Ocean Depths", forest: "Dark Forest" }[context] || "Cycle";
+
+  if (page === "overview") {
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0 }}>🏔️ {cycleName}</h1>
+            <p style={{ fontSize: 13, color: colors.textDim, margin: "4px 0 0" }}>Cycle overview and quick actions</p>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button style={{ padding: "8px 14px", background: "transparent", color: colors.textMuted, border: `1px solid ${colors.border}`, borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Transfer Ownership</button>
+            <button style={{ padding: "8px 14px", background: colors.accent, color: colors.bg, border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Preview Cycle</button>
+          </div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 24 }}>
+          {[
+            { label: "Scenes", count: 4, icon: "🗺️", color: colors.blue },
+            { label: "Quests", count: 2, icon: "⚔️", color: colors.purple },
+            { label: "Actors", count: 7, icon: "🎭", color: colors.pink },
+            { label: "Challenges", count: 3, icon: "⚡", color: colors.warning },
+            { label: "Assets", count: 69, icon: "🎨", color: colors.cyan },
+            { label: "Offerings", count: 5, icon: "🏪", color: colors.accent },
+          ].map((s, i) => {
+            const [h, setH] = useState(false);
+            return (
+              <div key={i} style={{ padding: 20, background: colors.surface, border: `1px solid ${h ? s.color + "66" : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s" }}
+                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 28 }}>{s.icon}</span>
+                  <span style={{ fontSize: 24, fontWeight: 700, color: s.color }}>{s.count}</span>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: colors.text, marginTop: 12 }}>{s.label}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ marginTop: 32 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: colors.textMuted, marginBottom: 12 }}>GETTING STARTED</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[
+              { step: "1", text: "Create your first Scene — the environment where players explore", done: true },
+              { step: "2", text: "Add Actors — characters that players can interact and chat with", done: true },
+              { step: "3", text: "Design Quests — narrative arcs that thread through your scenes", done: false },
+              { step: "4", text: "Connect Tools — give your actors access to external services", done: false },
+              { step: "5", text: "Set up Offerings — things players can buy, earn, or trade", done: false },
+              { step: "6", text: "Configure your Cycle's coin and economy", done: false },
+            ].map((s, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 12, padding: "12px 16px",
+                background: s.done ? colors.accentDim + "22" : colors.surface,
+                border: `1px solid ${s.done ? colors.accent + "33" : colors.border}`,
+                borderRadius: 8, opacity: s.done ? 0.7 : 1,
+              }}>
+                <span style={{
+                  width: 24, height: 24, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 12, fontWeight: 700,
+                  background: s.done ? colors.accent : colors.surfaceActive,
+                  color: s.done ? colors.bg : colors.textMuted,
+                }}>{s.done ? "✓" : s.step}</span>
+                <span style={{ fontSize: 13, color: s.done ? colors.textDim : colors.text, textDecoration: s.done ? "line-through" : "none" }}>{s.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginTop: 32 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: colors.textMuted, marginBottom: 12 }}>TEAM</h3>
+          <div style={{ display: "flex", gap: 8 }}>
+            {["DL", "SK", "MR"].map((initials, i) => (
+              <div key={i} style={{ width: 36, height: 36, borderRadius: 18, background: [colors.accent, colors.purple, colors.pink][i], display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: colors.white }}>{initials}</div>
+            ))}
+            <div style={{ width: 36, height: 36, borderRadius: 18, background: colors.surfaceActive, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, color: colors.textDim, cursor: "pointer", border: `1px dashed ${colors.textDim}` }}>+</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (page === "scenes") {
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0 }}>Scenes</h1>
+            <p style={{ fontSize: 13, color: colors.textDim, margin: "4px 0 0" }}>Isometric environments where players explore and interact</p>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button style={{ padding: "8px 14px", background: "transparent", color: colors.textMuted, border: `1px solid ${colors.border}`, borderRadius: 6, fontSize: 12, cursor: "pointer" }}>From Template</button>
+            <button style={{ padding: "8px 14px", background: colors.accent, color: colors.bg, border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ New Scene</button>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, margin: "16px 0" }}>
+          <input placeholder="Search scenes..." style={{ flex: 1, padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 13, outline: "none" }} />
+          <select style={{ padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 13 }}>
+            <option>All Types</option>
+          </select>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+          {[
+            { name: "Mountain Temple Gardens", type: "Meditation", status: "Active", actors: 3, assets: 12 },
+            { name: "Crystal Caves", type: "Exploration", status: "Active", actors: 2, assets: 8 },
+            { name: "Training Grounds", type: "Challenge", status: "Draft", actors: 4, assets: 15 },
+            { name: "Market Square", type: "Commerce", status: "Draft", actors: 5, assets: 22 },
+          ].map((s, i) => {
+            const [h, setH] = useState(false);
+            return (
+              <div key={i} style={{ background: colors.surface, border: `1px solid ${h ? colors.accent + "44" : colors.border}`, borderRadius: 10, overflow: "hidden", cursor: "pointer", transition: "border-color 0.15s" }}
+                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
+                <div style={{ height: 120, background: `linear-gradient(135deg, ${colors.surfaceActive}, ${colors.bg})`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 40, opacity: 0.4 }}>🗺️</span>
+                </div>
+                <div style={{ padding: "14px 16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{s.name}</span>
+                    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: (s.status === "Active" ? colors.accent : colors.warning) + "22", color: s.status === "Active" ? colors.accent : colors.warning }}>{s.status}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginTop: 4 }}>{s.type}</div>
+                  <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: 11, color: colors.textMuted }}>
+                    <span>🎭 {s.actors} actors</span>
+                    <span>🎨 {s.assets} assets</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (page === "actors") {
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0 }}>Actors</h1>
+            <p style={{ fontSize: 13, color: colors.textDim, margin: "4px 0 0" }}>AI characters that interact with players — reusable across scenes and cycles</p>
+          </div>
+          <button style={{ padding: "8px 16px", background: colors.accent, color: colors.bg, border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>+ New Actor</button>
+        </div>
+        <div style={{ display: "flex", gap: 8, margin: "16px 0", flexWrap: "wrap" }}>
+          {["All", "H", "E", "A", "R", "T", "Si", "So"].map((f, i) => (
+            <span key={i} style={{ padding: "4px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600, cursor: "pointer", background: i === 0 ? colors.accent : colors.surfaceActive, color: i === 0 ? colors.bg : colors.textMuted }}>{f}</span>
+          ))}
+          <span style={{ margin: "0 8px", color: colors.textDim }}>|</span>
+          {["All", "Draft", "Active", "Shared"].map((f, i) => (
+            <span key={i} style={{ padding: "4px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600, cursor: "pointer", background: i === 0 ? colors.accent : colors.surfaceActive, color: i === 0 ? colors.bg : colors.textMuted }}>{f}</span>
+          ))}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[
+            { name: "Elder Sage", role: "Guide & Mentor", facets: ["H", "E", "T"], scenes: 3, tools: ["📧"], status: "Active", reachable: "Email, In-app" },
+            { name: "Market Keeper", role: "Commerce & Trading", facets: ["R", "A"], scenes: 1, tools: ["◎", "📧"], status: "Active", reachable: "In-app" },
+            { name: "Forest Spirit", role: "Emotional Support", facets: ["H", "Si"], scenes: 2, tools: [], status: "Draft", reachable: "In-app" },
+            { name: "Challenge Master", role: "Training & Growth", facets: ["E", "R", "T"], scenes: 2, tools: ["✈️"], status: "Active", reachable: "Telegram, In-app" },
+            { name: "Story Weaver", role: "Narrative & Lore", facets: ["A", "So"], scenes: 4, tools: ["🦋"], status: "Active", reachable: "BlueSky, In-app" },
+          ].map((a, i) => {
+            const [h, setH] = useState(false);
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: colors.surface, border: `1px solid ${h ? colors.pink + "44" : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "border-color 0.15s" }}
+                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
+                <div style={{ width: 40, height: 40, borderRadius: 20, background: colors.pink + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🎭</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{a.name}</span>
+                    <span style={{ fontSize: 11, color: colors.textDim }}>— {a.role}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 12, marginTop: 4, fontSize: 11, color: colors.textMuted }}>
+                    <span>🗺️ {a.scenes} scenes</span>
+                    <span>📡 {a.reachable}</span>
+                    {a.tools.length > 0 && <span>🔧 {a.tools.join(" ")}</span>}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {a.facets.map((f, j) => (
+                    <span key={j} style={{ fontSize: 10, fontWeight: 700, width: 22, height: 22, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", background: colors.accent + "22", color: colors.accent }}>{f}</span>
+                  ))}
+                </div>
+                <span style={{ fontSize: 11, padding: "3px 8px", borderRadius: 4, background: (a.status === "Active" ? colors.accent : colors.warning) + "22", color: a.status === "Active" ? colors.accent : colors.warning }}>{a.status}</span>
+                <span style={{ color: colors.textDim, fontSize: 14 }}>→</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (page === "tools") {
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0 }}>Cycle Tools</h1>
+            <p style={{ fontSize: 13, color: colors.textDim, margin: "4px 0 0" }}>Connectors and integrations specific to this cycle</p>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button style={{ padding: "8px 14px", background: "transparent", color: colors.textMuted, border: `1px solid ${colors.border}`, borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Create Custom Tool</button>
+            <button style={{ padding: "8px 14px", background: colors.accent, color: colors.bg, border: "none", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>+ Connect Tool</button>
+          </div>
+        </div>
+        <div style={{ marginTop: 16, padding: "12px 16px", background: colors.warning + "11", border: `1px solid ${colors.warning}33`, borderRadius: 8 }}>
+          <span style={{ fontSize: 12, color: colors.warning }}>ℹ️ Platform-level tools (BlueSky, Telegram, Google, Solana) are inherited automatically. Add cycle-specific connections below.</span>
+        </div>
+        <h3 style={{ fontSize: 13, fontWeight: 600, color: colors.textDim, marginTop: 24, marginBottom: 12 }}>INHERITED FROM PLATFORM</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, opacity: 0.6 }}>
+          {[
+            { name: "BlueSky", icon: "🦋" },
+            { name: "Telegram", icon: "✈️" },
+            { name: "Google Workspace", icon: "📧" },
+            { name: "Solana", icon: "◎" },
+          ].map((t, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: colors.surface, border: `1px solid ${colors.borderSubtle}`, borderRadius: 6 }}>
+              <span style={{ fontSize: 16 }}>{t.icon}</span>
+              <span style={{ flex: 1, fontSize: 13, color: colors.textMuted }}>{t.name}</span>
+              <span style={{ fontSize: 10, color: colors.textDim, background: colors.surfaceActive, padding: "2px 6px", borderRadius: 4 }}>🔒 Platform</span>
+            </div>
+          ))}
+        </div>
+        <h3 style={{ fontSize: 13, fontWeight: 600, color: colors.textDim, marginTop: 24, marginBottom: 12 }}>CYCLE-SPECIFIC</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {[
+            { name: "Meditation Timer API", icon: "🧘", type: "Custom" },
+            { name: "Weather Service", icon: "🌤️", type: "REST API" },
+          ].map((t, i) => {
+            const [h, setH] = useState(false);
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: colors.surface, border: `1px solid ${h ? colors.accent + "44" : colors.border}`, borderRadius: 6, cursor: "pointer" }}
+                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
+                <span style={{ fontSize: 16 }}>{t.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 13, color: colors.text }}>{t.name}</span>
+                  <span style={{ fontSize: 11, color: colors.textDim, marginLeft: 8 }}>{t.type}</span>
+                </div>
+                <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: colors.accent + "22", color: colors.accent }}>Connected</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (page === "offerings") {
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0 }}>Offerings</h1>
+            <p style={{ fontSize: 13, color: colors.textDim, margin: "4px 0 0" }}>Digital goods, physical products, services, and subscriptions</p>
+          </div>
+          <button style={{ padding: "8px 16px", background: colors.accent, color: colors.bg, border: "none", borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>+ New Offering</button>
+        </div>
+        <div style={{ display: "flex", gap: 8, margin: "16px 0" }}>
+          {["All", "Digital", "Physical", "Service", "Subscription"].map((f, i) => (
+            <span key={i} style={{ padding: "4px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600, cursor: "pointer", background: i === 0 ? colors.accent : colors.surfaceActive, color: i === 0 ? colors.bg : colors.textMuted }}>{f}</span>
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+          {[
+            { name: "Crystal Cave Scene Pack", type: "Digital", price: "500 KNSHP", icon: "🗺️", sales: 23 },
+            { name: "Meditation Guide Prompt", type: "Digital", price: "Free", icon: "📜", sales: 156 },
+            { name: "Monthly Creator Pass", type: "Subscription", price: "2000 KNSHP/mo", icon: "🎫", sales: 45 },
+            { name: "Custom Actor Commission", type: "Service", price: "5000 KNSHP", icon: "🎭", sales: 8 },
+          ].map((o, i) => {
+            const [h, setH] = useState(false);
+            return (
+              <div key={i} style={{ padding: 16, background: colors.surface, border: `1px solid ${h ? colors.accent + "44" : colors.border}`, borderRadius: 8, cursor: "pointer" }}
+                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 24 }}>{o.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{o.name}</div>
+                    <div style={{ fontSize: 11, color: colors.textDim }}>{o.type}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 12 }}>
+                  <span style={{ color: colors.accent, fontWeight: 600 }}>{o.price}</span>
+                  <span style={{ color: colors.textMuted }}>{o.sales} sold</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  if (page === "economy") {
+    return (
+      <div>
+        <div style={{ marginBottom: 8 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, margin: 0 }}>Cycle Economy</h1>
+          <p style={{ fontSize: 13, color: colors.textDim, margin: "4px 0 0" }}>Coin, wallet, and economic settings for this cycle</p>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginTop: 24 }}>
+          <div style={{ padding: 20, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+            <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 8 }}>CYCLE COIN</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>◎ Temple Coin (TMPL)</div>
+            <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 8 }}>Supply: 100M</div>
+            <div style={{ fontSize: 12, color: colors.textMuted }}>Bonding Curve: Exponential</div>
+            <div style={{ fontSize: 12, color: colors.textMuted }}>Traded against: KNSHP</div>
+            <button style={{ marginTop: 16, padding: "6px 14px", background: "transparent", color: colors.accent, border: `1px solid ${colors.accent}44`, borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Configure</button>
+          </div>
+          <div style={{ padding: 20, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+            <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 8 }}>WALLET BALANCE</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: colors.accent }}>12,450 KNSHP</div>
+            <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 8 }}>250,000 TMPL</div>
+            <div style={{ fontSize: 12, color: colors.textMuted }}>0.45 SOL</div>
+            <button style={{ marginTop: 16, padding: "6px 14px", background: "transparent", color: colors.accent, border: `1px solid ${colors.accent}44`, borderRadius: 6, fontSize: 12, cursor: "pointer" }}>View Wallet</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback
+  return (
+    <div>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text }}>{page.charAt(0).toUpperCase() + page.slice(1)}</h1>
+      <p style={{ fontSize: 13, color: colors.textDim, marginTop: 4 }}>Content for {page} will go here.</p>
+      <div style={{ marginTop: 40, padding: 40, background: colors.surface, border: `1px dashed ${colors.border}`, borderRadius: 10, textAlign: "center" }}>
+        <span style={{ fontSize: 40, opacity: 0.3 }}>🚧</span>
+        <p style={{ fontSize: 14, color: colors.textDim, marginTop: 12 }}>This section is part of the redesign scope</p>
+      </div>
+    </div>
+  );
+};
+
+function App() {
+  const [context, setContext] = useState("mountain");
+  const [page, setPage] = useState("overview");
+  const [isWizard, setIsWizard] = useState(true);
+  const isPlatform = context === "platform";
+
+  const platformNav = [
+    { id: "p-tools", icon: "🔧", label: "Tools & Connectors", count: 5 },
+    { id: "p-prompts", icon: "💬", label: "System Prompts", count: 3 },
+    { id: "p-knowledge", icon: "📚", label: "Knowledge Base", count: 3 },
+    { id: "p-databases", icon: "🗄️", label: "Databases", count: 3 },
+    { id: "p-templates", icon: "📦", label: "Templates", count: 4 },
+    { id: "p-teams", icon: "👥", label: "Teams & Roles", count: 3 },
+    { id: "p-commerce", icon: "💰", label: "Commerce & Coins", count: 4 },
+  ];
+
+  const cycleNav = {
+    create: [
+      { id: "overview", icon: "📋", label: "Overview" },
+      { id: "scenes", icon: "🗺️", label: "Scenes", count: 4 },
+      { id: "quests", icon: "⚔️", label: "Quests", count: 2 },
+      { id: "actors", icon: "🎭", label: "Actors", count: 7 },
+      { id: "challenges", icon: "⚡", label: "Challenges", count: 3 },
+      { id: "assets", icon: "🎨", label: "Assets", count: 69 },
+    ],
+    connect: [
+      { id: "tools", icon: "🔧", label: "Tools", count: 6 },
+      { id: "prompts", icon: "💬", label: "Prompts", count: 2 },
+      { id: "knowledge", icon: "📚", label: "Knowledge", count: 1 },
+    ],
+    commerce: [
+      { id: "offerings", icon: "🏪", label: "Offerings", count: 5 },
+      { id: "economy", icon: "◎", label: "Economy" },
+    ],
+    manage: [
+      { id: "routes", icon: "🛤️", label: "Routes" },
+      { id: "progress", icon: "📊", label: "Progress" },
+      { id: "team", icon: "👥", label: "Team", count: 3 },
+    ],
+  };
+
+  return (
+    <div style={{ display: "flex", height: "100vh", background: colors.bg, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: colors.text, overflow: "hidden" }}>
+      <div style={{ width: 220, minWidth: 220, height: "100%", background: colors.bg, borderRight: `1px solid ${colors.border}`, display: "flex", flexDirection: "column", overflowY: "auto" }}>
+        <div style={{ padding: 16, display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 22 }}>🔥</span>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: colors.text, letterSpacing: 0.5 }}>KINSHIP</div>
+            <div style={{ fontSize: 10, color: colors.accent, fontWeight: 600, letterSpacing: 1 }}>STUDIO</div>
+          </div>
+        </div>
+        <CycleSelector current={context} onSwitch={(id) => { setContext(id); setPage(id === "platform" ? "p-tools" : "overview"); }} isWizard={isWizard} />
+        <div style={{ flex: 1, padding: "4px 8px", overflowY: "auto" }}>
+          {isPlatform ? (
+            <>
+              <SectionLabel>Platform Administration</SectionLabel>
+              {platformNav.map(item => (
+                <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />
+              ))}
+            </>
+          ) : (
+            <>
+              <SectionLabel>Create</SectionLabel>
+              {cycleNav.create.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />)}
+              <SectionLabel>Connect</SectionLabel>
+              {cycleNav.connect.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />)}
+              <SectionLabel>Commerce</SectionLabel>
+              {cycleNav.commerce.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />)}
+              <SectionLabel>Manage</SectionLabel>
+              {cycleNav.manage.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />)}
+            </>
+          )}
+        </div>
+        <div style={{ padding: "12px 16px", borderTop: `1px solid ${colors.border}`, display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 16, background: colors.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: colors.bg }}>DL</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>David Levine</div>
+            <div style={{ fontSize: 10, color: isWizard ? colors.warning : colors.accent }}>{isWizard ? "Wizard" : "Creator"}</div>
+          </div>
+          <button onClick={() => setIsWizard(!isWizard)} title={isWizard ? "Switch to Creator view" : "Switch to Wizard view"}
+            style={{ fontSize: 10, background: "transparent", border: `1px solid ${colors.border}`, borderRadius: 4, padding: "2px 6px", color: colors.textDim, cursor: "pointer" }}>
+            {isWizard ? "👑" : "✏️"}
+          </button>
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
+        <div style={{ marginBottom: 20, fontSize: 12, color: colors.textDim }}>
+          {isPlatform ? (
+            <span>⚙️ Platform Settings</span>
+          ) : (
+            <span>🏔️ {({ mountain: "Mountain Temple", ocean: "Ocean Depths", forest: "Dark Forest" })[context]} <span style={{ margin: "0 6px" }}>/</span> <span style={{ color: colors.textMuted }}>{page.charAt(0).toUpperCase() + page.slice(1)}</span></span>
+          )}
+        </div>
+        {isPlatform ? <PlatformContent page={page} /> : <CycleContent page={page} context={context} />}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>
