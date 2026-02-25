@@ -85,15 +85,15 @@ const NavItem = ({ icon, label, active, count, onClick }) => {
   );
 };
 
-const CycleSelector = ({ current, onSwitch, isWizard }) => {
+const CycleSelector = ({ current, onSwitch, isWizard, extraCycles = [], onNewCycle }) => {
   const [open, setOpen] = useState(false);
-  const cycles = [
-    { id: "platform", name: "⚙️  Platform Settings", type: "platform" },
+  const builtInCycles = [
     { id: "mountain", name: "🏔️  Mountain Temple", type: "cycle" },
     { id: "ocean", name: "🌊  Ocean Depths", type: "cycle" },
     { id: "forest", name: "🌲  Dark Forest", type: "cycle" },
   ];
-  const selected = cycles.find(c => c.id === current) || cycles[1];
+  const allCycles = [...builtInCycles, ...extraCycles];
+  const selected = allCycles.find(c => c.id === current) || (current === "platform" ? { name: "⚙️  Platform Settings" } : builtInCycles[0]);
   return (
     <div style={{ position: "relative", margin: "10px 12px 4px", userSelect: "none" }}>
       <button onClick={() => setOpen(!open)}
@@ -108,12 +108,12 @@ const CycleSelector = ({ current, onSwitch, isWizard }) => {
               badge={<span style={{ fontSize: 10, marginLeft: 8, color: colors.warning, background: colors.warning + "22", padding: "2px 6px", borderRadius: 4 }}>WIZARD</span>}
               onClick={() => { onSwitch("platform"); setOpen(false); }} borderBottom />
           )}
-          <div style={{ padding: "6px 0" }}>
-            {cycles.filter(c => c.type === "cycle").map(c => (
+          <div style={{ padding: "6px 0", maxHeight: 200, overflowY: "auto" }}>
+            {allCycles.map(c => (
               <DropdownItem key={c.id} label={c.name} active={current === c.id} onClick={() => { onSwitch(c.id); setOpen(false); }} />
             ))}
           </div>
-          <DropdownItem label="+ New Cycle" onClick={() => setOpen(false)} borderTop accentColor={colors.accent} />
+          <DropdownItem label="+ New Cycle" onClick={() => { setOpen(false); onNewCycle && onNewCycle(); }} borderTop accentColor={colors.accent} />
         </div>
       )}
     </div>
@@ -5192,6 +5192,285 @@ const loadSession = () => {
   } catch (e) {}
   return null;
 };
+// ─── New Cycle Wizard ─────────────────────────────────────────────────────────
+
+const CYCLE_STARTER_OPTIONS = [
+  { id: "mountain-temple", icon: "🏔️", name: "Mountain Temple Starter", desc: "Structured initiation arc with meditation, trading, and challenge scenes. Best for inner work and rites of passage.", scenes: ["Meditation Garden", "Trading Post", "Summit Challenge"], actors: ["Wise Guide"], quests: 2 },
+  { id: "ocean-depths", icon: "🌊", name: "Ocean Depths Starter", desc: "Fluid exploration cycle designed for creative journeys and emotional depth. Includes open scene structures.", scenes: ["Tidal Cave", "Kelp Forest", "The Abyss"], actors: ["Navigator"], quests: 1 },
+  { id: "blank", icon: "✨", name: "Start from Scratch", desc: "A clean slate. Build your own scenes, quests, and actor lineup from the ground up.", scenes: [], actors: [], quests: 0 },
+];
+
+const CYCLE_EMOJIS = ["🏔️","🌊","🌲","🔥","🌙","⚡","🌀","🪐","🌺","🏜️","❄️","🌈","🗺️","🔮","🏰","🌿","🦋","🌊","💎","🕯️"];
+const CYCLE_ACCESS_TYPES = [
+  { id: "private", icon: "🔒", label: "Private", desc: "Only people you invite can find or join." },
+  { id: "invite", icon: "🔗", label: "Invite-only", desc: "Discoverable, but joining requires an invitation or code." },
+  { id: "public", icon: "🌐", label: "Public", desc: "Anyone on the platform can find and join." },
+];
+
+const PLATFORM_ACTORS_FOR_PICKER = [
+  { id: "moto", icon: "🦘", name: "moto", type: "Orchestrator", desc: "Platform orchestrator with full context. Best for complex, multi-scene cycles." },
+  { id: "kaytee", icon: "✨", name: "Kaytee", type: "Guide", desc: "Warm, emotionally attuned guide. Ideal for inner work and reflective cycles." },
+];
+
+const NewCycleModal = ({ onClose, onCreate }) => {
+  const [step, setStep] = useState(1);
+  const TOTAL_STEPS = 5;
+  const [starter, setStarter] = useState(null);
+  const [form, setForm] = useState({ name: "", emoji: "🌀", desc: "", access: "private" });
+  const [selectedActor, setSelectedActor] = useState(null);
+  const [selectedScenes, setSelectedScenes] = useState([]);
+  const f = (k, v) => setForm(d => ({ ...d, [k]: v }));
+
+  const SCENE_OPTIONS = [
+    { id: "meditation", icon: "🏞️", name: "Meditation Garden", desc: "Calm, reflective space. Opens with ambient audio prompt." },
+    { id: "trading-post", icon: "🏪", name: "Trading Post", desc: "Exchange and decision-making space. Good for resource or value moments." },
+    { id: "council", icon: "🔥", name: "Council Fire", desc: "Group ritual space. Supports multiple participants in structured dialogue." },
+    { id: "archive", icon: "📚", name: "The Archive", desc: "Knowledge and memory space. Good for reflection, documentation, and lore." },
+    { id: "threshold", icon: "🌀", name: "The Threshold", desc: "Transitional scene marking a shift in phase, identity, or intention." },
+    { id: "market", icon: "🛍️", name: "Open Market", desc: "Commerce and offering space. Connects to platform marketplace." },
+  ];
+
+  const inputStyle = { background: "rgba(255,255,255,0.06)", border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 9, padding: "10px 14px", color: "#fff", fontSize: 14, width: "100%", outline: "none" };
+  const labelStyle = { fontSize: 11, color: "rgba(205,205,205,0.6)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 };
+
+  const toggleScene = (id) => setSelectedScenes(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+
+  const starterScenes = starter && starter.id !== "blank" ? starter.scenes : [];
+  const allScenes = [...new Set([...starterScenes, ...selectedScenes.map(id => SCENE_OPTIONS.find(s => s.id === id)?.name).filter(Boolean)])];
+
+  const canProceed = () => {
+    if (step === 1) return starter !== null;
+    if (step === 2) return form.name.trim().length > 0;
+    return true;
+  };
+
+  const StepDot = ({ n }) => (
+    <div style={{ width: n === step ? 24 : 8, height: 8, borderRadius: 4, background: n < step ? colors.accent : n === step ? colors.accent : "rgba(255,255,255,0.15)", transition: "all 0.2s" }} />
+  );
+
+  const handleCreate = () => {
+    const actor = selectedActor ? PLATFORM_ACTORS_FOR_PICKER.find(a => a.id === selectedActor) : null;
+    onCreate({ ...form, starter: starter?.id, scenes: allScenes, actor: actor?.name || null });
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(5,8,36,0.92)", backdropFilter: "blur(12px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: 620, maxHeight: "90vh", background: "#09073A", border: `1px solid rgba(255,255,255,0.14)`, borderRadius: 18, display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 40px 100px rgba(0,0,0,0.7)" }}>
+
+        {/* Header */}
+        <div style={{ padding: "20px 28px 16px", borderBottom: `1px solid rgba(255,255,255,0.08)`, display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 2 }}>New Cycle</div>
+            <div style={{ fontSize: 12, color: "rgba(205,205,205,0.6)" }}>Step {step} of {TOTAL_STEPS}</div>
+          </div>
+          <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+            {[1,2,3,4,5].map(n => <StepDot key={n} n={n} />)}
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "rgba(205,205,205,0.5)", fontSize: 20, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "24px 28px" }}>
+
+          {/* Step 1: Starting Point */}
+          {step === 1 && (
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 6 }}>Choose a starting point</div>
+              <div style={{ fontSize: 13, color: "rgba(205,205,205,0.6)", marginBottom: 22 }}>Starters give you a pre-built scaffold — scenes, actors, and quests ready to customize.</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {CYCLE_STARTER_OPTIONS.map(opt => {
+                  const isSelected = starter?.id === opt.id;
+                  return (
+                    <div key={opt.id} onClick={() => setStarter(opt)}
+                      style={{ display: "flex", gap: 16, padding: "16px 18px", background: isSelected ? colors.accent + "12" : "rgba(255,255,255,0.04)", border: `2px solid ${isSelected ? colors.accent : "rgba(255,255,255,0.08)"}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
+                      <span style={{ fontSize: 28, lineHeight: 1, marginTop: 2 }}>{opt.icon}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 4 }}>{opt.name}</div>
+                        <div style={{ fontSize: 12, color: "rgba(205,205,205,0.65)", lineHeight: 1.55, marginBottom: opt.scenes.length ? 8 : 0 }}>{opt.desc}</div>
+                        {opt.scenes.length > 0 && (
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            {opt.scenes.map(s => <span key={s} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: "rgba(255,255,255,0.08)", color: "rgba(205,205,205,0.7)" }}>{s}</span>)}
+                            {opt.actors.map(a => <span key={a} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: colors.accent + "18", color: colors.accent }}>🎙️ {a}</span>)}
+                          </div>
+                        )}
+                      </div>
+                      {isSelected && <div style={{ width: 20, height: 20, borderRadius: 10, background: colors.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}>✓</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Name & Identity */}
+          {step === 2 && (
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 6 }}>Name your cycle</div>
+              <div style={{ fontSize: 13, color: "rgba(205,205,205,0.6)", marginBottom: 24 }}>Give it a name and character. You can change all of this later.</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                <div>
+                  <div style={labelStyle}>Emoji</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                    {CYCLE_EMOJIS.map(em => (
+                      <button key={em} onClick={() => f("emoji", em)}
+                        style={{ width: 38, height: 38, borderRadius: 9, border: `2px solid ${form.emoji === em ? colors.accent : "rgba(255,255,255,0.08)"}`, background: form.emoji === em ? colors.accent + "18" : "rgba(255,255,255,0.04)", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        {em}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div style={labelStyle}>Cycle Name *</div>
+                  <input value={form.name} onChange={e => f("name", e.target.value)} style={inputStyle} placeholder="e.g. Autumn Ember Circle" autoFocus />
+                </div>
+                <div>
+                  <div style={labelStyle}>Short Description</div>
+                  <textarea value={form.desc} onChange={e => f("desc", e.target.value)} rows={3} style={{ ...inputStyle, resize: "vertical" }} placeholder="What is this cycle for? Who is it for?" />
+                </div>
+                <div>
+                  <div style={labelStyle}>Access</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {CYCLE_ACCESS_TYPES.map(a => (
+                      <div key={a.id} onClick={() => f("access", a.id)}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: form.access === a.id ? colors.accent + "10" : "rgba(255,255,255,0.04)", border: `1.5px solid ${form.access === a.id ? colors.accent : "rgba(255,255,255,0.08)"}`, borderRadius: 9, cursor: "pointer" }}>
+                        <span style={{ fontSize: 18 }}>{a.icon}</span>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{a.label}</div>
+                          <div style={{ fontSize: 11, color: "rgba(205,205,205,0.6)", marginTop: 1 }}>{a.desc}</div>
+                        </div>
+                        {form.access === a.id && <div style={{ marginLeft: "auto", width: 18, height: 18, borderRadius: 9, background: colors.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, flexShrink: 0 }}>✓</div>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Guide Actor */}
+          {step === 3 && (
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 6 }}>Assign a guide actor</div>
+              <div style={{ fontSize: 13, color: "rgba(205,205,205,0.6)", marginBottom: 22 }}>The guide actor anchors this cycle — they'll greet members, facilitate quests, and respond to context. You can add more actors scene-by-scene later.</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {PLATFORM_ACTORS_FOR_PICKER.map(actor => {
+                  const isSelected = selectedActor === actor.id;
+                  return (
+                    <div key={actor.id} onClick={() => setSelectedActor(isSelected ? null : actor.id)}
+                      style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: isSelected ? colors.accent + "12" : "rgba(255,255,255,0.04)", border: `2px solid ${isSelected ? colors.accent : "rgba(255,255,255,0.08)"}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
+                      <span style={{ fontSize: 26 }}>{actor.icon}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{actor.name}</span>
+                          <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 10, background: colors.accent + "18", color: colors.accent }}>{actor.type}</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: "rgba(205,205,205,0.65)", marginTop: 4 }}>{actor.desc}</div>
+                      </div>
+                      {isSelected && <div style={{ width: 20, height: 20, borderRadius: 10, background: colors.accent, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, flexShrink: 0 }}>✓</div>}
+                    </div>
+                  );
+                })}
+                <div onClick={() => setSelectedActor(null)}
+                  style={{ padding: "13px 18px", background: selectedActor === null ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.03)", border: `2px solid ${selectedActor === null ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.07)"}`, borderRadius: 12, cursor: "pointer", fontSize: 13, color: "rgba(205,205,205,0.65)" }}>
+                  Skip for now — I'll add an actor later
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Initial Scenes */}
+          {step === 4 && (
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 6 }}>Add initial scenes</div>
+              <div style={{ fontSize: 13, color: "rgba(205,205,205,0.6)", marginBottom: starter?.scenes?.length ? 10 : 22 }}>Scenes are the spaces within your cycle where activity happens. Pick a few to start with — you can always add more.</div>
+              {starter?.scenes?.length > 0 && (
+                <div style={{ background: colors.accent + "0C", border: `1px solid ${colors.accent}22`, borderRadius: 9, padding: "10px 14px", marginBottom: 18 }}>
+                  <div style={{ fontSize: 11, color: colors.accent, fontWeight: 600, marginBottom: 6 }}>From your starter</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {starter.scenes.map(s => <span key={s} style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, background: "rgba(235,128,0,0.15)", color: colors.accent }}>{s}</span>)}
+                  </div>
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {SCENE_OPTIONS.map(scene => {
+                  const isSelected = selectedScenes.includes(scene.id);
+                  return (
+                    <div key={scene.id} onClick={() => toggleScene(scene.id)}
+                      style={{ display: "flex", flexDirection: "column", gap: 6, padding: "14px 14px", background: isSelected ? colors.accent + "10" : "rgba(255,255,255,0.04)", border: `2px solid ${isSelected ? colors.accent : "rgba(255,255,255,0.08)"}`, borderRadius: 11, cursor: "pointer", transition: "all 0.15s" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 20 }}>{scene.icon}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{scene.name}</span>
+                        {isSelected && <span style={{ marginLeft: "auto", fontSize: 11, width: 18, height: 18, borderRadius: 9, background: colors.accent, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✓</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: "rgba(205,205,205,0.6)", lineHeight: 1.5 }}>{scene.desc}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ marginTop: 14, fontSize: 12, color: "rgba(205,205,205,0.45)" }}>Or skip and build scenes from scratch after creation.</div>
+            </div>
+          )}
+
+          {/* Step 5: Review & Launch */}
+          {step === 5 && (
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 6 }}>Review & launch</div>
+              <div style={{ fontSize: 13, color: "rgba(205,205,205,0.6)", marginBottom: 22 }}>Everything looks good? You can edit any of this after the cycle is created.</div>
+              <div style={{ background: "rgba(255,255,255,0.04)", border: `1px solid rgba(255,255,255,0.10)`, borderRadius: 14, overflow: "hidden" }}>
+                <div style={{ padding: "20px 22px", background: colors.accent + "0C", borderBottom: `1px solid rgba(255,255,255,0.08)`, display: "flex", alignItems: "center", gap: 14 }}>
+                  <span style={{ fontSize: 34 }}>{form.emoji}</span>
+                  <div>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: "#fff" }}>{form.name || "Unnamed Cycle"}</div>
+                    {form.desc && <div style={{ fontSize: 12, color: "rgba(205,205,205,0.65)", marginTop: 3 }}>{form.desc}</div>}
+                  </div>
+                  <div style={{ marginLeft: "auto" }}>
+                    {CYCLE_ACCESS_TYPES.find(a => a.id === form.access) && (
+                      <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 99, background: "rgba(255,255,255,0.08)", color: "rgba(205,205,205,0.7)" }}>
+                        {CYCLE_ACCESS_TYPES.find(a => a.id === form.access).icon} {CYCLE_ACCESS_TYPES.find(a => a.id === form.access).label}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {[
+                  ["Starting From", starter?.name || "Blank"],
+                  ["Guide Actor", selectedActor ? PLATFORM_ACTORS_FOR_PICKER.find(a => a.id === selectedActor)?.name : "None (add later)"],
+                  ["Scenes", allScenes.length > 0 ? allScenes.join(", ") : "None yet"],
+                  ["Access", CYCLE_ACCESS_TYPES.find(a => a.id === form.access)?.label],
+                ].map(([label, val]) => (
+                  <div key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "12px 22px", borderBottom: `1px solid rgba(255,255,255,0.05)` }}>
+                    <span style={{ fontSize: 12, color: "rgba(205,205,205,0.5)", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6 }}>{label}</span>
+                    <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", textAlign: "right", maxWidth: "60%" }}>{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: "16px 28px", borderTop: `1px solid rgba(255,255,255,0.08)`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <button onClick={() => step > 1 ? setStep(s => s - 1) : onClose()}
+            style={{ background: "none", border: `1px solid rgba(255,255,255,0.12)`, borderRadius: 8, padding: "9px 18px", color: "rgba(205,205,205,0.7)", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+            {step === 1 ? "Cancel" : "← Back"}
+          </button>
+          {step < TOTAL_STEPS ? (
+            <button onClick={() => canProceed() && setStep(s => s + 1)}
+              style={{ background: canProceed() ? colors.accent : "rgba(235,128,0,0.3)", border: "none", borderRadius: 8, padding: "9px 22px", color: canProceed() ? "#fff" : "rgba(255,255,255,0.35)", fontSize: 13, fontWeight: 600, cursor: canProceed() ? "pointer" : "default", fontFamily: "inherit", transition: "all 0.15s" }}>
+              Continue →
+            </button>
+          ) : (
+            <button onClick={handleCreate}
+              style={{ background: colors.accent, border: "none", borderRadius: 8, padding: "10px 24px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              🚀 Create Cycle
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const saveSession = (data) => {
   const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
   document.cookie = "ks_session=" + encodeURIComponent(JSON.stringify(data)) + ";expires=" + expires + ";path=/;SameSite=Lax";
@@ -5203,8 +5482,18 @@ function App() {
   const [page, setPage] = useState(saved?.page || "overview");
   const [isWizard, setIsWizard] = useState(saved?.isWizard !== undefined ? saved.isWizard : true);
   const [sectionKey, setSectionKey] = useState(0);
+  const [showNewCycle, setShowNewCycle] = useState(false);
+  const [extraCycles, setExtraCycles] = useState([]);
   const navTo = (id) => { setPage(id); setSectionKey(k => k + 1); };
   const isPlatform = context === "platform";
+
+  const handleCreateCycle = (data) => {
+    const id = data.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 24) || "new-cycle";
+    setExtraCycles(cs => [...cs, { id, name: `${data.emoji}  ${data.name}`, type: "cycle" }]);
+    setShowNewCycle(false);
+    setContext(id);
+    navTo("overview");
+  };
 
   React.useEffect(() => {
     saveSession({ context, page, isWizard });
@@ -5253,6 +5542,8 @@ function App() {
   return (
     <div style={{ display: "flex", height: "100vh", background: colors.bg, fontFamily: "'Inter', -apple-system, sans-serif", color: colors.text, overflow: "hidden" }}>
 
+      {showNewCycle && <NewCycleModal onClose={() => setShowNewCycle(false)} onCreate={handleCreateCycle} />}
+
       <div style={{ width: 228, minWidth: 228, height: "100%", background: colors.surface, borderRight: `1px solid ${colors.border}`, display: "flex", flexDirection: "column", overflowY: "auto" }}>
         <div style={{ padding: "16px 16px 12px", display: "flex", alignItems: "center", gap: 10, borderBottom: `1px solid ${colors.border}` }}>
           <div style={{ width: 30, height: 30, borderRadius: 8, background: colors.accent + "22", border: `1px solid ${colors.accent}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🦘</div>
@@ -5263,7 +5554,7 @@ function App() {
         </div>
 
         <div style={{ padding: "10px 0 4px" }}>
-          <CycleSelector current={context} onSwitch={(id) => { setContext(id); navTo(id === "platform" ? "p-tools" : "overview"); }} isWizard={isWizard} />
+          <CycleSelector current={context} onSwitch={(id) => { setContext(id); navTo(id === "platform" ? "p-tools" : "overview"); }} isWizard={isWizard} extraCycles={extraCycles} onNewCycle={() => setShowNewCycle(true)} />
         </div>
 
         <div style={{ flex: 1, padding: "4px 0", overflowY: "auto" }}>
