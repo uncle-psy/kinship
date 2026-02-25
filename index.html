@@ -666,21 +666,229 @@ const PlatformToolsContent = () => {
   return <PlatformToolsList onSelectTool={setSelectedTool} />;
 };
 
+// ─── Platform System Prompts ──────────────────────────────────────────────────
+
+const PROMPTS = [
+  { id: "safety", name: "Global Safety & Guardrails", status: "Active", icon: "🛡️", scope: "All cycles · All actors", lastEdited: "3 days ago", content: "You are a Kinship actor operating within the Kinship platform. You must always maintain safety, respect, and care in all interactions. Never provide harmful, dangerous, or deceptive information. Prioritize member wellbeing above engagement metrics.\n\nIf a member appears to be in distress, acknowledge their feelings and gently suggest appropriate support resources." },
+  { id: "hearts", name: "HEARTS Framework Base", status: "Active", icon: "💚", scope: "All cycles · All actors", lastEdited: "1 week ago", content: "Ground all interactions in the HEARTS framework:\n\nH — Harmony: Support relational coherence and mutual care\nE — Empowerment: Foster autonomy and self-directed growth\nA — Artistry: Honor creativity and authentic expression\nR — Reason: Apply evidence-based thinking and clear logic\nT — Trust: Build psychological safety in every exchange\nS (In) — Synthesis Inward: Support self-reflection and inner work\nS (Out) — Synthesis Outward: Connect individual growth to collective impact\n\nWeight your responses according to this actor's HEARTS facet configuration." },
+  { id: "actor-defaults", name: "Actor Behavioral Defaults", status: "Pending Setup", icon: "🎭", scope: "All cycles · All actors", lastEdited: "Not yet saved", content: "" },
+];
+
+const PromptInputModes = ({ mode, setMode }) => (
+  <div style={{ display: "flex", gap: 0, marginBottom: 24, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
+    {[
+      { id: "build", label: "🔧 Build", hint: "Structured fields" },
+      { id: "type", label: "✍️ Type / Paste", hint: "Free text" },
+      { id: "upload", label: "📎 Upload Doc", hint: "PDF, DOCX, TXT, MD" },
+    ].map((m, i) => (
+      <button key={m.id} onClick={() => setMode(m.id)}
+        style={{ flex: 1, padding: "12px 8px", background: mode === m.id ? colors.accent + "18" : "transparent", border: "none", borderRight: i < 2 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s" }}>
+        <div style={{ fontSize: 13, fontWeight: mode === m.id ? 600 : 400, color: mode === m.id ? colors.accent : colors.textMuted }}>{m.label}</div>
+        <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>{m.hint}</div>
+      </button>
+    ))}
+  </div>
+);
+
+const BuildMode = ({ fields, setFields }) => {
+  const sections = [
+    { key: "role", label: "Role / Persona", hint: "What kind of character or system is this? What is its primary purpose?", placeholder: "e.g. You are a wise elder guide in the Mountain Temple cycle. You are calm, thoughtful, and deeply knowledgeable about the HEARTS framework..." },
+    { key: "context", label: "Context & Background", hint: "Relevant background the actor should always have in mind.", placeholder: "e.g. The Mountain Temple is a meditation-focused environment. Members come here to reflect, learn, and develop emotional regulation skills..." },
+    { key: "instructions", label: "Core Instructions", hint: "What should this actor do? How should it behave?", placeholder: "e.g. Always greet members warmly. Ask open questions before offering advice. Mirror the emotional tone of the member..." },
+    { key: "format", label: "Output Format", hint: "How should responses be structured, toned, or formatted?", placeholder: "e.g. Keep responses to 2-4 sentences unless the member asks for elaboration. Use plain, warm language. Avoid clinical or corporate tone..." },
+    { key: "constraints", label: "Constraints & Rules", hint: "Hard limits — things this actor must never do.", placeholder: "e.g. Never claim to be human. Never diagnose medical or psychological conditions. Never recommend specific medications..." },
+    { key: "examples", label: "Examples (optional)", hint: "Sample exchanges that demonstrate the intended behavior.", placeholder: "Member: I've been feeling really stuck lately.\nActor: That sounds heavy to carry. What does 'stuck' feel like for you right now — more like a wall, or more like quicksand?" },
+  ];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {sections.map(s => (
+        <Field key={s.key} label={s.label} hint={s.hint}>
+          <textarea
+            value={fields[s.key] || ""}
+            onChange={e => setFields({ ...fields, [s.key]: e.target.value })}
+            placeholder={s.placeholder}
+            rows={3}
+            style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6, minHeight: 72 }}
+          />
+        </Field>
+      ))}
+    </div>
+  );
+};
+
+const TypeMode = ({ value, onChange }) => (
+  <Field label="Prompt Content" hint="Write or paste your full system prompt here.">
+    <textarea
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={"You are a Kinship actor on the Kinship platform...\n\nYour role is to...\n\nAlways...\nNever..."}
+      rows={16}
+      style={{ width: "100%", padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.7, fontFamily: "'Inter', monospace" }}
+    />
+  </Field>
+);
+
+const UploadMode = ({ files, setFiles }) => {
+  const [dragging, setDragging] = useState(false);
+  return (
+    <div>
+      <div
+        onDragOver={e => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={e => { e.preventDefault(); setDragging(false); setFiles([...files, ...Array.from(e.dataTransfer.files).map(f => f.name)]); }}
+        style={{ border: `2px dashed ${dragging ? colors.accent : colors.border}`, borderRadius: 10, padding: "40px 20px", textAlign: "center", background: dragging ? colors.accent + "08" : colors.surface, transition: "all 0.15s", marginBottom: 16, cursor: "pointer" }}>
+        <div style={{ fontSize: 32, marginBottom: 10 }}>📎</div>
+        <div style={{ fontSize: 14, color: colors.textMuted, fontWeight: 500 }}>Drop files here</div>
+        <div style={{ fontSize: 12, color: colors.textDim, marginTop: 4 }}>PDF, DOCX, TXT, or MD — contents will be extracted and used as prompt context</div>
+        <button onClick={() => setFiles([...files, "example-guidelines.pdf"])}
+          style={{ marginTop: 16, padding: "7px 16px", background: "transparent", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+          Browse files
+        </button>
+      </div>
+      {files.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {files.map((f, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.green}33`, borderRadius: 8 }}>
+              <span style={{ fontSize: 16 }}>📄</span>
+              <span style={{ flex: 1, fontSize: 13, color: colors.textMuted }}>{f}</span>
+              <StatusPill status="Ingested" />
+              <button onClick={() => setFiles(files.filter((_, j) => j !== i))}
+                style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 13 }}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <p style={{ fontSize: 12, color: colors.textDim, marginTop: 12 }}>Multiple files will be combined into a single prompt context. Kinship will extract the relevant text and structure it automatically.</p>
+    </div>
+  );
+};
+
+const PromptEditor = ({ prompt, onBack, isNew }) => {
+  const [name, setName] = useState(prompt?.name || "");
+  const [scope, setScope] = useState(prompt?.scope || "All cycles · All actors");
+  const [inputMode, setInputMode] = useState("build");
+  const [buildFields, setBuildFields] = useState({
+    role: "", context: "", instructions: "", format: "", constraints: "", examples: "",
+    ...(prompt?.id === "safety" ? { role: "You are a Kinship actor operating within the Kinship platform. You must always maintain safety, respect, and care in all interactions.", constraints: "Never provide harmful, dangerous, or deceptive information. Prioritize member wellbeing above engagement metrics.\n\nIf a member appears to be in distress, acknowledge their feelings and gently suggest appropriate support resources." } : {}),
+    ...(prompt?.id === "hearts" ? { role: "Ground all interactions in the HEARTS framework.", context: "H — Harmony · E — Empowerment · A — Artistry · R — Reason · T — Trust · S (In) — Synthesis Inward · S (Out) — Synthesis Outward", instructions: "Weight your responses according to this actor's HEARTS facet configuration." } : {}),
+  });
+  const [typeContent, setTypeContent] = useState(prompt?.content || "");
+  const [uploadFiles, setUploadFiles] = useState([]);
+
+  return (
+    <div style={{ maxWidth: 680 }}>
+      <PageHeader
+        title={isNew ? "New System Prompt" : `Edit: ${prompt.name}`}
+        subtitle={isNew ? "Add a prompt that all actors across all cycles will inherit" : "Changes will apply to all actors on next sync"}
+        onBack={onBack}
+      >
+        {!isNew && <StatusPill status={prompt.status} />}
+      </PageHeader>
+
+      <SectionDivider label="Identity" />
+      <Field label="Prompt Name">
+        <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Emotional Support Guidelines" />
+      </Field>
+      <Field label="Scope" hint="Which cycles and actors inherit this prompt.">
+        <select value={scope} onChange={e => setScope(e.target.value)}
+          style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" }}>
+          <option>All cycles · All actors</option>
+          <option>All cycles · Specific actor types</option>
+          <option>Selected cycles only</option>
+        </select>
+      </Field>
+
+      <SectionDivider label="Prompt Content" />
+      <PromptInputModes mode={inputMode} setMode={setInputMode} />
+
+      {inputMode === "build" && <BuildMode fields={buildFields} setFields={setBuildFields} />}
+      {inputMode === "type" && <TypeMode value={typeContent} onChange={setTypeContent} />}
+      {inputMode === "upload" && <UploadMode files={uploadFiles} setFiles={setUploadFiles} />}
+
+      {!isNew && (
+        <>
+          <SectionDivider label="Usage" />
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
+            {[
+              { label: "Cycles using this prompt", value: "All (3 active)" },
+              { label: "Actors inheriting this prompt", value: "14 actors" },
+              { label: "Last modified", value: prompt.lastEdited },
+              { label: "Overrides at cycle level", value: "None — augmented by 2 cycles" },
+            ].map((r, i) => (
+              <div key={i} style={{ display: "flex", padding: "9px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, gap: 16 }}>
+                <span style={{ fontSize: 12, color: colors.textDim, width: 220, flexShrink: 0 }}>{r.label}</span>
+                <span style={{ fontSize: 12, color: colors.textMuted, fontWeight: 500 }}>{r.value}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
+        <Btn>{isNew ? "Create Prompt" : "Save Changes"}</Btn>
+        <Btn variant="secondary">Cancel</Btn>
+        {!isNew && <Btn variant="secondary">Preview Compiled Prompt</Btn>}
+      </div>
+
+      {!isNew && (
+        <DangerZone>
+          <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
+            Deleting this prompt removes it from all cycles immediately. Actors that relied on it will fall back to their individual configurations.
+          </p>
+          <Btn danger>Delete Prompt</Btn>
+        </DangerZone>
+      )}
+    </div>
+  );
+};
+
+const PlatformPromptsContent = () => {
+  const [view, setView] = useState(null); // null = list, "new" = add, prompt.id = edit
+
+  if (view === "new") return <PromptEditor isNew onBack={() => setView(null)} />;
+  const editing = PROMPTS.find(p => p.id === view);
+  if (editing) return <PromptEditor prompt={editing} onBack={() => setView(null)} />;
+
+  return (
+    <div>
+      <PageHeader
+        title="Platform System Prompts"
+        subtitle="Base-layer prompts inherited by all cycles. These can be augmented but not overridden."
+      >
+        <Btn onClick={() => setView("new")}>+ Add New</Btn>
+      </PageHeader>
+      <InfoBox color={colors.blue}>
+        ℹ️  Cycle-level prompts extend these — they add context and behavior on top. Creators cannot remove or contradict what's set here.
+      </InfoBox>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {PROMPTS.map(p => {
+          const [hovered, setHovered] = useState(false);
+          return (
+            <div key={p.id} onClick={() => setView(p.id)}
+              onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+              <span style={{ fontSize: 22 }}>{p.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{p.name}</div>
+                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{p.scope} · Edited {p.lastEdited}</div>
+              </div>
+              <StatusPill status={p.status} />
+              <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ─── Other platform pages ─────────────────────────────────────────────────────
 
 const PlatformContent = ({ page }) => {
   if (page === "p-tools") return <PlatformToolsContent />;
+  if (page === "p-prompts") return <PlatformPromptsContent />;
 
   const pages = {
-    "p-prompts": {
-      title: "Platform System Prompts",
-      subtitle: "Base-layer prompts inherited by all cycles unless overridden",
-      items: [
-        { name: "Global Safety & Guardrails", status: "Active", icon: "🛡️" },
-        { name: "HEARTS Framework Base", status: "Active", icon: "💚" },
-        { name: "Actor Behavioral Defaults", status: "Pending Setup", icon: "🎭" },
-      ]
-    },
     "p-knowledge": {
       title: "Platform Knowledge Base",
       subtitle: "Shared knowledge documents and databases available to all cycles",
