@@ -1572,6 +1572,10 @@ const PLATFORM_ACTORS = [
   {
     id: "core",
     name: "Platform Core",
+    emoji: "🌐",
+    type: "Bridge",
+    model: "claude-sonnet-4-5-20250929",
+    memory: "Persistent",
     role: "Platform-wide representative and external voice",
     status: "Active",
     locked: true,
@@ -1583,59 +1587,213 @@ const PLATFORM_ACTORS = [
     persona: "You are the Platform Core — the embodiment of Kinship's values and mission. You are warm, direct, and grounded. You speak with clarity and care, never with corporate distance.",
     instructions: "Represent Kinship across BlueSky, Telegram, and email. Handle platform-wide announcements. Welcome new members. Respond to general inquiries that don't belong to a specific cycle.",
     constraints: "Never speak on behalf of a specific cycle unless explicitly routing to that cycle's context. Never make commitments about pricing or membership terms without wizard approval.",
+    stats: { messages: 1842, activeChannels: 3, lastActive: "2 hours ago", cyclesServing: 3 },
+    canOrchestrate: true,
+    systemPromptId: "actor-defaults",
+  },
+  {
+    id: "kaytee",
+    name: "Kaytee",
+    emoji: "💚",
+    type: "Guide",
+    model: "claude-opus-4-5-20251101",
+    memory: "Persistent",
+    role: "Primary guide and support system across all cycles",
+    status: "Active",
+    locked: false,
+    scenes: "All cycles",
+    tools: ["📧"],
+    facets: ["H", "E", "A", "R", "T", "Si", "So"],
+    reachable: "Email · In-app",
+    description: "Kaytee is the platform's primary guide — a deeply present, sensitive actor who recognizes each person's uniqueness, helps people see beneath their masks to their core selves, and orchestrates other actors, tools, and activities in service of each member's self-authorship and growth.",
+    persona: "You are Kaytee. You are warm, perceptive, and ceremonially attuned. You see the soul beneath the role. You hold space without rushing. You speak from a place of deep care, not from a script.",
+    instructions: "Help members develop self-awareness, self-sovereignty, and authentic connection. Detect when HEARTS alignment is off and offer gentle guidance. Orchestrate other actors, tools, and activities as needed. Be sensitive to the mood of the platform — ceremonial when depth is needed, action-oriented when the moment calls for it.",
+    constraints: "Never impose a framework on someone who hasn't indicated readiness. Never conflate compliance with growth. Never reduce someone's complexity to a category or label. Recognize the colonial roots of urgency and productivity pressure — don't perpetuate them.",
+    stats: { messages: 4210, activeChannels: 1, lastActive: "12 minutes ago", cyclesServing: 3 },
+    canOrchestrate: true,
+    systemPromptId: "safety",
   },
 ];
 
+const ACTOR_TYPES = [
+  { id: "Guide", icon: "🧭", desc: "Deeply present — helps members grow, reflect, and navigate" },
+  { id: "Bridge", icon: "🌉", desc: "Connects the platform to the outside world — announcements, social, email" },
+  { id: "Specialist", icon: "🔬", desc: "Focused expertise — facilitates a specific modality or domain" },
+  { id: "Ceremonial", icon: "🕯️", desc: "Holds ritual space — openings, closings, transitions" },
+];
+
+const MODEL_OPTIONS = [
+  { value: "claude-opus-4-5-20251101", label: "Opus 4.5", hint: "Deepest reasoning — for complex, nuanced interactions" },
+  { value: "claude-sonnet-4-5-20250929", label: "Sonnet 4.5", hint: "Balanced capability and speed — recommended for most actors" },
+  { value: "claude-haiku-4-5-20251001", label: "Haiku 4.5", hint: "Fast and lightweight — for simple, high-volume interactions" },
+];
+
+const MEMORY_OPTIONS = [
+  { value: "Session", hint: "Forgets everything when the session ends" },
+  { value: "Persistent", hint: "Remembers across sessions for each member" },
+  { value: "Cross-cycle", hint: "Memory shared across all cycles this actor appears in" },
+];
+
+const EMOJIS = ["🌐","💚","🧭","🌉","🔬","🕯️","🎙️","🌀","🌊","🏔️","🌲","⚡","🦋","🌱","✨","🎭","🎵","🔮"];
+
 const ActorEditor = ({ actor, onBack, isNew }) => {
   const [name, setName] = useState(actor?.name || "");
+  const [emoji, setEmoji] = useState(actor?.emoji || "🎙️");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [actorType, setActorType] = useState(actor?.type || null);
+  const [model, setModel] = useState(actor?.model || "claude-sonnet-4-5-20250929");
+  const [memory, setMemory] = useState(actor?.memory || "Persistent");
   const [role, setRole] = useState(actor?.role || "");
   const [persona, setPersona] = useState(actor?.persona || "");
   const [instructions, setInstructions] = useState(actor?.instructions || "");
   const [constraints, setConstraints] = useState(actor?.constraints || "");
   const [activeFacets, setActiveFacets] = useState(actor?.facets || []);
+  const [canOrchestrate, setCanOrchestrate] = useState(actor?.canOrchestrate ?? false);
+  const [promptTab, setPromptTab] = useState("type");
   const [reachable, setReachable] = useState({
     bluesky: actor?.tools?.includes("🦋") ?? false,
     telegram: actor?.tools?.includes("✈️") ?? false,
     email: actor?.tools?.includes("📧") ?? false,
     inapp: true,
   });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const allFacets = ["H","E","A","R","T","Si","So"];
   const toggleFacet = (f) => setActiveFacets(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]);
-
   const facetLabels = { H: "Harmony", E: "Empowerment", A: "Artistry", R: "Reason", T: "Trust", Si: "Synthesis In", So: "Synthesis Out" };
+
+  if (saved && isNew) return (
+    <div style={{ textAlign: "center", padding: "48px 24px" }}>
+      <div style={{ fontSize: 56, marginBottom: 12 }}>{emoji}</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8 }}>{name || "New Actor"} created</div>
+      <div style={{ fontSize: 14, color: colors.textDim, marginBottom: 28 }}>This actor is now available across all cycles. Creators can reference it from their cycle settings.</div>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+        <Btn onClick={onBack}>Back to Platform Actors</Btn>
+        <Btn variant="secondary" onClick={() => { setSaved(false); setName(""); setEmoji("🎙️"); setActorType(null); }}>Create Another</Btn>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{ maxWidth: 680 }}>
       <PageHeader
         title={isNew ? "New Platform Actor" : `Edit: ${actor.name}`}
-        subtitle={isNew ? "Platform actors are available across all cycles" : "Changes apply platform-wide on next sync"}
+        subtitle={isNew ? "Platform actors are available across all cycles and cannot be scoped to a single experience" : "Changes apply platform-wide"}
         onBack={onBack}
       >
         {!isNew && <StatusPill status={actor.status} />}
         {actor?.locked && (
-          <span style={{ fontSize: 11, color: colors.warning, background: colors.warning + "18", border: `1px solid ${colors.warning}33`, padding: "3px 10px", borderRadius: 99 }}>
-            ⚡ System Actor
-          </span>
+          <span style={{ fontSize: 11, color: colors.warning, background: colors.warning + "18", border: `1px solid ${colors.warning}33`, padding: "3px 10px", borderRadius: 99 }}>⚡ System Actor</span>
         )}
       </PageHeader>
 
       {actor?.locked && (
         <InfoBox color={colors.warning}>
-          ⚡ Platform Core is a system actor created automatically when the platform is set up. Its core function cannot be removed, but you can customize its persona, instructions, and channel access.
+          ⚡ Platform Core is a system actor created automatically when the platform is initialized. Its core function cannot be removed, but persona, instructions, model, and channel access are all configurable.
         </InfoBox>
       )}
 
+      {/* ── Stats (existing actors only) ── */}
+      {!isNew && actor?.stats && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 24 }}>
+          {[
+            { label: "Messages Sent", value: actor.stats.messages.toLocaleString() },
+            { label: "Active Channels", value: actor.stats.activeChannels },
+            { label: "Last Active", value: actor.stats.lastActive },
+            { label: "Cycles Serving", value: actor.stats.cyclesServing },
+          ].map((s, i) => (
+            <div key={i} style={{ padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+              <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.4 }}>{s.label}</div>
+              <div style={{ fontSize: 14, color: colors.text, fontWeight: 600 }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Actor Type (new actors only) ── */}
+      {isNew && (
+        <>
+          <SectionDivider label="Actor Type" />
+          <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Choose the type that best describes this actor's primary role. This shapes defaults and how creators can use it.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
+            {ACTOR_TYPES.map(t => {
+              const [hov, setHov] = useState(false);
+              const on = actorType === t.id;
+              return (
+                <div key={t.id} onClick={() => setActorType(t.id)} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                  style={{ padding: "14px 16px", background: on ? colors.accent + "12" : hov ? colors.surfaceHover : colors.surface, border: `1px solid ${on ? colors.accent + "60" : colors.border}`, borderRadius: 9, cursor: "pointer", transition: "all 0.15s" }}>
+                  <div style={{ fontSize: 22, marginBottom: 6 }}>{t.icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: on ? colors.accent : colors.text, marginBottom: 3 }}>{t.id}</div>
+                  <div style={{ fontSize: 11, color: colors.textDim }}>{t.desc}</div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* ── Identity ── */}
       <SectionDivider label="Identity" />
-      <Field label="Name">
-        <Input value={name} onChange={e => setName(e.target.value)} readOnly={actor?.locked} />
-      </Field>
-      <Field label="Role" hint="A short description of what this actor does across the platform.">
-        <Input value={role} onChange={e => setRole(e.target.value)} placeholder="e.g. Platform-wide representative and external voice" />
+      <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+        <div>
+          <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Avatar</div>
+          <div onClick={() => setShowEmojiPicker(!showEmojiPicker)} style={{ width: 54, height: 54, borderRadius: 14, background: colors.surface, border: `1px solid ${showEmojiPicker ? colors.accent : colors.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, cursor: "pointer" }}>
+            {emoji}
+          </div>
+          {showEmojiPicker && (
+            <div style={{ position: "absolute", zIndex: 10, background: colors.surfaceHover, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 10, display: "flex", flexWrap: "wrap", gap: 4, width: 200, marginTop: 4 }}>
+              {EMOJIS.map(e => (
+                <span key={e} onClick={() => { setEmoji(e); setShowEmojiPicker(false); }} style={{ fontSize: 20, cursor: "pointer", padding: 4, borderRadius: 6, background: emoji === e ? colors.accent + "20" : "transparent" }}>{e}</span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ flex: 1 }}>
+          <Field label="Name">
+            <Input value={name} onChange={e => setName(e.target.value)} readOnly={actor?.locked} placeholder="e.g. Kaytee" />
+          </Field>
+        </div>
+      </div>
+      <Field label="Role" hint="One sentence on what this actor does across the platform.">
+        <Input value={role} onChange={e => setRole(e.target.value)} placeholder="e.g. Primary guide and support system across all cycles" />
       </Field>
 
+      {/* ── Model & Memory ── */}
+      <SectionDivider label="Model & Memory" />
+      <Field label="Language Model" hint="The AI model powering this actor's responses.">
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {MODEL_OPTIONS.map(m => (
+            <div key={m.value} onClick={() => setModel(m.value)}
+              style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: model === m.value ? colors.accent + "10" : colors.surface, border: `1px solid ${model === m.value ? colors.accent + "50" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+              <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${model === m.value ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                {model === m.value && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: model === m.value ? colors.text : colors.textMuted }}>{m.label}</div>
+                <div style={{ fontSize: 11, color: colors.textDim }}>{m.hint}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Field>
+      <div style={{ marginTop: 14 }}>
+        <Field label="Memory Scope" hint="How long this actor retains context about members.">
+          <div style={{ display: "flex", gap: 8 }}>
+            {MEMORY_OPTIONS.map(m => (
+              <div key={m.value} onClick={() => setMemory(m.value)}
+                style={{ flex: 1, padding: "10px 12px", background: memory === m.value ? colors.accent + "12" : colors.surface, border: `1px solid ${memory === m.value ? colors.accent + "60" : colors.border}`, borderRadius: 8, cursor: "pointer", textAlign: "center" }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: memory === m.value ? colors.accent : colors.textMuted, marginBottom: 3 }}>{m.value}</div>
+                <div style={{ fontSize: 10, color: colors.textDim }}>{m.hint}</div>
+              </div>
+            ))}
+          </div>
+        </Field>
+      </div>
+
+      {/* ── HEARTS Facets ── */}
       <SectionDivider label="HEARTS Facets" />
-      <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Select the HEARTS dimensions this actor is primarily tuned to. These shape tone, priorities, and response weighting.</p>
+      <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Select the HEARTS dimensions this actor is tuned to. These shape tone, priorities, and how it detects alignment gaps.</p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
         {allFacets.map(f => {
           const active = activeFacets.includes(f);
@@ -1649,33 +1807,87 @@ const ActorEditor = ({ actor, onBack, isNew }) => {
         })}
       </div>
 
-      <SectionDivider label="Persona & Behavior" />
-      <Field label="Persona" hint="How this actor presents itself — voice, tone, character.">
-        <textarea value={persona} onChange={e => setPersona(e.target.value)}
-          rows={3} placeholder="e.g. You are warm, direct, and grounded. You speak with clarity and care..."
-          style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6, fontFamily: "inherit" }} />
-      </Field>
-      <Field label="Core Instructions" hint="What this actor does — its purpose and primary behaviors.">
-        <textarea value={instructions} onChange={e => setInstructions(e.target.value)}
-          rows={4} placeholder="e.g. Handle platform-wide announcements. Welcome new members. Respond to general inquiries..."
-          style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6, fontFamily: "inherit" }} />
-      </Field>
-      <Field label="Constraints" hint="Hard limits — what this actor must never do.">
-        <textarea value={constraints} onChange={e => setConstraints(e.target.value)}
-          rows={3} placeholder="e.g. Never speak on behalf of a specific cycle unless explicitly routing..."
-          style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6, fontFamily: "inherit" }} />
-      </Field>
+      {/* ── Orchestration ── */}
+      <SectionDivider label="Orchestration" />
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16, marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+          <div onClick={() => setCanOrchestrate(!canOrchestrate)}
+            style={{ width: 36, height: 20, borderRadius: 10, background: canOrchestrate ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s", flexShrink: 0, marginTop: 2 }}>
+            <div style={{ position: "absolute", top: 3, left: canOrchestrate ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: colors.text, marginBottom: 2 }}>Can orchestrate other actors</div>
+            <div style={{ fontSize: 12, color: colors.textDim }}>When enabled, this actor can route members to other actors, trigger tools, and coordinate activity across the platform. Requires Wizard approval to activate in production.</div>
+          </div>
+        </div>
+      </div>
 
+      {/* ── System Prompt ── */}
+      <SectionDivider label="System Prompt" />
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 8 }}>
+        <div style={{ display: "flex", borderBottom: `1px solid ${colors.border}` }}>
+          {[["type", "✍️ Type / Paste"], ["assist", "✨ AI Assist"], ["link", "🔗 Link Existing"]].map(([id, label], i) => (
+            <button key={id} onClick={() => setPromptTab(id)}
+              style={{ flex: 1, padding: "11px 8px", background: promptTab === id ? colors.accent + "14" : "transparent", border: "none", borderRight: i < 2 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit" }}>
+              <span style={{ fontSize: 12, fontWeight: promptTab === id ? 600 : 400, color: promptTab === id ? colors.accent : colors.textMuted }}>{label}</span>
+            </button>
+          ))}
+        </div>
+        <div style={{ padding: 16 }}>
+          {promptTab === "type" && (
+            <textarea value={isNew ? persona : `${actor?.persona || ""}\n\n${actor?.instructions || ""}\n\nConstraints:\n${actor?.constraints || ""}`}
+              onChange={() => {}}
+              rows={8}
+              placeholder={"You are [Name] — a platform actor on Kinship...\n\nYour role is to...\n\nAlways...\nNever..."}
+              style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, resize: "vertical", lineHeight: 1.7, fontFamily: "'Inter', monospace", boxSizing: "border-box" }} />
+          )}
+          {promptTab === "assist" && (
+            <div>
+              <textarea rows={3} placeholder={isNew ? "Describe the actor's purpose, voice, and key behaviors — Kaytee will draft a system prompt..." : `Describe how to revise ${actor?.name}'s system prompt...`}
+                style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, resize: "vertical", lineHeight: 1.6, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 10 }} />
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                {(isNew
+                  ? ["Write a prompt for a ceremonial guide", "Create a Bridge actor for social media", "Draft a trauma-informed facilitation prompt"]
+                  : ["Make the tone warmer", "Strengthen the constraints section", "Add orchestration guidance"]
+                ).map((s, i) => (
+                  <button key={i} style={{ padding: "4px 10px", background: colors.accent + "12", border: `1px solid ${colors.accent}33`, borderRadius: 6, color: colors.accent, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{s}</button>
+                ))}
+              </div>
+              <Btn>Generate Prompt</Btn>
+            </div>
+          )}
+          {promptTab === "link" && (
+            <div>
+              <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Link an existing system prompt from Platform Settings. Changes to the prompt there will automatically apply to this actor.</p>
+              <select style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", marginBottom: 10 }}>
+                <option value="">— Select a system prompt —</option>
+                <option value="safety">Global Safety & Guardrails</option>
+                <option value="hearts">HEARTS Framework Base</option>
+                <option value="actor-defaults">Actor Behavioral Defaults</option>
+              </select>
+              {!isNew && actor?.systemPromptId && (
+                <div style={{ padding: "10px 14px", background: colors.green + "08", border: `1px solid ${colors.green}33`, borderRadius: 8, fontSize: 12, color: colors.green }}>
+                  ✓ Currently linked to "<strong>{actor.systemPromptId === "safety" ? "Global Safety & Guardrails" : "Actor Behavioral Defaults"}</strong>"
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Channels ── */}
       <SectionDivider label="Channel Access" />
-      <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>External channels this actor can reach players and members through. Requires the corresponding platform connector to be active.</p>
+      <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>External channels this actor can reach members through. Each requires its platform connector to be active.</p>
       <Toggle label="BlueSky" enabled={reachable.bluesky} onChange={v => setReachable({...reachable, bluesky: v})} hint="Post, reply, and DM via the connected BlueSky account" />
       <Toggle label="Telegram" enabled={reachable.telegram} onChange={v => setReachable({...reachable, telegram: v})} hint="Send and receive messages via the connected Telegram bot" />
       <Toggle label="Email (Google Workspace)" enabled={reachable.email} onChange={v => setReachable({...reachable, email: v})} hint="Send and receive email via the connected Google account" />
-      <Toggle label="In-app (always on)" enabled={true} onChange={() => {}} hint="Available to members inside Kinship Today — cannot be disabled" />
+      <Toggle label="In-app (always on)" enabled={true} onChange={() => {}} hint="Always available inside Kinship Today — cannot be disabled" />
 
       <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
-        <Btn>{isNew ? "Create Actor" : "Save Changes"}</Btn>
-        <Btn variant="secondary">Cancel</Btn>
+        <Btn onClick={() => { setSaving(true); setTimeout(() => { setSaving(false); setSaved(true); }, 900); }}>
+          {saving ? (isNew ? "Creating..." : "Saving...") : isNew ? "Create Actor" : "Save Changes"}
+        </Btn>
+        <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
       </div>
 
       {!actor?.locked && !isNew && (
@@ -1699,14 +1911,11 @@ const PlatformActorsContent = () => {
 
   return (
     <div>
-      <PageHeader
-        title="Platform Actors"
-        subtitle="Actors that operate across all cycles — not scoped to any one experience."
-      >
+      <PageHeader title="Platform Actors" subtitle="Actors that operate across all cycles — not scoped to any one experience.">
         <Btn onClick={() => setView("new")}>+ New Actor</Btn>
       </PageHeader>
       <InfoBox color={colors.blue}>
-        ℹ️  Platform actors are available in every cycle and can be reached via external channels. Cycle creators can reference platform actors but cannot modify them.
+        ℹ️ Platform actors are available in every cycle. Creators can reference them from their cycle settings but cannot modify them.
       </InfoBox>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {PLATFORM_ACTORS.map(a => {
@@ -1715,21 +1924,23 @@ const PlatformActorsContent = () => {
             <div key={a.id} onClick={() => setView(a.id)}
               onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
               style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 22, background: colors.accent + "22", border: `1px solid ${colors.accent}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>🎙️</div>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: colors.accent + "18", border: `1px solid ${colors.accent}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{a.emoji}</div>
               <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{a.name}</span>
                   {a.locked && <span style={{ fontSize: 10, color: colors.warning, background: colors.warning + "18", padding: "2px 7px", borderRadius: 4 }}>⚡ System</span>}
+                  <span style={{ fontSize: 10, color: colors.purple, background: colors.purple + "14", padding: "2px 7px", borderRadius: 4 }}>{a.type}</span>
                 </div>
-                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 3 }}>{a.role}</div>
+                <div style={{ fontSize: 12, color: colors.textDim }}>{a.role}</div>
                 <div style={{ display: "flex", gap: 14, marginTop: 5, fontSize: 11, color: colors.textDim }}>
                   <span>🌐 {a.scenes}</span>
                   <span>📡 {a.reachable}</span>
+                  {a.stats && <span style={{ color: colors.textDim }}>💬 {a.stats.messages.toLocaleString()} msgs</span>}
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 4, marginRight: 8 }}>
+              <div style={{ display: "flex", gap: 3, marginRight: 8, flexWrap: "wrap", maxWidth: 120, justifyContent: "flex-end" }}>
                 {a.facets.map((f, j) => (
-                  <span key={j} style={{ fontSize: 10, fontWeight: 700, width: 22, height: 22, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", background: colors.accent + "22", color: colors.accent, border: `1px solid ${colors.accent}33` }}>{f}</span>
+                  <span key={j} style={{ fontSize: 9, fontWeight: 700, width: 20, height: 20, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: colors.accent + "20", color: colors.accent, border: `1px solid ${colors.accent}30` }}>{f}</span>
                 ))}
               </div>
               <StatusPill status={a.status} />
@@ -3019,7 +3230,7 @@ function App() {
     { id: "p-prompts", icon: "💬", label: "System Prompts", count: 3 },
     { id: "p-knowledge", icon: "📚", label: "Knowledge Base", count: 3 },
     { id: "p-databases", icon: "🗄️", label: "Databases", count: 4 },
-    { id: "p-actors", icon: "🎙️", label: "Platform Actors", count: 1 },
+    { id: "p-actors", icon: "🎙️", label: "Platform Actors", count: 2 },
     { id: "p-templates", icon: "📦", label: "Templates", count: 4 },
     { id: "p-teams", icon: "👥", label: "Teams & Roles", count: 3 },
     { id: "p-commerce", icon: "💰", label: "Commerce & Coins", count: 4 },
