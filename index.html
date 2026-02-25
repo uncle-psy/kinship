@@ -10767,11 +10767,259 @@ const CycleContent = ({ page, context }) => {
       note: "One-time initiation fee. Members keep access permanently after joining.",
     };
 
-    const [coins, setCoins]       = useState(CYCLE_COINS_INIT);
-    const [view, setView]         = useState(null); // null | "add-coin" | "create-coin" | coin.id
-    const [walletOpen, setWallet] = useState(false);
-    const [feesOpen, setFees]     = useState(false);
-    const [entryOpen, setEntry]   = useState(false);
+    const REVENUE_DIST_INIT = {
+      enabled: true,
+      trigger: "monthly",        // "monthly" | "per-sale" | "manual"
+      currency: "KNSHP",         // distribution currency
+      platformFee: 5,            // % taken by platform before distribution
+      recipients: [
+        { id: "moto",    type: "team",   label: "moto",   role: "Founder",    wallet: "8xKr...mN4q", share: 50, shareType: "percent" },
+        { id: "selene",  type: "team",   label: "Selene", role: "Co-founder", wallet: "3pLt...vX72", share: 30, shareType: "percent" },
+        { id: "temple-fund", type: "wallet", label: "Temple Fund", role: null, wallet: "7xK9...QR12", share: 20, shareType: "percent" },
+      ],
+      lastRun: "2026-02-01",
+      lastAmount: "14,250 KNSHP",
+      totalDistributed: "98,400 KNSHP",
+    };
+
+    const [coins, setCoins]           = useState(CYCLE_COINS_INIT);
+    const [view, setView]             = useState(null); // null | "add-coin" | "create-coin" | coin.id
+    const [walletOpen, setWallet]     = useState(false);
+    const [feesOpen, setFees]         = useState(false);
+    const [entryOpen, setEntry]       = useState(false);
+    const [revenueOpen, setRevenue]   = useState(false);
+
+    // ── Revenue Distribution panel ──────────────────────────────
+    const RevenuePanel = ({ onClose }) => {
+      const [distData, setDistData] = React.useState(REVENUE_DIST_INIT);
+      const [addingRecipient, setAddingRecipient] = React.useState(false);
+      const [newRecip, setNewRecip] = React.useState({ type: "team", label: "", role: "", wallet: "", share: 0, shareType: "percent" });
+      const [saving, setSaving] = React.useState(false);
+      const [saveLabel, setSaveLabel] = React.useState("Save Changes");
+      const [editingIdx, setEditingIdx] = React.useState(null);
+
+      const TEAM_FOR_DIST = [
+        { id: "moto",    label: "moto",   role: "Founder",    wallet: "8xKr...mN4q" },
+        { id: "selene",  label: "Selene", role: "Co-founder", wallet: "3pLt...vX72" },
+        { id: "arjun",   label: "Arjun",  role: "Admin",      wallet: "6cWm...hK81" },
+        { id: "cassidy", label: "Cassidy",role: "Producer",   wallet: "2nFr...yT55" },
+        { id: "orion",   label: "Orion",  role: "Treasurer",  wallet: "4bXs...pL30" },
+      ];
+
+      const totalAllocated = distData.recipients.reduce((sum, r) => sum + (r.shareType === "percent" ? r.share : 0), 0);
+      const effectivePct = 100 - distData.platformFee;
+      const over = totalAllocated > effectivePct;
+      const under = totalAllocated < effectivePct;
+
+      const updateShare = (i, val) => {
+        setDistData(p => { const r = [...p.recipients]; r[i] = { ...r[i], share: Math.max(0, parseFloat(val) || 0) }; return { ...p, recipients: r }; });
+      };
+      const removeRecipient = (i) => {
+        setDistData(p => ({ ...p, recipients: p.recipients.filter((_, j) => j !== i) }));
+      };
+
+      const TRIGGER_OPTS = [
+        { id: "monthly",  label: "Monthly",         hint: "Runs on the 1st of each month" },
+        { id: "per-sale", label: "Per Sale",         hint: "Runs automatically after each offering sale" },
+        { id: "manual",   label: "Manual only",      hint: "You trigger distribution manually" },
+      ];
+
+      const CYCLE_CURRENCIES = ["KNSHP", "TMPL", "USDC", "USD"];
+
+      return (
+        <div style={{ maxWidth: 640 }}>
+          <PageHeader title="Revenue Distribution" subtitle="Set how cycle revenue is split among team members and wallets" onBack={onClose} />
+
+          {/* Revenue summary */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
+            {[
+              { label: "Last Distribution",    value: distData.lastAmount,        sub: distData.lastRun        },
+              { label: "Total Distributed",    value: distData.totalDistributed,  sub: "all time"              },
+              { label: "Platform Fee",         value: distData.platformFee + "%", sub: "taken before split"    },
+            ].map((s, i) => (
+              <div key={i} style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase", marginBottom: 4 }}>{s.label}</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: colors.accent }}>{s.value}</div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Revenue sources */}
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 12 }}>Revenue Sources</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { label: "Usage Revenue",   hint: "Platform share based on member activity, session volume, and AI usage",  value: "~8,200 KNSHP/mo",  icon: "lucide:activity"   },
+                { label: "Sales Revenue",   hint: "Revenue from offerings and access sold to members",                       value: "~6,050 KNSHP/mo",  icon: "lucide:shopping-bag" },
+              ].map((s, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 8, background: colors.accent + "14", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name={s.icon} size={14} style={{ color: colors.accent }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{s.label}</div>
+                    <div style={{ fontSize: 11, color: colors.textDim }}>{s.hint}</div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted }}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Distribution settings */}
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Distribution</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 11, color: over ? colors.red : under ? colors.warning : colors.green }}>
+                  {totalAllocated}% of {effectivePct}% available
+                </span>
+                {over && <span style={{ fontSize: 10, color: colors.red, background: colors.red + "14", padding: "2px 7px", borderRadius: 4 }}>Over 100%</span>}
+                {!over && under && <span style={{ fontSize: 10, color: colors.warning, background: colors.warning + "14", padding: "2px 7px", borderRadius: 4 }}>{effectivePct - totalAllocated}% unallocated</span>}
+                {!over && !under && <span style={{ fontSize: 10, color: colors.green, background: colors.green + "14", padding: "2px 7px", borderRadius: 4 }}>Balanced</span>}
+              </div>
+            </div>
+
+            {/* Platform fee row */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, marginBottom: 10, opacity: 0.7 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: colors.pink + "14", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 14 }}>🏛️</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>Kinship Platform</div>
+                <div style={{ fontSize: 11, color: colors.textDim }}>Platform fee — taken before distribution</div>
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: colors.pink }}>{distData.platformFee}%</span>
+              <span style={{ fontSize: 10, color: colors.textDim, background: "rgba(255,255,255,0.07)", padding: "2px 7px", borderRadius: 4 }}>fixed</span>
+            </div>
+
+            {/* Recipient rows */}
+            {distData.recipients.map((r, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: editingIdx === i ? colors.accent + "08" : colors.bg, border: `1px solid ${editingIdx === i ? colors.accent + "44" : colors.border}`, borderRadius: 8, marginBottom: 6, cursor: "default" }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: colors.accent + "14", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 12, fontWeight: 700, color: colors.accent }}>
+                  {r.label.slice(0, 2).toUpperCase()}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{r.label}</div>
+                  <div style={{ fontSize: 10, color: colors.textDim }}>{r.role ? r.role + " · " : ""}{r.wallet}</div>
+                </div>
+                {editingIdx === i ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input type="number" min="0" max="100" value={r.share} onChange={e => updateShare(i, e.target.value)}
+                      style={{ width: 56, padding: "5px 8px", background: colors.bg, border: `1px solid ${colors.accent}60`, borderRadius: 6, color: colors.text, fontSize: 13, fontWeight: 600, textAlign: "right", fontFamily: "inherit" }} />
+                    <span style={{ fontSize: 12, color: colors.textDim }}>%</span>
+                    <button onClick={() => setEditingIdx(null)} style={{ padding: "5px 10px", background: colors.accent + "18", border: `1px solid ${colors.accent}44`, borderRadius: 6, color: colors.accent, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>Done</button>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: colors.accent }}>{r.share}%</span>
+                    <button onClick={() => setEditingIdx(i)} style={{ padding: "4px 8px", background: "transparent", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textDim, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>Edit</button>
+                    <button onClick={() => removeRecipient(i)} style={{ padding: "4px 8px", background: "transparent", border: `1px solid ${colors.red}33`, borderRadius: 6, color: colors.red, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>✕</button>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* Add recipient */}
+            {!addingRecipient ? (
+              <button onClick={() => setAddingRecipient(true)}
+                style={{ width: "100%", marginTop: 8, padding: "10px 14px", background: "transparent", border: `1px dashed ${colors.border}`, borderRadius: 8, color: colors.textDim, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, justifyContent: "center", fontFamily: "inherit" }}>
+                <Icon name="lucide:plus" size={13} style={{ color: colors.textDim }} />
+                Add recipient
+              </button>
+            ) : (
+              <div style={{ marginTop: 8, padding: "14px 16px", background: colors.bg, border: `1px solid ${colors.accent}40`, borderRadius: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: colors.text, marginBottom: 10 }}>Add Recipient</div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                  {["team", "wallet"].map(t => (
+                    <button key={t} onClick={() => setNewRecip(p => ({ ...p, type: t }))}
+                      style={{ padding: "6px 12px", background: newRecip.type === t ? colors.accent + "18" : "transparent", border: `1px solid ${newRecip.type === t ? colors.accent + "55" : colors.border}`, borderRadius: 6, color: newRecip.type === t ? colors.accent : colors.textDim, fontSize: 11, cursor: "pointer", fontFamily: "inherit", textTransform: "capitalize" }}>{t === "team" ? "Team Member" : "Custom Wallet"}</button>
+                  ))}
+                </div>
+                {newRecip.type === "team" ? (
+                  <select value={newRecip.id || ""} onChange={e => {
+                    const m = TEAM_FOR_DIST.find(t => t.id === e.target.value);
+                    setNewRecip(p => ({ ...p, id: m?.id, label: m?.label || "", role: m?.role || "", wallet: m?.wallet || "" }));
+                  }} style={{ width: "100%", padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, fontFamily: "inherit", marginBottom: 8 }}>
+                    <option value="">Select team member...</option>
+                    {TEAM_FOR_DIST.filter(m => !distData.recipients.find(r => r.id === m.id)).map(m => (
+                      <option key={m.id} value={m.id}>{m.label} — {m.role}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
+                    <input value={newRecip.label} onChange={e => setNewRecip(p => ({ ...p, label: e.target.value }))}
+                      placeholder="Label (e.g. Temple Fund)"
+                      style={{ padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, fontFamily: "inherit" }} />
+                    <input value={newRecip.wallet} onChange={e => setNewRecip(p => ({ ...p, wallet: e.target.value }))}
+                      placeholder="Solana wallet address"
+                      style={{ padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, fontFamily: "inherit", fontFamily: "monospace" }} />
+                  </div>
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <input type="number" min="0" max="100" value={newRecip.share} onChange={e => setNewRecip(p => ({ ...p, share: parseFloat(e.target.value) || 0 }))}
+                    style={{ width: 64, padding: "7px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 13, fontFamily: "inherit" }} />
+                  <span style={{ fontSize: 12, color: colors.textDim }}>%</span>
+                  <span style={{ fontSize: 11, color: colors.textDim }}>of post-fee revenue</span>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <Btn onClick={() => {
+                    if (!newRecip.label && !newRecip.wallet) return;
+                    setDistData(p => ({ ...p, recipients: [...p.recipients, { ...newRecip, id: newRecip.id || "w-" + Date.now() }] }));
+                    setNewRecip({ type: "team", label: "", role: "", wallet: "", share: 0, shareType: "percent" });
+                    setAddingRecipient(false);
+                  }}>Add</Btn>
+                  <Btn variant="secondary" onClick={() => setAddingRecipient(false)}>Cancel</Btn>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Trigger + currency */}
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Distribution Settings</div>
+
+            <Field label="Trigger" hint="When does distribution run automatically?">
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {TRIGGER_OPTS.map(t => (
+                  <div key={t.id} onClick={() => setDistData(p => ({ ...p, trigger: t.id }))}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: distData.trigger === t.id ? colors.accent + "10" : colors.bg, border: `1px solid ${distData.trigger === t.id ? colors.accent + "44" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+                    <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${distData.trigger === t.id ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {distData.trigger === t.id && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{t.label}</span>
+                      <span style={{ fontSize: 11, color: colors.textDim, marginLeft: 8 }}>{t.hint}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Field>
+
+            <div style={{ marginTop: 14 }}>
+              <Field label="Distribution Currency" hint="All distributions will be made in this currency.">
+                <div style={{ display: "flex", gap: 6 }}>
+                  {CYCLE_CURRENCIES.map(c => (
+                    <button key={c} onClick={() => setDistData(p => ({ ...p, currency: c }))}
+                      style={{ padding: "7px 14px", background: distData.currency === c ? colors.accent + "18" : colors.bg, border: `1px solid ${distData.currency === c ? colors.accent + "55" : colors.border}`, borderRadius: 7, color: distData.currency === c ? colors.accent : colors.textMuted, fontSize: 12, fontWeight: distData.currency === c ? 700 : 400, cursor: "pointer", fontFamily: "inherit" }}>{c}</button>
+                  ))}
+                </div>
+              </Field>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn onClick={() => { setSaving(true); setTimeout(() => { setSaving(false); setSaveLabel("✓ Saved"); setTimeout(() => setSaveLabel("Save Changes"), 2000); }, 800); }}>
+              {saving ? "Saving..." : saveLabel}
+            </Btn>
+            <Btn variant="secondary" onClick={() => {
+              if (distData.trigger === "manual") alert("Manual distribution triggered — processing…");
+              else alert("Distribution already scheduled. Use 'Manual only' trigger to run ad-hoc.");
+            }}>Run Now</Btn>
+            <Btn variant="secondary" onClick={onClose}>Close</Btn>
+          </div>
+        </div>
+      );
+    };
 
     // ── Wallet panel ────────────────────────────────────────────
     const WalletPanel = ({ onClose }) => (
@@ -11507,9 +11755,10 @@ const CycleContent = ({ page, context }) => {
     };
 
     // ── Routing ────────────────────────────────────────────────
-    if (walletOpen) return <WalletPanel onClose={() => setWallet(false)} />;
-    if (feesOpen)   return <FeesPanel   onClose={() => setFees(false)}   />;
-    if (entryOpen)  return <EntryPanel  onClose={() => setEntry(false)}  />;
+    if (walletOpen)  return <WalletPanel   onClose={() => setWallet(false)}  />;
+    if (feesOpen)    return <FeesPanel    onClose={() => setFees(false)}    />;
+    if (entryOpen)   return <EntryPanel   onClose={() => setEntry(false)}   />;
+    if (revenueOpen) return <RevenuePanel onClose={() => setRevenue(false)} />;
     if (view === "add-coin")    return <AddCoinPicker onAdd={c => { setCoins(prev => [...prev, c]); setView(null); }} onBack={() => setView(null)} />;
     if (view === "create-coin") return <CreateCoinWizard onBack={() => setView(null)} />;
     const selectedCoin = coins.find(c => c.id === view);
@@ -11614,11 +11863,12 @@ const CycleContent = ({ page, context }) => {
 
         {/* Secondary sections */}
         <SectionDivider label="Other Settings" />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {[
-            { label: "Cycle Entry",    sub: "Join cost, one-time or subscription",   icon: "lucide:door-open",  onClick: () => setEntry(true)  },
-            { label: "Wallet",         sub: "Balances, on-ramp, transactions",        icon: "lucide:wallet-2",   onClick: () => setWallet(true) },
-            { label: "Fees & Rewards", sub: "Fee rates, quest reward budget",         icon: "lucide:percent",    onClick: () => setFees(true)   },
+            { label: "Cycle Entry",          sub: "Join cost, one-time or subscription",    icon: "lucide:door-open",     onClick: () => setEntry(true)   },
+            { label: "Revenue Distribution", sub: "Split earnings across team and wallets", icon: "lucide:split",         onClick: () => setRevenue(true) },
+            { label: "Wallet",               sub: "Balances, on-ramp, transactions",         icon: "lucide:wallet-2",      onClick: () => setWallet(true)  },
+            { label: "Fees & Rewards",       sub: "Fee rates, quest reward budget",          icon: "lucide:percent",       onClick: () => setFees(true)    },
           ].map((s, i) => {
             const [hov, setHov] = React.useState(false);
             return (
