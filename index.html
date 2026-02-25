@@ -98,8 +98,9 @@ const NavItem = ({ icon, label, active, count, onClick }) => {
         borderLeft: active ? `2px solid ${colors.accent}` : "2px solid transparent",
         borderRadius: "0 6px 6px 0",
         cursor: "pointer", transition: "all 0.15s",
+        color: active ? colors.accent : colors.textDim,
       }}>
-      <Icon name={icon} size={15} style={{ opacity: 0.75 }} />
+      <Icon name={icon} size={15} style={{ opacity: 0.9 }} />
       <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? colors.accent : colors.textMuted, flex: 1, textAlign: "left" }}>{label}</span>
       <Badge count={count} />
     </button>
