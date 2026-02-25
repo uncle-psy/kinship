@@ -1422,6 +1422,320 @@ const PlatformBotsContent = () => {
   );
 };
 
+// ─── Platform Knowledge Base ──────────────────────────────────────────────────
+
+const KNOWLEDGE_ITEMS = [
+  { id: "hearts-ref", name: "HEARTS Framework Reference", type: "document", format: "PDF", status: "Ingested", icon: "📚", size: "2.4 MB", pages: 42, added: "2024-04-15", addedBy: "moto", source: "upload", chunks: 128, scope: "All cycles" },
+  { id: "policies", name: "Platform Policies", type: "document", format: "PDF", status: "Ingested", icon: "📋", size: "890 KB", pages: 18, added: "2024-05-02", addedBy: "moto", source: "upload", chunks: 54, scope: "All cycles" },
+  { id: "overview", name: "Kinship Systems Overview", type: "document", format: "DOCX", status: "Ingested", icon: "🏛️", size: "1.1 MB", pages: 24, added: "2024-06-10", addedBy: "Eloy", source: "upload", chunks: 72, scope: "All cycles" },
+  { id: "nightpaper", name: "Kinship Systems Nightpaper 2026", type: "document", format: "PDF", status: "Processing", icon: "📰", size: "156 KB", pages: 12, added: "2026-02-23", addedBy: "moto", source: "upload", chunks: 0, scope: "All cycles" },
+  { id: "indigenous", name: "Indigenous Worldview & Trance-Based Learning", type: "link", format: "Web", status: "Ingested", icon: "🔗", size: "—", pages: null, added: "2024-08-20", addedBy: "moto", source: "https://fourarrows.example.com/research", chunks: 34, scope: "Selected cycles" },
+  { id: "ai-care", name: "Comparative Analysis: Care Frameworks in EdTech", type: "ai-generated", format: "DOCX", status: "Ingested", icon: "🤖", size: "340 KB", pages: 8, added: "2026-01-15", addedBy: "Kaytee (AI)", source: "ai-research", chunks: 22, scope: "All cycles" },
+];
+
+const sourceTypeLabels = { document: "Uploaded", link: "Ingested from URL", "ai-generated": "AI-Generated Research" };
+
+const KnowledgeDocDetail = ({ doc, onBack }) => {
+  const [scope, setScope] = useState(doc.scope);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  return (
+    <div style={{ maxWidth: 660 }}>
+      <PageHeader title={doc.name} subtitle={`${sourceTypeLabels[doc.type]} · Added ${doc.added} by ${doc.addedBy}`} onBack={onBack}>
+        <StatusPill status={doc.status} />
+      </PageHeader>
+
+      <SectionDivider label="Document Info" />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+        {[
+          { label: "Format", value: doc.format },
+          { label: "Size", value: doc.size },
+          { label: "Pages", value: doc.pages ? doc.pages : "—" },
+        ].map((f, i) => (
+          <div key={i} style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase", marginBottom: 4 }}>{f.label}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{f.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <SectionDivider label="Ingestion Status" />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+        <div style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase", marginBottom: 4 }}>Vector Chunks</div>
+          <div style={{ fontSize: 14, fontWeight: 500, color: doc.chunks > 0 ? colors.green : colors.textDim }}>{doc.chunks > 0 ? `${doc.chunks} chunks indexed` : "Processing..."}</div>
+        </div>
+        <div style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase", marginBottom: 4 }}>Source</div>
+          <div style={{ fontSize: 13, fontWeight: 500, color: colors.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {doc.type === "link" ? doc.source : doc.type === "ai-generated" ? "AI Research by Kaytee" : "Direct upload"}
+          </div>
+        </div>
+      </div>
+      {doc.status === "Processing" && (
+        <div style={{ padding: "12px 16px", background: colors.accent + "12", border: `1px solid ${colors.accent}33`, borderRadius: 8, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 14 }}>⏳</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: colors.accent }}>Ingestion in progress</div>
+              <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>Document is being chunked and indexed into the vector store. This usually takes 1-3 minutes.</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <SectionDivider label="Availability" />
+      <Field label="Scope" hint="Which cycles can access this knowledge.">
+        <select value={scope} onChange={e => setScope(e.target.value)} style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" }}>
+          <option>All cycles</option>
+          <option>Selected cycles only</option>
+        </select>
+      </Field>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+        <Btn variant="secondary">📥 Download Original</Btn>
+        {doc.type === "ai-generated" && <Btn variant="secondary">📥 Download as DOCX</Btn>}
+        <Btn variant="secondary">🔄 Re-ingest</Btn>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <Btn>Save Changes</Btn>
+        <Btn variant="secondary">Cancel</Btn>
+      </div>
+
+      <DangerZone>
+        {!confirmRemove ? (
+          <>
+            <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
+              Removing this document deletes it from the vector store and makes it unavailable to all actors across all cycles.
+            </p>
+            <Btn danger onClick={() => setConfirmRemove(true)}>Remove from Knowledge Base</Btn>
+          </>
+        ) : (
+          <>
+            <p style={{ fontSize: 13, color: colors.red, fontWeight: 500, marginBottom: 12 }}>
+              Are you sure? This will remove {doc.chunks} indexed chunks and cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn danger>Confirm Removal</Btn>
+              <Btn variant="secondary" onClick={() => setConfirmRemove(false)}>Cancel</Btn>
+            </div>
+          </>
+        )}
+      </DangerZone>
+    </div>
+  );
+};
+
+const KnowledgeAddNew = ({ onBack }) => {
+  const [addMode, setAddMode] = useState("upload");
+  const [dragging, setDragging] = useState(false);
+  const [files, setFiles] = useState([]);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [links, setLinks] = useState([]);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiResult, setAiResult] = useState(null);
+
+  const addModes = [
+    { id: "upload", label: "📎 Upload", hint: "PDF, DOCX, TXT, MD" },
+    { id: "link", label: "🔗 Link / URL", hint: "Ingest from web" },
+    { id: "ai", label: "🤖 AI Research", hint: "Generate knowledge" },
+  ];
+
+  return (
+    <div style={{ maxWidth: 680 }}>
+      <PageHeader title="Add to Knowledge Base" subtitle="Upload documents, ingest links, or generate research with AI" onBack={onBack} />
+
+      <div style={{ display: "flex", gap: 0, marginBottom: 24, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
+        {addModes.map((m, i) => (
+          <button key={m.id} onClick={() => setAddMode(m.id)}
+            style={{ flex: 1, padding: "12px 8px", background: addMode === m.id ? colors.accent + "18" : "transparent", border: "none", borderRight: i < addModes.length - 1 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s" }}>
+            <div style={{ fontSize: 13, fontWeight: addMode === m.id ? 600 : 400, color: addMode === m.id ? colors.accent : colors.textMuted }}>{m.label}</div>
+            <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>{m.hint}</div>
+          </button>
+        ))}
+      </div>
+
+      {addMode === "upload" && (
+        <div>
+          <div
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={e => { e.preventDefault(); setDragging(false); setFiles([...files, ...Array.from(e.dataTransfer.files).map(f => f.name)]); }}
+            style={{ border: `2px dashed ${dragging ? colors.accent : colors.border}`, borderRadius: 10, padding: "44px 20px", textAlign: "center", background: dragging ? colors.accent + "08" : colors.surface, transition: "all 0.15s", marginBottom: 16, cursor: "pointer" }}>
+            <div style={{ fontSize: 36, marginBottom: 10 }}>📎</div>
+            <div style={{ fontSize: 14, color: colors.textMuted, fontWeight: 500 }}>Drop files here</div>
+            <div style={{ fontSize: 12, color: colors.textDim, marginTop: 4 }}>PDF, DOCX, TXT, or MD — files will be chunked and indexed into the vector store</div>
+            <button onClick={() => setFiles([...files, "Kaytee System Prompt.pdf"])}
+              style={{ marginTop: 16, padding: "8px 18px", background: "transparent", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+              Browse files
+            </button>
+          </div>
+          {files.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+              {files.map((f, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.green}33`, borderRadius: 8 }}>
+                  <span style={{ fontSize: 16 }}>📄</span>
+                  <span style={{ flex: 1, fontSize: 13, color: colors.textMuted }}>{f}</span>
+                  <StatusPill status="Ready" />
+                  <button onClick={() => setFiles(files.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 12 }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {files.length > 0 && (
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn>Ingest {files.length} Document{files.length > 1 ? "s" : ""}</Btn>
+              <Btn variant="secondary">Cancel</Btn>
+            </div>
+          )}
+        </div>
+      )}
+
+      {addMode === "link" && (
+        <div>
+          <Field label="URL" hint="Paste a link and Kinship will crawl the page, extract content, and index it.">
+            <div style={{ display: "flex", gap: 8 }}>
+              <Input value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://example.com/research-paper" />
+              <Btn variant="secondary" size="sm" onClick={() => { if (linkUrl) { setLinks([...links, { url: linkUrl, status: "Queued" }]); setLinkUrl(""); } }}>+ Add</Btn>
+            </div>
+          </Field>
+          {links.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12, marginBottom: 16 }}>
+              {links.map((l, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                  <span style={{ fontSize: 14 }}>🔗</span>
+                  <span style={{ flex: 1, fontSize: 12, color: colors.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.url}</span>
+                  <StatusPill status={l.status} />
+                  <button onClick={() => setLinks(links.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 12 }}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {links.length > 0 && (
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn>Ingest {links.length} Link{links.length > 1 ? "s" : ""}</Btn>
+              <Btn variant="secondary">Cancel</Btn>
+            </div>
+          )}
+          <InfoBox color={colors.blue}>
+            Links are crawled and their text content is extracted. JavaScript-rendered pages, paywalled content, and login-protected pages may not ingest fully. You can re-ingest a link at any time to pick up updated content.
+          </InfoBox>
+        </div>
+      )}
+
+      {addMode === "ai" && (
+        <div>
+          <div style={{ padding: "18px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 10, letterSpacing: 0.4, textTransform: "uppercase" }}>Research prompt</div>
+            <textarea
+              value={aiPrompt}
+              onChange={e => setAiPrompt(e.target.value)}
+              placeholder="Describe what you want researched. Kaytee will generate a knowledge document you can use as-is or download and edit.\n\ne.g. Research the latest findings on care-based measurement frameworks in education technology, focusing on alternatives to engagement metrics..."
+              rows={5}
+              style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }}
+            />
+            <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+              {["Research care frameworks in EdTech", "Summarize Indigenous pedagogical principles", "Compare relational vs transactional AI approaches", "Survey community-based governance models"].map((s, i) => (
+                <button key={i} onClick={() => setAiPrompt(s)}
+                  style={{ padding: "4px 10px", background: colors.accent + "12", border: `1px solid ${colors.accent}33`, borderRadius: 6, color: colors.accent, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <Btn onClick={() => { setAiGenerating(true); setTimeout(() => { setAiGenerating(false); setAiResult(true); }, 1500); }}>
+                {aiGenerating ? "Researching..." : "Generate Research Document"}
+              </Btn>
+            </div>
+          </div>
+
+          {aiResult && (
+            <div style={{ border: `1px solid ${colors.green}44`, borderRadius: 10, overflow: "hidden" }}>
+              <div style={{ padding: "10px 16px", background: colors.green + "18", borderBottom: `1px solid ${colors.green}33`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: colors.green }}>Generated: Research Document</span>
+                <span style={{ fontSize: 11, color: colors.textDim }}>~8 pages · 3,400 words</span>
+              </div>
+              <div style={{ padding: "14px 16px", background: colors.surface }}>
+                <div style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.7, maxHeight: 220, overflowY: "auto" }}>
+                  <div style={{ fontWeight: 600, marginBottom: 6 }}>Comparative Analysis: Care Frameworks in Education Technology</div>
+                  <div style={{ color: colors.textDim, fontSize: 12 }}>
+                    This document surveys emerging measurement frameworks that prioritize human development and relational health over engagement metrics. It examines approaches from five organizations working at the intersection of care theory and platform design, including Kinship Systems' HEARTS framework...
+                    <br /><br />
+                    <span style={{ fontStyle: "italic" }}>[Preview truncated — full document available for review]</span>
+                  </div>
+                </div>
+              </div>
+              <div style={{ padding: "10px 16px", background: colors.surface, borderTop: `1px solid ${colors.borderSubtle}`, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <Btn size="sm">Add to Knowledge Base</Btn>
+                <Btn variant="secondary" size="sm">📥 Download as DOCX</Btn>
+                <Btn variant="secondary" size="sm">Edit Before Adding</Btn>
+                <Btn variant="secondary" size="sm" onClick={() => setAiResult(null)}>Discard</Btn>
+              </div>
+            </div>
+          )}
+
+          {!aiResult && !aiGenerating && (
+            <InfoBox color={colors.purple}>
+              Kaytee will research your topic and produce a structured document. You can add it directly to the knowledge base, download it as a Word doc for manual editing, or refine it with follow-up prompts before ingesting.
+            </InfoBox>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PlatformKnowledgeContent = () => {
+  const [view, setView] = useState(null);
+  const [filter, setFilter] = useState("All");
+
+  if (view === "new") return <KnowledgeAddNew onBack={() => setView(null)} />;
+  const doc = KNOWLEDGE_ITEMS.find(d => d.id === view);
+  if (doc) return <KnowledgeDocDetail doc={doc} onBack={() => setView(null)} />;
+
+  const typeFilters = ["All", "Uploaded", "Links", "AI-Generated"];
+  const filtered = KNOWLEDGE_ITEMS.filter(d => {
+    if (filter === "All") return true;
+    if (filter === "Uploaded") return d.type === "document";
+    if (filter === "Links") return d.type === "link";
+    if (filter === "AI-Generated") return d.type === "ai-generated";
+    return true;
+  });
+
+  return (
+    <div>
+      <PageHeader title="Platform Knowledge Base" subtitle="Documents, links, and research available to all actors across all cycles">
+        <Btn onClick={() => setView("new")}>+ Add New</Btn>
+      </PageHeader>
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        {typeFilters.map(f => <FilterPill key={f} label={f} active={filter === f} onClick={() => setFilter(f)} />)}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {filtered.map(d => {
+          const [hovered, setHovered] = useState(false);
+          return (
+            <div key={d.id} onClick={() => setView(d.id)}
+              onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+              <span style={{ fontSize: 20 }}>{d.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{d.name}</div>
+                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>
+                  {d.format} · {d.size} · Added {d.added} by {d.addedBy}
+                  {d.chunks > 0 && <span> · {d.chunks} chunks</span>}
+                </div>
+              </div>
+              <StatusPill status={d.status} />
+              <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ─── Other platform pages ─────────────────────────────────────────────────────
 
 const PlatformContent = ({ page }) => {
@@ -1430,17 +1744,9 @@ const PlatformContent = ({ page }) => {
   if (page === "p-actors") return <PlatformActorsContent />;
   if (page === "p-users") return <PlatformUsersContent />;
   if (page === "p-bots") return <PlatformBotsContent />;
+  if (page === "p-knowledge") return <PlatformKnowledgeContent />;
 
   const pages = {
-    "p-knowledge": {
-      title: "Platform Knowledge Base",
-      subtitle: "Shared knowledge documents and databases available to all cycles",
-      items: [
-        { name: "HEARTS Framework Reference", status: "Ingested", icon: "📚" },
-        { name: "Platform Policies", status: "Ingested", icon: "📋" },
-        { name: "Kinship Systems Overview", status: "Ingested", icon: "🏛️" },
-      ]
-    },
     "p-databases": {
       title: "Platform Databases",
       subtitle: "Vector stores and structured databases shared across all cycles",
