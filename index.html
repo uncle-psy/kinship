@@ -11425,6 +11425,797 @@ const CycleContent = ({ page, context }) => {
     );
   }
 
+  // ─── Cycle Progress / Scoring System ────────────────────────────────────────
+  if (page === "progress") {
+    const SCORING_INIT = [
+      {
+        id: "health", name: "Health", icon: "💚", color: "#4ECDC4",
+        desc: "Physical and emotional wellbeing. Earned through meditation sessions, ceremony attendance, and healing quests.",
+        canLose: true, maxValue: 1000,
+        earns: [
+          { source: "Quest completion",      per: "per quest",          points: 20 },
+          { source: "Ceremony attendance",   per: "per ceremony",       points: 15 },
+          { source: "Daily check-in",        per: "per day",            points: 5  },
+        ],
+        loses: [
+          { trigger: "Missed ceremony",      per: "per missed",         points: -10 },
+          { trigger: "7-day inactivity",     per: "per week",           points: -5  },
+        ],
+        milestones: [
+          { at: 100,  name: "First Breath",   reward: { type: "badge",  label: "Newcomer",    icon: "🌱" } },
+          { at: 250,  name: "Grounded",        reward: { type: "coin",   symbol: "TMPL",      amount: 200 } },
+          { at: 500,  name: "Vitalized",       reward: { type: "badge",  label: "Vitalized",  icon: "⚡" } },
+          { at: 1000, name: "Peak Health",     reward: { type: "coin",   symbol: "TMPL",      amount: 1000 } },
+        ],
+        totalAwarded: 4820, activeMembers: 34,
+      },
+      {
+        id: "wealth", name: "Wealth", icon: "💰", color: "#FFB347",
+        desc: "Material and energetic abundance. Earned through trading, challenge completions, and acts of generosity.",
+        canLose: false, maxValue: null,
+        earns: [
+          { source: "Challenge completion",  per: "per challenge",      points: 50 },
+          { source: "Offering purchase",     per: "per referral",       points: 25 },
+          { source: "Trading Post activity", per: "per trade",          points: 10 },
+        ],
+        loses: [],
+        milestones: [
+          { at: 100,  name: "First Coin",    reward: { type: "badge",  label: "Trader",    icon: "🪙" } },
+          { at: 500,  name: "Prosperous",    reward: { type: "coin",   symbol: "TMPL",     amount: 500 } },
+          { at: 2000, name: "Sovereign",     reward: { type: "badge",  label: "Sovereign", icon: "👑" } },
+        ],
+        totalAwarded: 12400, activeMembers: 28,
+      },
+      {
+        id: "wisdom", name: "Wisdom", icon: "📖", color: "#C3A6FF",
+        desc: "Depth of learning and insight. Earned through quests, reflection submissions, and knowledge engagement.",
+        canLose: false, maxValue: null,
+        earns: [
+          { source: "Quest completion",      per: "per quest",          points: 30 },
+          { source: "Reflection submitted",  per: "per submission",     points: 20 },
+          { source: "Knowledge interaction", per: "per interaction",    points: 5  },
+        ],
+        loses: [],
+        milestones: [
+          { at: 50,   name: "Curious",       reward: { type: "badge",  label: "Curious",    icon: "🔍" } },
+          { at: 200,  name: "Student",       reward: { type: "coin",   symbol: "TMPL",      amount: 150 } },
+          { at: 600,  name: "Elder",         reward: { type: "badge",  label: "Elder",      icon: "🧙" } },
+        ],
+        totalAwarded: 7230, activeMembers: 41,
+      },
+      {
+        id: "love", name: "Love", icon: "❤️", color: "#FF6FAE",
+        desc: "Relational presence and care. Earned through helping others, ceremony participation, and acts of community care.",
+        canLose: true, maxValue: 500,
+        earns: [
+          { source: "Peer recognition",      per: "per recognition",    points: 10 },
+          { source: "Ceremony participation",per: "per ceremony",       points: 20 },
+          { source: "Actor interaction (care)",per: "per exchange",     points: 3  },
+        ],
+        loses: [
+          { trigger: "Community violation",  per: "per incident",       points: -50 },
+        ],
+        milestones: [
+          { at: 50,  name: "Open Heart",     reward: { type: "badge",  label: "Warm",       icon: "🌸" } },
+          { at: 200, name: "Beloved",        reward: { type: "coin",   symbol: "TMPL",      amount: 300 } },
+          { at: 500, name: "Pillar",         reward: { type: "badge",  label: "Pillar",     icon: "🕯️" } },
+        ],
+        totalAwarded: 3140, activeMembers: 22,
+      },
+    ];
+
+    const [attrs, setAttrs]   = useState(SCORING_INIT);
+    const [view, setView]     = useState(null); // null | "new" | attr.id
+
+    // ── Attribute Editor ─────────────────────────────────────────
+    const AttrEditor = ({ attr, isNew, onBack }) => {
+      const [name, setName]           = useState(attr?.name || "");
+      const [icon, setIcon]           = useState(attr?.icon || "⭐");
+      const [color, setColor]         = useState(attr?.color || "#6FC3FF");
+      const [desc, setDesc]           = useState(attr?.desc || "");
+      const [canLose, setCanLose]     = useState(attr?.canLose ?? false);
+      const [maxValue, setMaxVal]     = useState(attr?.maxValue ?? "");
+      const [earns, setEarns]         = useState(attr?.earns || [{ source: "", per: "", points: 10 }]);
+      const [loses, setLoses]         = useState(attr?.loses || []);
+      const [milestones, setMiles]    = useState(attr?.milestones || []);
+      const [saving, setSaving]       = useState(false);
+      const [confirmDel, setConfDel]  = useState(false);
+      const [tab, setTab]             = useState("identity");
+
+      const ICON_OPTIONS = ["⭐","💚","💰","📖","❤️","🔥","⚡","🌙","🌊","💎","🏔️","🌀","🔮","🏛️","🛡️","🌸","🪄","🌿","🦋","🗝️","🌈","🪐","🎯","🧠","🫀","🌱","🏆","🎭"];
+      const COLOR_OPTIONS = ["#4ECDC4","#FFB347","#C3A6FF","#FF6FAE","#6FC3FF","#A8E063","#F7DC6F","#EC7063","#5DADE2","#AF7AC5","#E67E22","#1ABC9C"];
+
+      const addEarn    = () => setEarns([...earns, { source: "", per: "", points: 10 }]);
+      const removeEarn = i  => setEarns(earns.filter((_,j) => j !== i));
+      const editEarn   = (i, k, v) => setEarns(earns.map((e,j) => j===i ? {...e,[k]:v} : e));
+
+      const addLose    = () => setLoses([...loses, { trigger: "", per: "", points: -10 }]);
+      const removeLose = i  => setLoses(loses.filter((_,j) => j !== i));
+      const editLose   = (i, k, v) => setLoses(loses.map((l,j) => j===i ? {...l,[k]:v} : l));
+
+      const addMile    = () => setMiles([...milestones, { at: 100, name: "", reward: { type: "badge", label: "", icon: "🏅" } }]);
+      const removeMile = i  => setMiles(milestones.filter((_,j) => j !== i));
+      const editMile   = (i, k, v) => setMiles(milestones.map((m,j) => j===i ? {...m,[k]:v} : m));
+      const editMileReward = (i, k, v) => setMiles(milestones.map((m,j) => j===i ? {...m, reward: {...m.reward,[k]:v}} : m));
+
+      const handleSave = () => {
+        setSaving(true);
+        setTimeout(() => {
+          const updated = { id: attr?.id || name.toLowerCase().replace(/\s+/g,"-"), name, icon, color, desc, canLose, maxValue: maxValue || null, earns, loses, milestones, totalAwarded: attr?.totalAwarded || 0, activeMembers: attr?.activeMembers || 0 };
+          if (isNew) setAttrs(prev => [...prev, updated]);
+          else       setAttrs(prev => prev.map(a => a.id === attr.id ? updated : a));
+          setSaving(false);
+          onBack();
+        }, 600);
+      };
+
+      const TABS = [
+        { id: "identity",   label: "Identity"   },
+        { id: "earning",    label: "Earning"     },
+        { id: "milestones", label: "Milestones"  },
+      ];
+
+      return (
+        <div style={{ maxWidth: 680 }}>
+          <PageHeader
+            title={isNew ? "New Attribute" : `Edit: ${attr.name}`}
+            subtitle={isNew ? "Define a scoring dimension for your cycle" : "Changes apply to all members immediately"}
+            onBack={onBack}
+          >
+            {!isNew && <div style={{ width: 36, height: 36, borderRadius: 10, background: color + "28", border: `2px solid ${color}55`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{icon}</div>}
+          </PageHeader>
+
+          {/* Tab bar */}
+          <div style={{ display: "flex", gap: 0, marginBottom: 24, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
+            {TABS.map((t, i) => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{ flex: 1, padding: "11px 8px", background: tab === t.id ? colors.accent + "18" : "transparent", border: "none", borderRight: i < TABS.length-1 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit" }}>
+                <span style={{ fontSize: 13, fontWeight: tab === t.id ? 600 : 400, color: tab === t.id ? colors.accent : colors.textMuted }}>{t.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Identity tab */}
+          {tab === "identity" && (
+            <div>
+              <SectionDivider label="Identity" />
+              <Field label="Name" hint="What this dimension represents — shown to members.">
+                <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Wisdom" />
+              </Field>
+              <Field label="Icon">
+                <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+                  {ICON_OPTIONS.map(em => (
+                    <button key={em} onClick={() => setIcon(em)}
+                      style={{ width: 34, height: 34, fontSize: 17, borderRadius: 8, border: `2px solid ${icon === em ? colors.accent : colors.border}`, background: icon === em ? colors.accent + "15" : colors.surface, cursor: "pointer" }}>
+                      {em}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Color">
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {COLOR_OPTIONS.map(c => (
+                    <button key={c} onClick={() => setColor(c)}
+                      style={{ width: 26, height: 26, borderRadius: "50%", border: `3px solid ${color === c ? "#fff" : "transparent"}`, background: c, cursor: "pointer", outline: color === c ? `2px solid ${c}` : "none" }} />
+                  ))}
+                </div>
+              </Field>
+              <Field label="Description" hint="Explain to members what this attribute means and why it matters.">
+                <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={3}
+                  placeholder="e.g. Depth of learning and insight. Earned through quests and reflection submissions."
+                  style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }} />
+              </Field>
+              <Field label="Members can lose this attribute">
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Toggle value={canLose} onChange={setCanLose} />
+                  <span style={{ fontSize: 12, color: colors.textDim }}>Allow points to be deducted (e.g. for inactivity or violations)</span>
+                </div>
+              </Field>
+              <Field label="Maximum value (optional)" hint="Cap the score at this value. Leave blank for unlimited.">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="number" value={maxValue} onChange={e => setMaxVal(e.target.value)}
+                    placeholder="— no limit —"
+                    style={{ width: 140, padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none" }} />
+                  <span style={{ fontSize: 12, color: colors.textDim }}>points</span>
+                </div>
+              </Field>
+              <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+                <Btn onClick={handleSave}>{saving ? "Saving..." : isNew ? "Create Attribute" : "Save Changes"}</Btn>
+                <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+              </div>
+            </div>
+          )}
+
+          {/* Earning tab */}
+          {tab === "earning" && (
+            <div>
+              <SectionDivider label="Ways to Earn" />
+              <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 14, lineHeight: 1.6 }}>
+                Define what actions reward {name || "this attribute"} points. These apply automatically when a member completes the action.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                {earns.map((e, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                    <input value={e.source} onChange={ev => editEarn(i, "source", ev.target.value)} placeholder="Source (e.g. Quest completion)"
+                      style={{ flex: 2, padding: "7px 10px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }} />
+                    <input value={e.per} onChange={ev => editEarn(i, "per", ev.target.value)} placeholder="Per (e.g. per quest)"
+                      style={{ flex: 1, padding: "7px 10px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                      <span style={{ fontSize: 12, color: colors.green, fontWeight: 700 }}>+</span>
+                      <input type="number" value={e.points} onChange={ev => editEarn(i, "points", parseInt(ev.target.value))}
+                        style={{ width: 60, padding: "7px 8px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.green, fontSize: 12, fontWeight: 700, outline: "none", textAlign: "center" }} />
+                      <span style={{ fontSize: 11, color: colors.textDim }}>pts</span>
+                    </div>
+                    <button onClick={() => removeEarn(i)} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 14, padding: "0 4px" }}>✕</button>
+                  </div>
+                ))}
+              </div>
+              <Btn variant="secondary" size="sm" onClick={addEarn}>+ Add Earn Source</Btn>
+
+              {canLose && (
+                <>
+                  <SectionDivider label="Ways to Lose" />
+                  <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 14, lineHeight: 1.6 }}>
+                    Define what causes {name || "this attribute"} points to be deducted.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                    {loses.map((l, i) => (
+                      <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.red}22`, borderRadius: 8 }}>
+                        <input value={l.trigger} onChange={ev => editLose(i, "trigger", ev.target.value)} placeholder="Trigger (e.g. Missed ceremony)"
+                          style={{ flex: 2, padding: "7px 10px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }} />
+                        <input value={l.per} onChange={ev => editLose(i, "per", ev.target.value)} placeholder="Per (e.g. per missed)"
+                          style={{ flex: 1, padding: "7px 10px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }} />
+                        <div style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                          <span style={{ fontSize: 12, color: colors.red, fontWeight: 700 }}>-</span>
+                          <input type="number" value={Math.abs(l.points)} onChange={ev => editLose(i, "points", -Math.abs(parseInt(ev.target.value)))}
+                            style={{ width: 60, padding: "7px 8px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.red, fontSize: 12, fontWeight: 700, outline: "none", textAlign: "center" }} />
+                          <span style={{ fontSize: 11, color: colors.textDim }}>pts</span>
+                        </div>
+                        <button onClick={() => removeLose(i)} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 14, padding: "0 4px" }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                  <Btn variant="secondary" size="sm" onClick={addLose}>+ Add Lose Trigger</Btn>
+                </>
+              )}
+
+              <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+                <Btn onClick={handleSave}>{saving ? "Saving..." : "Save Changes"}</Btn>
+                <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+              </div>
+            </div>
+          )}
+
+          {/* Milestones tab */}
+          {tab === "milestones" && (
+            <div>
+              <SectionDivider label="Milestones" />
+              <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 14, lineHeight: 1.6 }}>
+                Milestones trigger when a member reaches a point threshold in {name || "this attribute"}. They can award badges, coins, or both.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                {milestones.length === 0 && (
+                  <div style={{ textAlign: "center", padding: "32px 20px", border: `1px dashed ${colors.border}`, borderRadius: 8, color: colors.textDim, fontSize: 13 }}>
+                    No milestones yet — add the first one below
+                  </div>
+                )}
+                {milestones.map((m, i) => (
+                  <div key={i} style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, color: colors.textDim }}>At</span>
+                        <input type="number" value={m.at} onChange={ev => editMile(i, "at", parseInt(ev.target.value))}
+                          style={{ width: 80, padding: "6px 8px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none", textAlign: "center" }} />
+                        <span style={{ fontSize: 11, color: colors.textDim }}>pts</span>
+                      </div>
+                      <input value={m.name} onChange={ev => editMile(i, "name", ev.target.value)} placeholder="Milestone name"
+                        style={{ flex: 1, padding: "6px 10px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }} />
+                      <button onClick={() => removeMile(i)} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 14 }}>✕</button>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                      <span style={{ fontSize: 11, color: colors.textDim, width: 48 }}>Reward:</span>
+                      <select value={m.reward.type} onChange={ev => editMileReward(i, "type", ev.target.value)}
+                        style={{ padding: "6px 8px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12, outline: "none" }}>
+                        <option value="badge">Badge</option>
+                        <option value="coin">Coin</option>
+                        <option value="both">Badge + Coin</option>
+                      </select>
+                      {(m.reward.type === "badge" || m.reward.type === "both") && (
+                        <>
+                          <input value={m.reward.icon} onChange={ev => editMileReward(i, "icon", ev.target.value)} placeholder="🏅"
+                            style={{ width: 40, padding: "6px 8px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 14, outline: "none", textAlign: "center" }} />
+                          <input value={m.reward.label} onChange={ev => editMileReward(i, "label", ev.target.value)} placeholder="Badge name"
+                            style={{ flex: 1, padding: "6px 10px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }} />
+                        </>
+                      )}
+                      {(m.reward.type === "coin" || m.reward.type === "both") && (
+                        <>
+                          <input value={m.reward.amount || ""} onChange={ev => editMileReward(i, "amount", parseInt(ev.target.value))} type="number" placeholder="amount"
+                            style={{ width: 80, padding: "6px 8px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none", textAlign: "center" }} />
+                          <input value={m.reward.symbol || ""} onChange={ev => editMileReward(i, "symbol", ev.target.value)} placeholder="TMPL"
+                            style={{ width: 70, padding: "6px 8px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }} />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Btn variant="secondary" size="sm" onClick={addMile}>+ Add Milestone</Btn>
+
+              <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+                <Btn onClick={handleSave}>{saving ? "Saving..." : "Save Changes"}</Btn>
+                <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+              </div>
+
+              {!isNew && (
+                <div style={{ marginTop: 32, padding: "20px 24px", background: colors.red + "08", border: `1px solid ${colors.red}22`, borderRadius: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: colors.red, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 10 }}>Danger Zone</div>
+                  {!confirmDel ? (
+                    <>
+                      <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
+                        Deleting this attribute removes it from the scoring system. Existing member scores for "{attr.name}" are permanently lost.
+                      </p>
+                      <Btn danger onClick={() => setConfDel(true)}>Delete Attribute</Btn>
+                    </>
+                  ) : (
+                    <>
+                      <p style={{ fontSize: 13, color: colors.red, fontWeight: 500, marginBottom: 12 }}>
+                        Delete "{attr.name}" and all associated scores?
+                      </p>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <Btn danger onClick={() => { setAttrs(prev => prev.filter(a => a.id !== attr.id)); onBack(); }}>Confirm Delete</Btn>
+                        <Btn variant="secondary" onClick={() => setConfDel(false)}>Cancel</Btn>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ── Router ────────────────────────────────────────────────
+    if (view === "new") return <AttrEditor isNew onBack={() => setView(null)} />;
+    const editAttr = attrs.find(a => a.id === view);
+    if (editAttr) return <AttrEditor attr={editAttr} onBack={() => setView(null)} />;
+
+    // ── Dashboard ─────────────────────────────────────────────
+    const totalPoints = attrs.reduce((s, a) => s + a.totalAwarded, 0);
+    const totalMiles  = attrs.reduce((s, a) => s + a.milestones.length, 0);
+
+    return (
+      <div>
+        <PageHeader title="Progress & Scoring" subtitle="Define what members earn, what it means, and what they're working toward">
+          <Btn onClick={() => setView("new")}>+ New Attribute</Btn>
+        </PageHeader>
+
+        {/* Stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 24 }}>
+          {[
+            { label: "Attributes",     value: String(attrs.length),                icon: "lucide:bar-chart-2",  color: colors.accent  },
+            { label: "Points Awarded", value: totalPoints.toLocaleString(),         icon: "lucide:trending-up",  color: colors.green   },
+            { label: "Milestones",     value: String(totalMiles),                   icon: "lucide:flag",         color: colors.purple  },
+            { label: "Active Scorers", value: String(Math.max(...attrs.map(a => a.activeMembers))), icon: "lucide:users", color: colors.cyan },
+          ].map((s, i) => (
+            <div key={i} style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                <Icon name={s.icon} size={13} style={{ color: s.color }} />
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase" }}>{s.label}</span>
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Attribute cards */}
+        <SectionDivider label={`Scoring Attributes (${attrs.length})`} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 12 }}>
+          {attrs.map(a => {
+            const [hov, setHov] = React.useState(false);
+            const topMile = [...a.milestones].sort((x,y) => y.at - x.at)[0];
+            return (
+              <div key={a.id} onClick={() => setView(a.id)}
+                onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                style={{ padding: "18px 20px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? a.color + "66" : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s", borderLeft: `3px solid ${a.color}` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: a.color + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
+                    {a.icon}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: colors.text }}>{a.name}</div>
+                    <div style={{ fontSize: 11, color: colors.textDim, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.desc}</div>
+                  </div>
+                  <Icon name="lucide:chevron-right" size={15} style={{ color: colors.textDim }} />
+                </div>
+                {/* Progress bar */}
+                {a.maxValue && (
+                  <div style={{ height: 4, background: colors.border, borderRadius: 2, marginBottom: 10, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${Math.min(100, (a.totalAwarded / a.maxValue) * 100).toFixed(0)}%`, background: a.color, borderRadius: 2 }} />
+                  </div>
+                )}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                  <div style={{ padding: "8px 10px", background: "rgba(255,255,255,0.04)", borderRadius: 7 }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.7, color: colors.textDim, textTransform: "uppercase", marginBottom: 2 }}>Awarded</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{a.totalAwarded.toLocaleString()}</div>
+                  </div>
+                  <div style={{ padding: "8px 10px", background: "rgba(255,255,255,0.04)", borderRadius: 7 }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.7, color: colors.textDim, textTransform: "uppercase", marginBottom: 2 }}>Earners</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{a.activeMembers}</div>
+                  </div>
+                  <div style={{ padding: "8px 10px", background: "rgba(255,255,255,0.04)", borderRadius: 7 }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.7, color: colors.textDim, textTransform: "uppercase", marginBottom: 2 }}>Milestones</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: colors.text }}>{a.milestones.length}</div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                  {a.earns.slice(0,3).map((e,i) => (
+                    <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: colors.green + "12", color: colors.green, border: `1px solid ${colors.green}22` }}>
+                      +{e.points} {e.source}
+                    </span>
+                  ))}
+                  {a.canLose && a.loses.length > 0 && (
+                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, background: colors.red + "12", color: colors.red, border: `1px solid ${colors.red}22` }}>
+                      can lose
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Add tile */}
+          <div onClick={() => setView("new")}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, padding: "24px", border: `2px dashed ${colors.border}`, borderRadius: 12, cursor: "pointer", color: colors.textDim, transition: "all 0.15s", minHeight: 140 }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = colors.accent; e.currentTarget.style.color = colors.accent; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textDim; }}>
+            <Icon name="lucide:plus-circle" size={24} />
+            <span style={{ fontSize: 13 }}>Add Attribute</span>
+          </div>
+        </div>
+
+        {/* Recent awards */}
+        <SectionDivider label="Recent Awards" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {[
+            { member: "solstice.eth",  attr: "Wisdom",  amount: "+30",  src: "Quest completion",      time: "2h ago"    },
+            { member: "deepwater.sol", attr: "Health",  amount: "+15",  src: "Ceremony attendance",   time: "5h ago"    },
+            { member: "wanderer22",    attr: "Love",    amount: "+10",  src: "Peer recognition",      time: "Yesterday" },
+            { member: "lightpath.eth", attr: "Wealth",  amount: "+50",  src: "Challenge completion",  time: "Yesterday" },
+            { member: "solstice.eth",  attr: "Health",  amount: "-10",  src: "Missed ceremony",       time: "2 days ago"},
+          ].map((r, i) => {
+            const attr = attrs.find(a => a.name === r.attr);
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                {attr && <span style={{ fontSize: 16 }}>{attr.icon}</span>}
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted }}>{r.member}</span>
+                  <span style={{ fontSize: 11, color: colors.textDim }}> · {r.src}</span>
+                </div>
+                <span style={{ fontSize: 12, fontWeight: 700, color: r.amount.startsWith("+") ? colors.green : colors.red, width: 36 }}>{r.amount}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: attr?.color || colors.textDim, width: 60, textAlign: "center" }}>{r.attr}</span>
+                <span style={{ fontSize: 11, color: colors.textDim, width: 70, textAlign: "right" }}>{r.time}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Cycle Routes ─────────────────────────────────────────────────────────────
+  if (page === "routes") {
+    const TRIGGER_TYPES = [
+      { id: "join",        label: "Member Joins Cycle",       icon: "lucide:door-open",    color: "#4ECDC4" },
+      { id: "quest",       label: "Quest Completed",          icon: "lucide:flag",         color: "#6FC3FF" },
+      { id: "scene",       label: "Member Enters Scene",      icon: "lucide:map-pin",      color: "#A8E063" },
+      { id: "attribute",   label: "Attribute Threshold",      icon: "lucide:bar-chart-2",  color: "#C3A6FF" },
+      { id: "time",        label: "Scheduled / Recurring",   icon: "lucide:clock",         color: "#FFB347" },
+      { id: "manual",      label: "Manual (Actor Triggered)", icon: "lucide:user-check",   color: "#FF6FAE" },
+    ];
+
+    const STEP_TYPES = [
+      { id: "scene",     label: "Unlock Scene",      icon: "lucide:map"           },
+      { id: "quest",     label: "Offer Quest",       icon: "lucide:flag"          },
+      { id: "message",   label: "Send Message",      icon: "lucide:message-circle"},
+      { id: "reward",    label: "Award Reward",      icon: "lucide:gift"          },
+      { id: "branch",    label: "Branch Condition",  icon: "lucide:git-branch"    },
+      { id: "actor",     label: "Activate Actor",    icon: "lucide:user-cog"      },
+    ];
+
+    const ROUTES_INIT = [
+      {
+        id: "onboarding", name: "Onboarding Path", status: "Active",
+        triggerType: "join", triggerLabel: "Member joins cycle",
+        membersRouted: 47,
+        steps: [
+          { id: "s1", type: "message",  label: 'Elder Sage sends welcome message',    detail: '"Welcome to the Mountain Temple..."' },
+          { id: "s2", type: "scene",    label: 'Unlock "Entrance Hall"',              detail: "Primary gathering space"             },
+          { id: "s3", type: "quest",    label: 'Offer "First Steps" quest',           detail: "Intro arc, 3 challenges"             },
+          { id: "s4", type: "branch",   label: 'On quest completion',                 detail: "Branch: path A or B"                 },
+        ],
+      },
+      {
+        id: "challenge-path", name: "Challenge Path", status: "Active",
+        triggerType: "quest",  triggerLabel: "First Steps quest completed",
+        membersRouted: 31,
+        steps: [
+          { id: "s1", type: "reward",   label: "Award 100 Wisdom",                    detail: "Attribute reward"                    },
+          { id: "s2", type: "scene",    label: 'Unlock "Temple Courtyard"',           detail: "Challenge arena"                     },
+          { id: "s3", type: "quest",    label: 'Offer "Trial by Fire" quest',         detail: "First challenge arc"                 },
+          { id: "s4", type: "message",  label: "Challenge Master sends invitation",   detail: '"Your initiation begins..."'         },
+        ],
+      },
+      {
+        id: "healing-path", name: "Healing Path", status: "Active",
+        triggerType: "attribute", triggerLabel: "Health drops below 50",
+        membersRouted: 12,
+        steps: [
+          { id: "s1", type: "actor",    label: "Healer actor activates",              detail: "Checks in with member"               },
+          { id: "s2", type: "quest",    label: 'Offer "Restoration" quest',           detail: "Recovery and reflection arc"         },
+          { id: "s3", type: "reward",   label: "Award 50 Health on completion",       detail: "Recovery bonus"                      },
+        ],
+      },
+      {
+        id: "ceremony-loop", name: "Monthly Ceremony Loop", status: "Draft",
+        triggerType: "time", triggerLabel: "Every new moon (monthly)",
+        membersRouted: 0,
+        steps: [
+          { id: "s1", type: "message",  label: "Elder Sage announces ceremony",       detail: "48 hours in advance"                 },
+          { id: "s2", type: "scene",    label: 'Open "Summit Circle" scene',          detail: "Ceremony space"                      },
+          { id: "s3", type: "reward",   label: "Award 20 Health to attendees",        detail: "Ceremony participation reward"       },
+        ],
+      },
+    ];
+
+    const [routes, setRoutes]   = useState(ROUTES_INIT);
+    const [view, setView]       = useState(null); // null | "new" | route.id
+
+    // ── Route Editor ─────────────────────────────────────────────
+    const RouteEditor = ({ route, isNew, onBack }) => {
+      const [name, setName]           = useState(route?.name || "");
+      const [status, setStatus]       = useState(route?.status || "Draft");
+      const [triggerType, setTrigger] = useState(route?.triggerType || "");
+      const [triggerLabel, setTrigLbl]= useState(route?.triggerLabel || "");
+      const [steps, setSteps]         = useState(route?.steps || []);
+      const [saving, setSaving]       = useState(false);
+      const [confirmDel, setConfDel]  = useState(false);
+
+      const addStep = (type) => {
+        const labels = { scene: "Unlock Scene", quest: "Offer Quest", message: "Send Message", reward: "Award Reward", branch: "Add Branch", actor: "Activate Actor" };
+        setSteps([...steps, { id: "step-" + Date.now(), type, label: labels[type], detail: "" }]);
+      };
+      const removeStep = i => setSteps(steps.filter((_,j) => j !== i));
+      const editStep   = (i, k, v) => setSteps(steps.map((s,j) => j===i ? {...s,[k]:v} : s));
+
+      const handleSave = () => {
+        setSaving(true);
+        setTimeout(() => {
+          const trigInfo = TRIGGER_TYPES.find(t => t.id === triggerType) || {};
+          if (isNew) setRoutes(prev => [...prev, { id: "route-" + Date.now(), name, status, triggerType, triggerLabel, membersRouted: 0, steps }]);
+          else       setRoutes(prev => prev.map(r => r.id === route.id ? { ...r, name, status, triggerType, triggerLabel, steps } : r));
+          setSaving(false);
+          onBack();
+        }, 600);
+      };
+
+      const stepTypeColor = (t) => ({ scene: "#A8E063", quest: "#6FC3FF", message: "#4ECDC4", reward: "#FFB347", branch: "#C3A6FF", actor: "#FF6FAE" }[t] || colors.textDim);
+
+      return (
+        <div style={{ maxWidth: 700 }}>
+          <PageHeader
+            title={isNew ? "New Route" : route.name}
+            subtitle={isNew ? "Design an automated journey for your members" : `${route.membersRouted} members have gone through this route`}
+            onBack={onBack}
+          >
+            {!isNew && <StatusPill status={status} />}
+          </PageHeader>
+
+          <SectionDivider label="Route Identity" />
+          <Field label="Route Name">
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Onboarding Path" />
+          </Field>
+          <Field label="Status">
+            <div style={{ display: "flex", gap: 8 }}>
+              {["Active", "Draft", "Paused"].map(s => (
+                <button key={s} onClick={() => setStatus(s)}
+                  style={{ padding: "7px 16px", borderRadius: 6, border: `1px solid ${status === s ? colors.accent : colors.border}`, background: status === s ? colors.accent + "18" : "transparent", color: status === s ? colors.accent : colors.textMuted, fontSize: 12, fontWeight: status === s ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <SectionDivider label="Trigger" />
+          <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 12, lineHeight: 1.6 }}>What event starts this route?</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 16 }}>
+            {TRIGGER_TYPES.map(t => {
+              const sel = triggerType === t.id;
+              return (
+                <div key={t.id} onClick={() => { setTrigger(t.id); setTrigLbl(t.label); }}
+                  style={{ padding: "12px 14px", background: sel ? t.color + "18" : colors.surface, border: `1px solid ${sel ? t.color : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s" }}>
+                  <Icon name={t.icon} size={16} style={{ color: sel ? t.color : colors.textDim, marginBottom: 6 }} />
+                  <div style={{ fontSize: 12, fontWeight: sel ? 600 : 400, color: sel ? t.color : colors.textMuted }}>{t.label}</div>
+                </div>
+              );
+            })}
+          </div>
+          {triggerType && (
+            <Field label="Trigger detail" hint={`Specify the exact condition for "${TRIGGER_TYPES.find(t=>t.id===triggerType)?.label}"`}>
+              <Input value={triggerLabel} onChange={e => setTrigLbl(e.target.value)}
+                placeholder={{ join: "Any member joining", quest: "e.g. 'First Steps' quest completed", scene: "e.g. Member enters 'Summit Circle'", attribute: "e.g. Wisdom reaches 100", time: "e.g. Every new moon (monthly)", manual: "Actor or admin triggers manually" }[triggerType]} />
+            </Field>
+          )}
+
+          <SectionDivider label="Steps" />
+          <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 14, lineHeight: 1.6 }}>
+            Steps execute in order when the route is triggered. Drag to reorder (coming soon).
+          </p>
+
+          {steps.length === 0 && (
+            <div style={{ textAlign: "center", padding: "28px 20px", border: `1px dashed ${colors.border}`, borderRadius: 8, color: colors.textDim, marginBottom: 14 }}>
+              <Icon name="lucide:git-branch" size={24} style={{ marginBottom: 8 }} />
+              <div style={{ fontSize: 13 }}>No steps yet — add steps below</div>
+            </div>
+          )}
+
+          {steps.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 0, marginBottom: 16 }}>
+              {steps.map((s, i) => {
+                const tc = stepTypeColor(s.type);
+                const st = STEP_TYPES.find(t => t.id === s.type);
+                return (
+                  <div key={s.id} style={{ display: "flex", gap: 0 }}>
+                    {/* Connector line */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginRight: 12 }}>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: tc + "22", border: `2px solid ${tc}44`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 14 }}>
+                        <Icon name={st?.icon || "lucide:circle"} size={12} style={{ color: tc }} />
+                      </div>
+                      {i < steps.length - 1 && <div style={{ width: 2, flex: 1, background: colors.border, margin: "4px 0" }} />}
+                    </div>
+                    <div style={{ flex: 1, padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, marginBottom: i < steps.length - 1 ? 6 : 0 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: tc + "18", color: tc, fontWeight: 600 }}>{s.type.toUpperCase()}</span>
+                        <input value={s.label} onChange={e => editStep(i, "label", e.target.value)}
+                          style={{ flex: 1, padding: "5px 8px", background: "transparent", border: `1px solid ${colors.border}`, borderRadius: 5, color: colors.text, fontSize: 12, fontWeight: 500, outline: "none" }} />
+                        <button onClick={() => removeStep(i)} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 13 }}>✕</button>
+                      </div>
+                      <input value={s.detail} onChange={e => editStep(i, "detail", e.target.value)}
+                        placeholder="Additional detail (optional)"
+                        style={{ width: "100%", padding: "5px 8px", background: "transparent", border: `1px solid ${colors.borderSubtle}`, borderRadius: 5, color: colors.textDim, fontSize: 11, outline: "none" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Add step buttons */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 24 }}>
+            <span style={{ fontSize: 11, color: colors.textDim, alignSelf: "center", marginRight: 4 }}>Add step:</span>
+            {STEP_TYPES.map(t => (
+              <button key={t.id} onClick={() => addStep(t.id)}
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 6, border: `1px solid ${colors.border}`, background: colors.surface, color: colors.textMuted, fontSize: 11, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = stepTypeColor(t.id); e.currentTarget.style.color = stepTypeColor(t.id); }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textMuted; }}>
+                <Icon name={t.icon} size={11} />
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn onClick={handleSave}>{saving ? "Saving..." : isNew ? "Create Route" : "Save Route"}</Btn>
+            <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+          </div>
+
+          {!isNew && (
+            <div style={{ marginTop: 32, padding: "20px 24px", background: colors.red + "08", border: `1px solid ${colors.red}22`, borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: colors.red, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 10 }}>Danger Zone</div>
+              {!confirmDel ? (
+                <>
+                  <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
+                    Deleting this route stops it permanently. Members currently in progress through it will not receive remaining steps.
+                  </p>
+                  <Btn danger onClick={() => setConfDel(true)}>Delete Route</Btn>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: 13, color: colors.red, fontWeight: 500, marginBottom: 12 }}>Delete "{route.name}"?</p>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Btn danger onClick={() => { setRoutes(prev => prev.filter(r => r.id !== route.id)); onBack(); }}>Confirm Delete</Btn>
+                    <Btn variant="secondary" onClick={() => setConfDel(false)}>Cancel</Btn>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ── Router ────────────────────────────────────────────────
+    if (view === "new") return <RouteEditor isNew onBack={() => setView(null)} />;
+    const editRoute = routes.find(r => r.id === view);
+    if (editRoute) return <RouteEditor route={editRoute} onBack={() => setView(null)} />;
+
+    // ── List view ─────────────────────────────────────────────
+    return (
+      <div>
+        <PageHeader title="Routes" subtitle="Automated member journeys triggered by events, quests, or conditions">
+          <Btn onClick={() => setView("new")}>+ New Route</Btn>
+        </PageHeader>
+
+        {/* Stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
+          {[
+            { label: "Routes",      value: String(routes.length),                                                        icon: "lucide:git-branch"   },
+            { label: "Active",      value: String(routes.filter(r => r.status === "Active").length),                     icon: "lucide:check-circle" },
+            { label: "Routed",      value: String(routes.reduce((s,r) => s + r.membersRouted, 0)),                       icon: "lucide:users"        },
+            { label: "Avg Steps",   value: (routes.reduce((s,r) => s + r.steps.length, 0) / routes.length || 0).toFixed(1), icon: "lucide:list"    },
+          ].map((s, i) => (
+            <div key={i} style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 6 }}>
+                <Icon name={s.icon} size={13} style={{ color: colors.accent }} />
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase" }}>{s.label}</span>
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {routes.map(r => {
+            const [hov, setHov] = React.useState(false);
+            const trigger = TRIGGER_TYPES.find(t => t.id === r.triggerType);
+            return (
+              <div key={r.id} onClick={() => setView(r.id)}
+                onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                style={{ padding: "16px 18px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
+                  {/* Trigger badge */}
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: (trigger?.color || colors.accent) + "22", border: `1px solid ${(trigger?.color || colors.accent)}44`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name={trigger?.icon || "lucide:zap"} size={18} style={{ color: trigger?.color || colors.accent }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: colors.text, marginBottom: 2 }}>{r.name}</div>
+                    <div style={{ fontSize: 12, color: colors.textDim }}>Trigger: {r.triggerLabel}</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, color: colors.textDim }}>{r.membersRouted} members</span>
+                    <StatusPill status={r.status} />
+                    <Icon name="lucide:chevron-right" size={15} style={{ color: colors.textDim }} />
+                  </div>
+                </div>
+                {/* Step pills */}
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  {r.steps.map((s, i) => {
+                    const tc = { scene: "#A8E063", quest: "#6FC3FF", message: "#4ECDC4", reward: "#FFB347", branch: "#C3A6FF", actor: "#FF6FAE" }[s.type] || colors.textDim;
+                    return (
+                      <span key={i} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, padding: "3px 8px", borderRadius: 10, background: tc + "15", color: tc, border: `1px solid ${tc}33` }}>
+                        <span style={{ fontWeight: 700 }}>{i+1}</span> {s.label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Add tile */}
+          <div onClick={() => setView("new")}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "18px", border: `2px dashed ${colors.border}`, borderRadius: 12, cursor: "pointer", color: colors.textDim, fontSize: 13, transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = colors.accent; e.currentTarget.style.color = colors.accent; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textDim; }}>
+            <Icon name="lucide:plus" size={14} />
+            <span>New Route</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, letterSpacing: -0.3 }}>{page.charAt(0).toUpperCase() + page.slice(1)}</h1>
