@@ -301,7 +301,7 @@ const TelegramDetail = ({ onBack }) => {
     <div style={{ maxWidth: 640 }}>
       <PageHeader
         title="✈️ Telegram"
-        subtitle="Bot-based messaging for actors to reach players via Telegram"
+        subtitle="Bot-based messaging for the Platform Core actor to reach players via Telegram"
         onBack={onBack}
       >
         <StatusPill status="Connected" />
@@ -367,14 +367,14 @@ const GoogleDetail = ({ onBack }) => {
     { scope: "calendar.events", description: "Create and read calendar events", active: calendar },
     { scope: "calendar.readonly", description: "Check availability", active: calendar },
     { scope: "meet.readonly", description: "Access meeting links and schedules", active: meet },
-    { scope: "drive.file", description: "Read and create files actors generate", active: drive },
+    { scope: "drive.file", description: "Read and create files Platform Core generates", active: drive },
   ];
 
   return (
     <div style={{ maxWidth: 640 }}>
       <PageHeader
         title="📧 Google Workspace"
-        subtitle="Gmail, Calendar, Meet, and Drive access for Kinship actors"
+        subtitle="Gmail, Calendar, Meet, and Drive access for the Platform Core actor"
         onBack={onBack}
       >
         <StatusPill status="Connected" />
@@ -395,10 +395,10 @@ const GoogleDetail = ({ onBack }) => {
       </Field>
 
       <SectionDivider label="Enabled Services" />
-      <Toggle label="Gmail" enabled={gmail} onChange={setGmail} hint="Actors can send and read emails on behalf of this account" />
-      <Toggle label="Google Calendar" enabled={calendar} onChange={setCalendar} hint="Actors can check availability and create events" />
-      <Toggle label="Google Meet" enabled={meet} onChange={setMeet} hint="Actors can generate Meet links and join schedules" />
-      <Toggle label="Google Drive" enabled={drive} onChange={setDrive} hint="Actors can create and access files in Drive" />
+      <Toggle label="Gmail" enabled={gmail} onChange={setGmail} hint="Platform Core can send and read emails on behalf of this account" />
+      <Toggle label="Google Calendar" enabled={calendar} onChange={setCalendar} hint="Platform Core can check availability and create events" />
+      <Toggle label="Google Meet" enabled={meet} onChange={setMeet} hint="Platform Core can generate Meet links and join schedules" />
+      <Toggle label="Google Drive" enabled={drive} onChange={setDrive} hint="Platform Core can create and access files in Drive" />
 
       <SectionDivider label="Active OAuth Scopes" />
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -419,7 +419,7 @@ const GoogleDetail = ({ onBack }) => {
       </div>
 
       <DangerZone>
-        <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Revoking access will immediately stop all actors from sending email, accessing calendars, or interacting with Drive on behalf of this Google account.</p>
+        <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Revoking access will immediately stop Platform Core from sending email, accessing calendars, or interacting with Drive on behalf of this Google account.</p>
         <Btn danger>Revoke Google Access</Btn>
       </DangerZone>
     </div>
@@ -498,9 +498,9 @@ const LinkedInDetail = ({ onBack }) => {
           </Field>
 
           <SectionDivider label="Capabilities" />
-          <Toggle label="Publish posts" enabled={true} onChange={() => {}} hint="Actors can draft and publish posts to LinkedIn" />
-          <Toggle label="Comment on posts" enabled={false} onChange={() => {}} hint="Actors can reply to comments and engage threads" />
-          <Toggle label="Send connection requests" enabled={false} onChange={() => {}} hint="Actors can send invitations on behalf of this account" />
+          <Toggle label="Publish posts" enabled={true} onChange={() => {}} hint="Platform Core can draft and publish posts to LinkedIn" />
+          <Toggle label="Comment on posts" enabled={false} onChange={() => {}} hint="Platform Core can reply to comments and engage threads" />
+          <Toggle label="Send connection requests" enabled={false} onChange={() => {}} hint="Platform Core can send invitations on behalf of this account" />
 
           <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
             <Btn>Save Configuration</Btn>
@@ -517,7 +517,7 @@ const LinkedInDetail = ({ onBack }) => {
 
       {pluginInstalled && (
         <DangerZone>
-          <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Disconnecting LinkedIn removes all actor permissions and stops all posting activity. The Chrome Extension will remain installed.</p>
+          <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>Disconnecting LinkedIn removes Platform Core's access and stops all posting activity. The Chrome Extension will remain installed.</p>
           <Btn danger>Disconnect LinkedIn</Btn>
         </DangerZone>
       )}
