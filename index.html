@@ -22,11 +22,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
 const { useState } = React;
+
+const Icon = ({ name, size = 14, color, style = {} }) =>
+  React.createElement('iconify-icon', {
+    icon: name,
+    width: size,
+    height: size,
+    style: { display: 'inline-block', verticalAlign: 'middle', flexShrink: 0,
+             color: color || 'currentColor', lineHeight: 1, ...style }
+  });
 
 const colors = {
   bg: "#050824",
@@ -49,6 +59,15 @@ const colors = {
   green: "#10B981",
   red: "#EF4444",
   white: "#FFFFFF",
+};
+
+
+// Smart renderer: handles both emoji strings and iconify icon names
+const RenderIcon = ({ icon, size = 20, style = {}, color }) => {
+  if (icon && icon.includes && icon.includes(':')) {
+    return <Icon name={icon} size={size} style={style} color={color} />;
+  }
+  return <span style={{ fontSize: size, lineHeight: 1, display: 'inline-block', flexShrink: 0, ...style }}>{icon}</span>;
 };
 
 // ─── Shared primitives ───────────────────────────────────────────────────────
@@ -80,7 +99,7 @@ const NavItem = ({ icon, label, active, count, onClick }) => {
         borderRadius: "0 6px 6px 0",
         cursor: "pointer", transition: "all 0.15s",
       }}>
-      <span style={{ fontSize: 15, opacity: 0.75 }}>{icon}</span>
+      <Icon name={icon} size={15} style={{ opacity: 0.75 }} />
       <span style={{ fontSize: 13, fontWeight: active ? 600 : 400, color: active ? colors.accent : colors.textMuted, flex: 1, textAlign: "left" }}>{label}</span>
       <Badge count={count} />
     </button>
@@ -101,7 +120,7 @@ const CycleSelector = ({ current, onSwitch, isWizard, extraCycles = [], onNewCyc
       <button onClick={() => setOpen(!open)}
         style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "10px 12px", background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.borderHover}`, borderRadius: 9999, cursor: "pointer", color: colors.text }}>
         <span style={{ fontSize: 13, flex: 1, textAlign: "left", fontWeight: 600 }}>{selected.name}</span>
-        <span style={{ fontSize: 10, color: colors.textDim }}>{open ? "▲" : "▼"}</span>
+        <Icon name={open ? "lucide:chevron-up" : "lucide:chevron-down"} size={12} style={{ color: colors.textDim }} />
       </button>
       {open && (
         <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, background: "#0D0B4A", border: `1px solid ${colors.borderHover}`, borderRadius: 12, overflow: "hidden", zIndex: 100, boxShadow: "0 12px 40px rgba(0,0,0,0.6)" }}>
@@ -303,7 +322,7 @@ const TelegramDetail = ({ onBack }) => {
     <div style={{ maxWidth: 640 }}>
       <PageHeader
         title="✈️ Telegram"
-        subtitle="Bot-based messaging for the Platform Core actor to reach players via Telegram"
+        subtitle="Bot-based messaging for the Platform Core actor to reach members via Telegram"
         onBack={onBack}
       >
         <StatusPill status="Connected" />
@@ -587,10 +606,10 @@ const SolanaDetail = ({ onBack }) => {
       </div>
 
       <SectionDivider label="Embedded Wallet Settings" />
-      <Toggle label="Enable embedded wallets for players" enabled={embeddedWallet} onChange={setEmbeddedWallet}
-        hint="Each player gets a non-custodial wallet created on signup" />
-      <Toggle label="Custodial mode for new players" enabled={custodial} onChange={setCustodial}
-        hint="Platform holds keys until player opts into self-custody. Reduces friction for onboarding." />
+      <Toggle label="Enable embedded wallets for members" enabled={embeddedWallet} onChange={setEmbeddedWallet}
+        hint="Each member gets a non-custodial wallet created on signup" />
+      <Toggle label="Custodial mode for new members" enabled={custodial} onChange={setCustodial}
+        hint="Platform holds keys until member opts into self-custody. Reduces friction for onboarding." />
 
       <SectionDivider label="Kinship Coin (KNSHP)" />
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
@@ -625,10 +644,10 @@ const SolanaDetail = ({ onBack }) => {
 // ─── Platform tools list ──────────────────────────────────────────────────────
 
 const CONNECTORS = [
-  { id: "bluesky", name: "BlueSky", icon: "🦋", account: "@kinship.bsky.social", status: "Connected", category: "Social" },
-  { id: "telegram", name: "Telegram", icon: "✈️", account: "KinshipBot", status: "Connected", category: "Messaging" },
-  { id: "google", name: "Google Workspace", icon: "📧", account: "admin@kinship.today", status: "Connected", category: "Productivity" },
-  { id: "linkedin", name: "LinkedIn", icon: "💼", account: "Chrome plugin required", status: "Pending Setup", category: "Social" },
+  { id: "bluesky", name: "BlueSky", icon: "simple-icons:bluesky", account: "@kinship.bsky.social", status: "Connected", category: "Social" },
+  { id: "telegram", name: "Telegram", icon: "simple-icons:telegram", account: "KinshipBot", status: "Connected", category: "Messaging" },
+  { id: "google", name: "Google Workspace", icon: "simple-icons:google", account: "admin@kinship.today", status: "Connected", category: "Productivity" },
+  { id: "linkedin", name: "LinkedIn", icon: "simple-icons:linkedin", account: "Chrome plugin required", status: "Pending Setup", category: "Social" },
   { id: "solana", name: "Solana", icon: "◎", account: "mainnet-beta", status: "Connected", category: "Commerce" },
 ];
 
@@ -653,7 +672,7 @@ const PLATFORM_TOOLS_DATA = [
   {
     id: "pattern-tracker",
     name: "Pattern Tracker",
-    icon: "🔁",
+    icon: "lucide:activity",
     category: "Analytics",
     status: "Active",
     version: "0.9.1",
@@ -670,7 +689,7 @@ const PLATFORM_TOOLS_DATA = [
   {
     id: "ritual-timer",
     name: "Ritual Timer",
-    icon: "⏱️",
+    icon: "lucide:timer",
     category: "Facilitation",
     status: "Active",
     version: "1.0.3",
@@ -716,7 +735,7 @@ const MeetingFacilitatorDetail = ({ onBack }) => {
 
   return (
     <div style={{ maxWidth: 680 }}>
-      <PageHeader title={`${tool.icon} ${tool.name}`} subtitle={tool.desc} onBack={onBack}>
+      <PageHeader title={tool.name} iconEl={<RenderIcon icon={tool.icon} size={28} />} subtitle={tool.desc} onBack={onBack}>
         <StatusPill status={tool.status} />
       </PageHeader>
 
@@ -846,17 +865,17 @@ const MeetingFacilitatorDetail = ({ onBack }) => {
 // ─── Add Connector flow ───────────────────────────────────────────────────────
 
 const AVAILABLE_CONNECTORS = [
-  { id: "discord", name: "Discord", icon: "💬", category: "Messaging", auth: "OAuth", desc: "Bot-based messaging, channels, threads, and voice rooms" },
-  { id: "slack", name: "Slack", icon: "🟣", category: "Messaging", auth: "OAuth", desc: "Workspace messaging and workflow automation" },
-  { id: "whatsapp", name: "WhatsApp", icon: "📱", category: "Messaging", auth: "API Key", desc: "Messaging via the WhatsApp Business API" },
-  { id: "zoom", name: "Zoom", icon: "📹", category: "Video", auth: "OAuth", desc: "Meeting scheduling, recordings, and in-session chat" },
-  { id: "notion", name: "Notion", icon: "📓", category: "Productivity", auth: "OAuth", desc: "Read and write to Notion pages and databases" },
-  { id: "airtable", name: "Airtable", icon: "🗃️", category: "Productivity", auth: "API Key", desc: "Structured data in tables — great for tracking and records" },
-  { id: "stripe", name: "Stripe", icon: "💳", category: "Commerce", auth: "API Key", desc: "Payment processing, subscriptions, and invoicing" },
-  { id: "calendly", name: "Calendly", icon: "📅", category: "Scheduling", auth: "OAuth", desc: "Book sessions and sync availability with members" },
-  { id: "youtube", name: "YouTube", icon: "▶️", category: "Media", auth: "OAuth", desc: "Publish content, read comments, and manage the channel" },
-  { id: "spotify", name: "Spotify", icon: "🎵", category: "Media", auth: "OAuth", desc: "Surface playlists and ambient music cues in sessions" },
-  { id: "github", name: "GitHub", icon: "🐙", category: "Developer", auth: "OAuth", desc: "Trigger workflows from commits and pull requests" },
+  { id: "discord", name: "Discord", icon: "simple-icons:discord", category: "Messaging", auth: "OAuth", desc: "Bot-based messaging, channels, threads, and voice rooms" },
+  { id: "slack", name: "Slack", icon: "simple-icons:slack", category: "Messaging", auth: "OAuth", desc: "Workspace messaging and workflow automation" },
+  { id: "whatsapp", name: "WhatsApp", icon: "simple-icons:whatsapp", category: "Messaging", auth: "API Key", desc: "Messaging via the WhatsApp Business API" },
+  { id: "zoom", name: "Zoom", icon: "simple-icons:zoom", category: "Video", auth: "OAuth", desc: "Meeting scheduling, recordings, and in-session chat" },
+  { id: "notion", name: "Notion", icon: "simple-icons:notion", category: "Productivity", auth: "OAuth", desc: "Read and write to Notion pages and databases" },
+  { id: "airtable", name: "Airtable", icon: "simple-icons:airtable", category: "Productivity", auth: "API Key", desc: "Structured data in tables — great for tracking and records" },
+  { id: "stripe", name: "Stripe", icon: "simple-icons:stripe", category: "Commerce", auth: "API Key", desc: "Payment processing, subscriptions, and invoicing" },
+  { id: "calendly", name: "Calendly", icon: "simple-icons:calendly", category: "Scheduling", auth: "OAuth", desc: "Book sessions and sync availability with members" },
+  { id: "youtube", name: "YouTube", icon: "simple-icons:youtube", category: "Media", auth: "OAuth", desc: "Publish content, read comments, and manage the channel" },
+  { id: "spotify", name: "Spotify", icon: "simple-icons:spotify", category: "Media", auth: "OAuth", desc: "Surface playlists and ambient music cues in sessions" },
+  { id: "github", name: "GitHub", icon: "simple-icons:github", category: "Developer", auth: "OAuth", desc: "Trigger workflows from commits and pull requests" },
   { id: "webhook", name: "Custom Webhook", icon: "🔗", category: "Developer", auth: "Webhook URL", desc: "Send and receive arbitrary payloads to any endpoint" },
 ];
 const connectorCategories = ["All", "Messaging", "Video", "Productivity", "Commerce", "Scheduling", "Media", "Developer"];
@@ -878,7 +897,7 @@ const AddConnectorFlow = ({ onBack }) => {
     return (
       <div style={{ maxWidth: 560 }}>
         <div style={{ textAlign: "center", padding: "40px 20px" }}>
-          <div style={{ fontSize: 56, marginBottom: 16 }}>{conn.icon}</div>
+          <RenderIcon icon={conn.icon} size={56} style={{ marginBottom: 16 }} />
           <div style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Connected!</div>
           <div style={{ fontSize: 14, color: colors.textDim, marginBottom: 28 }}>{conn.name} is now connected to Platform Core. Creators can start adding it to their cycles.</div>
           <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
@@ -897,7 +916,7 @@ const AddConnectorFlow = ({ onBack }) => {
         <button onClick={() => { setAuthStep(false); }} style={{ background: "none", border: "none", color: colors.accent, fontSize: 12, cursor: "pointer", marginBottom: 16, fontFamily: "inherit" }}>← Back to connector list</button>
         <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, overflow: "hidden" }}>
           <div style={{ padding: "20px 24px", borderBottom: `1px solid ${colors.border}`, display: "flex", alignItems: "center", gap: 14 }}>
-            <span style={{ fontSize: 32 }}>{conn.icon}</span>
+            <RenderIcon icon={conn.icon} size={32} />
             <div>
               <div style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>{conn.name}</div>
               <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{conn.desc}</div>
@@ -978,7 +997,7 @@ const AddConnectorFlow = ({ onBack }) => {
             <div key={conn.id} onClick={() => { setSelected(conn.id); setAuthStep(true); }}
               onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
               style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-              <span style={{ fontSize: 26 }}>{conn.icon}</span>
+              <RenderIcon icon={conn.icon} size={26} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{conn.name}</span>
@@ -1044,7 +1063,7 @@ const AddToolFlow = ({ onBack }) => {
             return (
               <div key={opt.id} onClick={() => setToolType(opt.id)} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
                 style={{ padding: "24px 22px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.accent + "60" : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>{opt.icon}</div>
+                <RenderIcon icon={opt.icon} size={36} style={{ marginBottom: 12 }} />
                 <div style={{ fontSize: 15, fontWeight: 700, color: colors.text, marginBottom: 6 }}>{opt.label}</div>
                 <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.6 }}>{opt.desc}</div>
               </div>
@@ -1062,17 +1081,17 @@ const AddToolFlow = ({ onBack }) => {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {[
             { icon: "🎙️", name: "Meeting Facilitator", desc: "Real-time communication guidance during live sessions", available: false },
-            { icon: "🔁", name: "Pattern Tracker", desc: "Surfaces recurring interaction patterns across member sessions", available: false },
-            { icon: "⏱️", name: "Ritual Timer", desc: "Timed ritual structures with configurable pacing and cues", available: false },
-            { icon: "🌡️", name: "Mood Barometer", desc: "Tracks emotional temperature of a group in real time", available: true },
-            { icon: "🪞", name: "Reflection Prompter", desc: "Injects guided reflection questions at configured session moments", available: true },
+            { icon: "lucide:activity", name: "Pattern Tracker", desc: "Surfaces recurring interaction patterns across member sessions", available: false },
+            { icon: "lucide:timer", name: "Ritual Timer", desc: "Timed ritual structures with configurable pacing and cues", available: false },
+            { icon: "lucide:heart-pulse", name: "Mood Barometer", desc: "Tracks emotional temperature of a group in real time", available: true },
+            { icon: "lucide:brain", name: "Reflection Prompter", desc: "Injects guided reflection questions at configured session moments", available: true },
             { icon: "📊", name: "Engagement Lens", desc: "Tracks participation balance and surfaces quieter voices", available: true },
           ].map((t, i) => {
             const [hovered, setHovered] = useState(false);
             return (
               <div key={i} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: hovered && t.available ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered && t.available ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: t.available ? "pointer" : "default", transition: "all 0.15s", opacity: t.available ? 1 : 0.55 }}>
-                <span style={{ fontSize: 22 }}>{t.icon}</span>
+                <RenderIcon icon={t.icon} size={22} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{t.name}</div>
                   <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{t.desc}</div>
@@ -1205,14 +1224,14 @@ const PlatformToolsList = ({ onSelectTool, onAddConnector, onAddTool, onSelectPl
               <div key={t.id} onClick={() => onSelectTool(t.id)}
                 onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-                <span style={{ fontSize: 22 }}>{t.icon}</span>
+                <RenderIcon icon={t.icon} size={22} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{t.name}</div>
                   <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{t.account}</div>
                 </div>
                 <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: colors.textDim, border: `1px solid ${colors.border}` }}>{t.category}</span>
                 <StatusPill status={t.status} />
-                <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+                <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
               </div>
             );
           })}
@@ -1227,7 +1246,7 @@ const PlatformToolsList = ({ onSelectTool, onAddConnector, onAddTool, onSelectPl
               <div key={t.id} onClick={() => onSelectPlatformTool(t.id)}
                 onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-                <span style={{ fontSize: 22 }}>{t.icon}</span>
+                <RenderIcon icon={t.icon} size={22} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{t.name}</div>
                   <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{t.desc}</div>
@@ -1239,7 +1258,7 @@ const PlatformToolsList = ({ onSelectTool, onAddConnector, onAddTool, onSelectPl
                 </div>
                 <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: colors.textDim, border: `1px solid ${colors.border}` }}>{t.category}</span>
                 <StatusPill status={t.status} />
-                <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+                <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
               </div>
             );
           })}
@@ -1553,13 +1572,13 @@ const PlatformPromptsContent = () => {
             <div key={p.id} onClick={() => setView(p.id)}
               onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
               style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-              <span style={{ fontSize: 22 }}>{p.icon}</span>
+              <RenderIcon icon={p.icon} size={22} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{p.name}</div>
                 <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{p.scope} · Edited {p.lastEdited}</div>
               </div>
               <StatusPill status={p.status} />
-              <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+              <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
             </div>
           );
         })}
@@ -1725,7 +1744,7 @@ const ActorEditor = ({ actor, onBack, isNew }) => {
               return (
                 <div key={t.id} onClick={() => setActorType(t.id)} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
                   style={{ padding: "14px 16px", background: on ? colors.accent + "12" : hov ? colors.surfaceHover : colors.surface, border: `1px solid ${on ? colors.accent + "60" : colors.border}`, borderRadius: 9, cursor: "pointer", transition: "all 0.15s" }}>
-                  <div style={{ fontSize: 22, marginBottom: 6 }}>{t.icon}</div>
+                  <RenderIcon icon={t.icon} size={22} style={{ marginBottom: 6 }} />
                   <div style={{ fontSize: 13, fontWeight: 600, color: on ? colors.accent : colors.text, marginBottom: 3 }}>{t.id}</div>
                   <div style={{ fontSize: 11, color: colors.textDim }}>{t.desc}</div>
                 </div>
@@ -1926,7 +1945,7 @@ const PlatformActorsContent = () => {
             <div key={a.id} onClick={() => setView(a.id)}
               onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
               style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: colors.accent + "18", border: `1px solid ${colors.accent}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{a.emoji}</div>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: colors.accent + "18", border: `1px solid ${colors.accent}33`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><RenderIcon icon={a.emoji} size={22} /></div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{a.name}</span>
@@ -1946,7 +1965,7 @@ const PlatformActorsContent = () => {
                 ))}
               </div>
               <StatusPill status={a.status} />
-              <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+              <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
             </div>
           );
         })}
@@ -1987,7 +2006,7 @@ const MemberDetail = ({ user, onBack }) => {
   const selectStyle = { width: "100%", padding: "9px 12px", background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" };
   const actionRow = (icon, label, desc, btnLabel, btnColor, onClick) => (
     <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "13px 0", borderBottom: `1px solid ${colors.borderSubtle}` }}>
-      <span style={{ fontSize: 18, width: 28, textAlign: "center" }}>{icon}</span>
+      <span style={{ width: 28, textAlign: "center", display:"flex", alignItems:"center", justifyContent:"center" }}><RenderIcon icon={icon} size={16} /></span>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 500, color: colors.text }}>{label}</div>
         <div style={{ fontSize: 11, color: colors.textDim, marginTop: 1 }}>{desc}</div>
@@ -2073,17 +2092,17 @@ const MemberDetail = ({ user, onBack }) => {
       {tab === "moderation" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <SectionCard title="Actions">
-            {actionRow("⚠️", "Issue a Warning", "Send the member a formal warning message", "Send Warning", colors.warning, () => setShowWarnBox(w => !w))}
+            {actionRow("lucide:alert-triangle", "Issue a Warning", "Send the member a formal warning message", "Send Warning", colors.warning, () => setShowWarnBox(w => !w))}
             {showWarnBox && (
               <div style={{ padding: "12px 0 4px" }}>
                 <textarea value={warnMsg} onChange={e => setWarnMsg(e.target.value)} rows={3} placeholder="Describe the reason for the warning..." style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: `1px solid ${colors.warning}44`, borderRadius: 8, padding: "9px 12px", color: colors.textMuted, fontSize: 13, resize: "vertical", outline: "none" }} />
                 <Btn variant="primary" style={{ marginTop: 8, background: colors.warning, border: "none" }}>Send Warning</Btn>
               </div>
             )}
-            {actionRow("📨", "Send Direct Message", "Send a private message from the platform", "Message", colors.blue, () => {})}
-            {actionRow("🚫", "Suspend Account", "Immediately revokes access. Member can be reinstated.", user.status === "Suspended" ? "Reactivate Instead" : "Suspend", colors.warning, () => {})}
-            {actionRow("🔨", "Ban Account", "Permanently blocks this account from the platform", "Ban", colors.red, () => {})}
-            {actionRow("🗑️", "Delete Account", "Permanently removes all data. Cannot be undone.", "Delete", colors.red, () => {})}
+            {actionRow("lucide:mail", "Send Direct Message", "Send a private message from the platform", "Message", colors.blue, () => {})}
+            {actionRow("lucide:ban", "Suspend Account", "Immediately revokes access. Member can be reinstated.", user.status === "Suspended" ? "Reactivate Instead" : "Suspend", colors.warning, () => {})}
+            {actionRow("lucide:hammer", "Ban Account", "Permanently blocks this account from the platform", "Ban", colors.red, () => {})}
+            {actionRow("lucide:trash-2", "Delete Account", "Permanently removes all data. Cannot be undone.", "Delete", colors.red, () => {})}
           </SectionCard>
           {user.warnings > 0 && (
             <SectionCard title="Warning History">
@@ -2101,10 +2120,10 @@ const MemberDetail = ({ user, onBack }) => {
 
       {tab === "access" && (
         <SectionCard title="Security">
-          {actionRow("🔑", "Reset Password", `Send a password reset link to ${user.email}`, "Send Reset", colors.blue, () => {})}
-          {actionRow("📱", "Revoke Sessions", "Force sign-out from all devices immediately", "Revoke All", colors.warning, () => {})}
-          {actionRow("🔐", "Reset 2FA", "Clear any two-factor authentication setup", "Reset 2FA", colors.textMuted, () => {})}
-          {actionRow("📋", "Export Data", "Download a full data export for this account", "Export", colors.textMuted, () => {})}
+          {actionRow("lucide:key-round", "Reset Password", `Send a password reset link to ${user.email}`, "Send Reset", colors.blue, () => {})}
+          {actionRow("lucide:smartphone", "Revoke Sessions", "Force sign-out from all devices immediately", "Revoke All", colors.warning, () => {})}
+          {actionRow("lucide:lock", "Reset 2FA", "Clear any two-factor authentication setup", "Reset 2FA", colors.textMuted, () => {})}
+          {actionRow("lucide:clipboard-list", "Export Data", "Download a full data export for this account", "Export", colors.textMuted, () => {})}
           <div style={{ padding: "12px 0 4px", display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ fontSize: 11, color: colors.textDim, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.7 }}>Login History</div>
             {[["2026-02-25 14:32", "Chrome · macOS", "San Francisco, CA"], ["2026-02-24 09:11", "iOS App", "San Francisco, CA"], ["2026-02-20 22:04", "Chrome · macOS", "San Francisco, CA"]].map(([time, client, loc]) => (
@@ -2318,7 +2337,7 @@ const PlatformUsersContent = () => {
 
       {/* Search */}
       <div style={{ position: "relative", marginBottom: 14 }}>
-        <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: colors.textDim, fontSize: 13, pointerEvents: "none" }}>🔍</span>
+        <Icon name="lucide:search" size={14} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: colors.textDim, pointerEvents: "none" }} />
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or email..."
           style={{ width: "100%", padding: "8px 12px 8px 32px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
       </div>
@@ -2384,7 +2403,7 @@ const PlatformUsersContent = () => {
                   {u.name.charAt(0).toUpperCase()}
                 </div>
                 <span style={{ fontSize: 13, fontWeight: 500, color: colors.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.name}</span>
-                {u.warnings > 0 && <span style={{ fontSize: 9, color: colors.warning, background: colors.warning + "18", padding: "1px 5px", borderRadius: 4, flexShrink: 0 }}>⚠️ {u.warnings}</span>}
+                {u.warnings > 0 && <span style={{ display:"flex", alignItems:"center", gap:2, fontSize: 9, color: colors.warning, background: colors.warning + "18", padding: "2px 6px", borderRadius: 4, flexShrink: 0 }}><Icon name="lucide:alert-triangle" size={9} />{u.warnings}</span>}
               </div>
               <div style={{ fontSize: 12, color: colors.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{u.email}</div>
               <div><span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 9999, background: rc + "22", color: rc }}>{u.role}</span></div>
@@ -2532,10 +2551,10 @@ const PlatformBotsContent = () => {
 const KNOWLEDGE_ITEMS = [
   { id: "hearts-ref", name: "HEARTS Framework Reference", type: "document", format: "PDF", status: "Ingested", icon: "📚", size: "2.4 MB", pages: 42, added: "2024-04-15", addedBy: "moto", source: "upload", chunks: 128, scope: "All cycles" },
   { id: "policies", name: "Platform Policies", type: "document", format: "PDF", status: "Ingested", icon: "📋", size: "890 KB", pages: 18, added: "2024-05-02", addedBy: "moto", source: "upload", chunks: 54, scope: "All cycles" },
-  { id: "overview", name: "Kinship Systems Overview", type: "document", format: "DOCX", status: "Ingested", icon: "🏛️", size: "1.1 MB", pages: 24, added: "2024-06-10", addedBy: "Eloy", source: "upload", chunks: 72, scope: "All cycles" },
-  { id: "nightpaper", name: "Kinship Systems Nightpaper 2026", type: "document", format: "PDF", status: "Processing", icon: "📰", size: "156 KB", pages: 12, added: "2026-02-23", addedBy: "moto", source: "upload", chunks: 0, scope: "All cycles" },
+  { id: "overview", name: "Kinship Systems Overview", type: "document", format: "DOCX", status: "Ingested", icon: "lucide:landmark", size: "1.1 MB", pages: 24, added: "2024-06-10", addedBy: "Eloy", source: "upload", chunks: 72, scope: "All cycles" },
+  { id: "nightpaper", name: "Kinship Systems Nightpaper 2026", type: "document", format: "PDF", status: "Processing", icon: "lucide:newspaper", size: "156 KB", pages: 12, added: "2026-02-23", addedBy: "moto", source: "upload", chunks: 0, scope: "All cycles" },
   { id: "indigenous", name: "Indigenous Worldview & Trance-Based Learning", type: "link", format: "Web", status: "Ingested", icon: "🔗", size: "—", pages: null, added: "2024-08-20", addedBy: "moto", source: "https://fourarrows.example.com/research", chunks: 34, scope: "Selected cycles" },
-  { id: "ai-care", name: "Comparative Analysis: Care Frameworks in EdTech", type: "ai-generated", format: "DOCX", status: "Ingested", icon: "🤖", size: "340 KB", pages: 8, added: "2026-01-15", addedBy: "Kaytee (AI)", source: "ai-research", chunks: 22, scope: "All cycles" },
+  { id: "ai-care", name: "Comparative Analysis: Care Frameworks in EdTech", type: "ai-generated", format: "DOCX", status: "Ingested", icon: "lucide:bot", size: "340 KB", pages: 8, added: "2026-01-15", addedBy: "Kaytee (AI)", source: "ai-research", chunks: 22, scope: "All cycles" },
 ];
 
 const sourceTypeLabels = { document: "Uploaded", link: "Ingested from URL", "ai-generated": "AI-Generated Research" };
@@ -2823,7 +2842,7 @@ const PlatformKnowledgeContent = () => {
             <div key={d.id} onClick={() => setView(d.id)}
               onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
               style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-              <span style={{ fontSize: 20 }}>{d.icon}</span>
+              <RenderIcon icon={d.icon} size={20} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{d.name}</div>
                 <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>
@@ -2832,7 +2851,7 @@ const PlatformKnowledgeContent = () => {
                 </div>
               </div>
               <StatusPill status={d.status} />
-              <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+              <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
             </div>
           );
         })}
@@ -2844,9 +2863,9 @@ const PlatformKnowledgeContent = () => {
 // ─── Platform Databases ──────────────────────────────────────────────────────
 
 const PLATFORM_DATABASES = [
-  { id: "pinecone-knowledge", name: "Pinecone — Platform Knowledge", engine: "Pinecone", type: "Vector", status: "Active", icon: "🌲", stats: "3 namespaces · 12K vectors", region: "us-east-1", version: "Serverless", created: "2024-03-20", lastSync: "2026-02-25", owner: "moto", usage: "Embeddings for knowledge base, system prompts, and actor memory" },
-  { id: "mongo-users", name: "MongoDB — Users & Auth", engine: "MongoDB", type: "Document", status: "Active", icon: "🍃", stats: "24 collections · 847 documents", region: "us-east-1", version: "Atlas M10", created: "2024-03-15", lastSync: "2026-02-25", owner: "moto", usage: "User profiles, authentication, sessions, roles, and permissions" },
-  { id: "postgres-context", name: "PostgreSQL — Context & Checkpoints", engine: "PostgreSQL", type: "Relational", status: "Active", icon: "🐘", stats: "18 tables · 3.2K rows", region: "us-east-1", version: "16.2", created: "2024-06-10", lastSync: "2026-02-25", owner: "moto", usage: "Cycle state, actor checkpoints, conversation context windows, and orchestration logs" },
+  { id: "pinecone-knowledge", name: "Pinecone — Platform Knowledge", engine: "Pinecone", type: "Vector", status: "Active", icon: "simple-icons:pinecone", stats: "3 namespaces · 12K vectors", region: "us-east-1", version: "Serverless", created: "2024-03-20", lastSync: "2026-02-25", owner: "moto", usage: "Embeddings for knowledge base, system prompts, and actor memory" },
+  { id: "mongo-users", name: "MongoDB — Users & Auth", engine: "MongoDB", type: "Document", status: "Active", icon: "simple-icons:mongodb", stats: "24 collections · 847 documents", region: "us-east-1", version: "Atlas M10", created: "2024-03-15", lastSync: "2026-02-25", owner: "moto", usage: "User profiles, authentication, sessions, roles, and permissions" },
+  { id: "postgres-context", name: "PostgreSQL — Context & Checkpoints", engine: "PostgreSQL", type: "Relational", status: "Active", icon: "simple-icons:postgresql", stats: "18 tables · 3.2K rows", region: "us-east-1", version: "16.2", created: "2024-06-10", lastSync: "2026-02-25", owner: "moto", usage: "Cycle state, actor checkpoints, conversation context windows, and orchestration logs" },
   { id: "supabase-commerce", name: "Supabase — Commerce", engine: "Supabase", type: "Relational", status: "Active", icon: "💰", stats: "8 tables", region: "us-east-1", version: "Supabase Pro", created: "2024-04-01", lastSync: "2026-02-24", owner: "moto", usage: "Transactions, wallet balances, marketplace listings, and bonding curves" },
 ];
 
@@ -2993,7 +3012,7 @@ const DatabaseAddNew = ({ onBack }) => {
             return (
               <div key={eng.id} onClick={() => setEngine(eng.id)} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
                 style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-                <span style={{ fontSize: 28 }}>{eng.icon}</span>
+                <RenderIcon icon={eng.icon} size={28} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{eng.name}</div>
                   <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{eng.desc}</div>
@@ -3015,7 +3034,7 @@ const DatabaseAddNew = ({ onBack }) => {
           <button onClick={() => setEngine(null)} style={{ background: "none", border: "none", color: colors.accent, fontSize: 12, cursor: "pointer", marginBottom: 16, fontFamily: "inherit" }}>← Back to engine selection</button>
           <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-              <span style={{ fontSize: 24 }}>{managedEngines.find(e => e.id === engine)?.icon}</span>
+              <RenderIcon icon={managedEngines.find(e => e.id === engine)?.icon} size={24} />
               <div style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>{managedEngines.find(e => e.id === engine)?.name}</div>
             </div>
             <div style={{ marginBottom: 16 }}>
@@ -3111,7 +3130,7 @@ const PlatformDatabasesContent = () => {
             <div key={db.id} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
               style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}
               onClick={() => { setSelectedDb(db.id); setView("detail"); }}>
-              <span style={{ fontSize: 22 }}>{db.icon}</span>
+              <RenderIcon icon={db.icon} size={22} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{db.name}</div>
                 <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{db.stats}</div>
@@ -3690,7 +3709,7 @@ const PlatformTeamsContent = () => {
                     <div style={{ fontSize: 11, color: colors.textDim, marginTop: 3 }}>Last active {m.lastActive}</div>
                   </div>
                   <RoleBadge roleId={m.role} />
-                  <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+                  <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
                 </div>
               );
             })}
@@ -4119,7 +4138,7 @@ const AddCommerceFlow = ({ onBack }) => {
             <div key={t.id} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
               onClick={() => { setType(t.id); setStep("form"); }}
               style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "18px 20px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
-              <span style={{ fontSize: 26 }}>{t.icon}</span>
+              <RenderIcon icon={t.icon} size={26} />
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: colors.text, marginBottom: 4 }}>{t.name}</div>
                 <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.5 }}>{t.desc}</div>
@@ -4226,7 +4245,7 @@ const MembershipsSection = ({ onBack }) => {
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {levels.map(lvl => (
             <div key={lvl.id} onClick={() => setEditingLevel(lvl.id)} style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 20px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, cursor: "pointer" }}>
-              <span style={{ fontSize: 28 }}>{lvl.icon}</span>
+              <RenderIcon icon={lvl.icon} size={28} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>{lvl.name}</div>
                 <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{lvl.description}</div>
@@ -4235,7 +4254,7 @@ const MembershipsSection = ({ onBack }) => {
                 <div style={{ fontSize: 15, fontWeight: 700, color: lvl.monthlyPrice === 0 ? colors.green : colors.accent }}>{lvl.monthlyPrice === 0 ? "Free" : `$${lvl.monthlyPrice}/mo`}</div>
                 {lvl.annualPrice > 0 && <div style={{ fontSize: 11, color: colors.textDim }}>${lvl.annualPrice}/yr</div>}
               </div>
-              <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+              <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
             </div>
           ))}
         </div>
@@ -4246,7 +4265,7 @@ const MembershipsSection = ({ onBack }) => {
           {offers.map(offer => (
             <div key={offer.id} style={{ padding: "16px 20px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                <span style={{ fontSize: 22 }}>{offer.icon}</span>
+                <RenderIcon icon={offer.icon} size={22} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{offer.name}</div>
                   {offer.code && <div style={{ fontSize: 11, color: colors.textDim, marginTop: 1 }}>Code: <span style={{ fontFamily: "monospace", color: colors.accent }}>{offer.code}</span></div>}
@@ -4328,7 +4347,7 @@ const PlatformOfferingsSection = ({ onBack }) => {
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {filtered.map(o => (
           <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, cursor: "pointer" }}>
-            <span style={{ fontSize: 22 }}>{o.icon}</span>
+            <RenderIcon icon={o.icon} size={22} />
             <div style={{ flex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{o.name}</span>
@@ -4361,12 +4380,12 @@ const PlatformCommerceContent = () => {
 
   const totalRevenue = PLATFORM_OFFERINGS.reduce((s,o) => s + o.price * o.sales, 0);
   const SECTIONS = [
-    { id: "coin", icon: "◎", name: "Kinship Coin (KNSHP)", sub: `Supply: 1B · Price: $${COIN_DATA.price} · ${COIN_DATA.holders.toLocaleString()} holders`, status: "Active" },
-    { id: "wallet", icon: "👛", name: "Embedded Wallet Config", sub: "Privy · Solana mainnet-beta", status: "Active" },
-    { id: "fees", icon: "📊", name: "Marketplace Fees", sub: `Platform fee: ${MARKETPLACE_FEES.platformFee}% · Creator royalty: ${MARKETPLACE_FEES.creatorRoyalty}%`, status: "Active" },
-    { id: "curve", icon: "📈", name: "Bonding Curve Defaults", sub: `${BONDING_CURVE.defaultCurve} · Initial: ${BONDING_CURVE.initialPrice} KNSHP`, status: "Active" },
-    { id: "memberships", icon: "🪙", name: "Memberships", sub: `${MEMBERSHIP_LEVELS.length} levels · ${SPECIAL_OFFERS.length} active offers · ${COUPONS.filter(c=>c.status==="Active").length} coupons`, status: "Active" },
-    { id: "offerings", icon: "🛍️", name: "Platform Offerings", sub: `${PLATFORM_OFFERINGS.filter(o=>o.status==="Listed").length} listed · $${totalRevenue.toFixed(0)} total revenue`, status: "Active" },
+    { id: "coin", icon: "lucide:coins", name: "Kinship Coin (KNSHP)", sub: `Supply: 1B · Price: $${COIN_DATA.price} · ${COIN_DATA.holders.toLocaleString()} holders`, status: "Active" },
+    { id: "wallet", icon: "lucide:wallet-2", name: "Embedded Wallet Config", sub: "Privy · Solana mainnet-beta", status: "Active" },
+    { id: "fees", icon: "lucide:percent", name: "Marketplace Fees", sub: `Platform fee: ${MARKETPLACE_FEES.platformFee}% · Creator royalty: ${MARKETPLACE_FEES.creatorRoyalty}%`, status: "Active" },
+    { id: "curve", icon: "lucide:trending-up", name: "Bonding Curve Defaults", sub: `${BONDING_CURVE.defaultCurve} · Initial: ${BONDING_CURVE.initialPrice} KNSHP`, status: "Active" },
+    { id: "memberships", icon: "lucide:badge-check", name: "Memberships", sub: `${MEMBERSHIP_LEVELS.length} levels · ${SPECIAL_OFFERS.length} active offers · ${COUPONS.filter(c=>c.status==="Active").length} coupons`, status: "Active" },
+    { id: "offerings", icon: "lucide:package-open", name: "Platform Offerings", sub: `${PLATFORM_OFFERINGS.filter(o=>o.status==="Listed").length} listed · $${totalRevenue.toFixed(0)} total revenue`, status: "Active" },
   ];
 
   return (
@@ -4381,13 +4400,13 @@ const PlatformCommerceContent = () => {
             <div key={s.id} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
               onClick={() => setView(s.id)}
               style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-              <span style={{ fontSize: 22 }}>{s.icon}</span>
+              <RenderIcon icon={s.icon} size={22} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{s.name}</div>
                 <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{s.sub}</div>
               </div>
               <StatusPill status={s.status} />
-              <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+              <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
             </div>
           );
         })}
@@ -4435,13 +4454,13 @@ const PlatformContent = ({ page }) => {
           return (
             <div key={i} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
               style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-              <span style={{ fontSize: 20 }}>{item.icon}</span>
+              <RenderIcon icon={item.icon} size={20} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{item.name}</div>
                 {item.account && <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{item.account}</div>}
               </div>
               <StatusPill status={item.status} />
-              <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+              <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
             </div>
           );
         })}
@@ -4946,7 +4965,7 @@ const TemplateCreate = ({ onBack }) => {
               return (
                 <div key={opt.id} onClick={() => setType(opt.id)} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
                   style={{ padding: "20px 18px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.accent + "50" : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
-                  <div style={{ fontSize: 32, marginBottom: 10 }}>{opt.icon}</div>
+                  <RenderIcon icon={opt.icon} size={32} style={{ marginBottom: 10 }} />
                   <div style={{ display: "flex", align: "center", gap: 8, marginBottom: 6 }}>
                     <span style={{ fontSize: 14, fontWeight: 700, color: colors.text }}>{opt.id}</span>
                     <TemplateTypeBadge type={opt.id} />
@@ -5161,7 +5180,7 @@ const PlatformTemplatesContent = () => {
             <div key={t.id} onClick={() => { setSelected(t.id); setView("detail"); }}
               onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
               style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
-              <span style={{ fontSize: 26 }}>{t.icon}</span>
+              <RenderIcon icon={t.icon} size={26} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{t.name}</span>
@@ -5230,7 +5249,7 @@ const CycleContent = ({ page, context }) => {
             <div key={i} style={{ padding: 20, background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? s.color + "55" : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}
               onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 26 }}>{s.icon}</span>
+                <RenderIcon icon={s.icon} size={26} />
                 <span style={{ fontSize: 26, fontWeight: 700, color: s.color }}>{s.count}</span>
               </div>
               <div style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted, marginTop: 12 }}>{s.label}</div>
@@ -5242,11 +5261,11 @@ const CycleContent = ({ page, context }) => {
         <h3 style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 12 }}>Getting Started</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {[
-            { step: "1", text: "Create your first Scene — the environment where players explore", done: true },
-            { step: "2", text: "Add Actors — characters that players can interact and chat with", done: true },
+            { step: "1", text: "Create your first Scene — the environment where members explore", done: true },
+            { step: "2", text: "Add Actors — characters that members can interact and chat with", done: true },
             { step: "3", text: "Design Quests — narrative arcs that thread through your scenes", done: false },
             { step: "4", text: "Connect Tools — give your actors access to external services", done: false },
-            { step: "5", text: "Set up Offerings — things players can buy, earn, or trade", done: false },
+            { step: "5", text: "Set up Offerings — things members can buy, earn, or trade", done: false },
             { step: "6", text: "Configure your Cycle's coin and economy", done: false },
           ].map((s, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: s.done ? colors.accent + "0D" : colors.surface, border: `1px solid ${s.done ? colors.accent + "33" : colors.border}`, borderRadius: 8 }}>
@@ -5268,48 +5287,498 @@ const CycleContent = ({ page, context }) => {
     </div>
   );
 
-  if (page === "scenes") return (
-    <div>
-      <PageHeader title="Scenes" subtitle="Isometric environments where players explore and interact">
-        <Btn variant="secondary">From Template</Btn>
-        <Btn>+ New Scene</Btn>
-      </PageHeader>
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        <input placeholder="Search scenes..." style={{ flex: 1, padding: "8px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
-        <select style={{ padding: "8px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.textDim, fontSize: 13, outline: "none" }}>
-          <option>All Types</option><option>Meditation</option><option>Exploration</option><option>Commerce</option>
-        </select>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
-        {[
-          { name: "Mountain Temple Gardens", type: "Meditation", status: "Active", actors: 3, assets: 12 },
-          { name: "Crystal Caves", type: "Exploration", status: "Active", actors: 2, assets: 8 },
-          { name: "Training Grounds", type: "Challenge", status: "Pending Setup", actors: 4, assets: 15 },
-          { name: "Market Square", type: "Commerce", status: "Pending Setup", actors: 5, assets: 22 },
-        ].map((s, i) => {
-          const [h, setH] = useState(false);
-          return (
-            <div key={i} style={{ background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 12, overflow: "hidden", cursor: "pointer", transition: "all 0.15s" }}
-              onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
-              <div style={{ height: 110, background: `linear-gradient(135deg, ${colors.surfaceActive}, ${colors.bg})`, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: `1px solid ${colors.border}` }}>
-                <span style={{ fontSize: 38, opacity: 0.35 }}>🗺️</span>
+  // ── Scene data ────────────────────────────────────────────────────────────────
+  const SCENE_DATA = [
+    {
+      id: "mountain-gardens",
+      name: "Mountain Temple Gardens",
+      type: "Meditation",
+      status: "Active",
+      actors: ["Elder Sage", "Forest Spirit"],
+      assets: 12,
+      description: "A tranquil outdoor space with stone pathways and ancient flora. Members arrive here at the start of every session.",
+      spawnPoint: "Center Altar",
+      visibility: "Members only",
+      bgm: "forest-ambient.mp3",
+      ambience: "Wind, birds, water",
+      triggers: [
+        { event: "On Enter", action: "Actor: Elder Sage greets member" },
+        { event: "On 5 min idle", action: "Actor: Forest Spirit prompts reflection" },
+      ],
+      linkedQuests: ["First Steps", "Inner Mirror"],
+      notes: "Primary entry point for Mountain Temple. Keep low-stimulation.",
+    },
+    {
+      id: "crystal-caves",
+      name: "Crystal Caves",
+      type: "Exploration",
+      status: "Active",
+      actors: ["Echo Guide", "Crystal Keeper"],
+      assets: 8,
+      description: "A shimmering underground network of passages and resonance chambers.",
+      spawnPoint: "Cavern Mouth",
+      visibility: "Members only",
+      bgm: "crystal-resonance.mp3",
+      ambience: "Dripping water, low hum",
+      triggers: [{ event: "On Enter", action: "Plays resonance sound effect" }],
+      linkedQuests: [],
+      notes: "",
+    },
+    {
+      id: "training-grounds",
+      name: "Training Grounds",
+      type: "Challenge",
+      status: "Pending Setup",
+      actors: ["Challenge Master", "Scoreboard Spirit", "Pace Keeper", "Herald"],
+      assets: 15,
+      description: "An open training arena with obstacle courses and challenge stations.",
+      spawnPoint: "Starting Gate",
+      visibility: "Members only",
+      bgm: "percussive-drive.mp3",
+      ambience: "Crowd murmur, wind",
+      triggers: [],
+      linkedQuests: ["The First Trial"],
+      notes: "Needs Challenge Master prompts configured before going live.",
+    },
+    {
+      id: "market-square",
+      name: "Market Square",
+      type: "Commerce",
+      status: "Pending Setup",
+      actors: ["Market Keeper", "Coin Oracle", "Merchant NPC", "Welcome Host", "Trade Arbiter"],
+      assets: 22,
+      description: "A bustling marketplace where members trade, shop, and discover cycle offerings.",
+      spawnPoint: "Plaza Fountain",
+      visibility: "Members only",
+      bgm: "market-bustle.mp3",
+      ambience: "Chatter, bells, footsteps",
+      triggers: [
+        { event: "On Enter", action: "Market Keeper announces current featured items" },
+        { event: "On Purchase", action: "Coin Oracle logs transaction" },
+      ],
+      linkedQuests: [],
+      notes: "Connect to Commerce config before enabling.",
+    },
+  ];
+  const [selectedScene, setSelectedScene] = useState(null);
+  const [showNewScene, setShowNewScene] = useState(false);
+  const [sceneSearch, setSceneSearch] = useState("");
+  const [sceneTypeFilter, setSceneTypeFilter] = useState("All");
+  const [sceneList, setSceneList] = useState(SCENE_DATA);
+
+  const NewSceneModal = ({ onClose, onCreate }) => {
+    const [step, setStep] = useState(1);
+    const TOTAL_STEPS = 4;
+    const [sceneType, setSceneType] = useState(null);
+    const [templateChoice, setTemplateChoice] = useState(null);
+    const [form, setForm] = useState({ name: "", description: "", spawnPoint: "", visibility: "Members only", bgm: "", ambience: "" });
+    const [assignedActors, setAssignedActors] = useState([]);
+    const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+    const SCENE_TYPES = [
+      { id: "meditation", label: "Meditation", icon: "lucide:moon", desc: "Calm, reflective spaces for inner work" },
+      { id: "exploration", label: "Exploration", icon: "lucide:compass", desc: "Open environments for discovery" },
+      { id: "challenge", label: "Challenge", icon: "lucide:zap", desc: "Training arenas and growth structures" },
+      { id: "commerce", label: "Commerce", icon: "lucide:store", desc: "Marketplace and exchange environments" },
+      { id: "social", label: "Social", icon: "lucide:users", desc: "Gathering places for connection" },
+      { id: "custom", label: "Custom", icon: "lucide:layers", desc: "Blank canvas — configure everything" },
+    ];
+    const SCENE_TEMPLATES = [
+      { id: "blank", label: "Blank Scene", icon: "lucide:box", desc: "Empty environment — configure everything yourself" },
+      { id: "meditation-grove", label: "Meditation Grove", icon: "lucide:trees", desc: "Pre-built with ambient audio and Elder Sage starter prompt" },
+      { id: "challenge-arena", label: "Challenge Arena", icon: "lucide:trophy", desc: "Obstacle course layout with scoreboard and pace triggers" },
+      { id: "trade-post", label: "Trade Post", icon: "lucide:coins", desc: "Commerce-ready scene with Market Keeper and inventory hooks" },
+    ];
+    const AVAILABLE_ACTORS = ["Elder Sage", "Forest Spirit", "Challenge Master", "Market Keeper", "Echo Guide", "Crystal Keeper", "Coin Oracle", "Welcome Host"];
+    const toggleActor = (a) => setAssignedActors(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
+    const canAdvance = () => { if (step === 1) return !!sceneType; if (step === 2) return !!templateChoice; if (step === 3) return form.name.trim().length > 0; return true; };
+    const handleCreate = () => {
+      const newScene = { id: form.name.toLowerCase().replace(/\s+/g, "-") + "-" + Date.now(), name: form.name, type: sceneType ? sceneType.charAt(0).toUpperCase() + sceneType.slice(1) : "Custom", status: "Pending Setup", actors: assignedActors, assets: 0, description: form.description, spawnPoint: form.spawnPoint || "Default Spawn", visibility: form.visibility, bgm: form.bgm, ambience: form.ambience, triggers: [], linkedQuests: [], notes: "" };
+      setSceneList(s => [...s, newScene]);
+      onClose();
+      setSelectedScene(newScene);
+      onCreate && onCreate(newScene);
+    };
+    const STEP_LABELS = ["Scene Type", "Template", "Configure", "Actors"];
+    return (
+      <div style={{ position: "fixed", inset: 0, background: "rgba(5,5,18,0.85)", backdropFilter: "blur(8px)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 16, width: 600, maxHeight: "90vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "20px 24px 16px", borderBottom: `1px solid ${colors.border}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>New Scene</div>
+              <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{step} of {TOTAL_STEPS} — {STEP_LABELS[step - 1]}</div>
+            </div>
+            <button onClick={onClose} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", padding: 4 }}><Icon name="lucide:x" size={18} /></button>
+          </div>
+          <div style={{ display: "flex", gap: 6, padding: "12px 24px 0", alignItems: "center" }}>
+            {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+              <div key={i} style={{ height: 3, flex: 1, borderRadius: 3, background: i < step ? colors.accent : colors.border, transition: "background 0.2s" }} />
+            ))}
+          </div>
+          <div style={{ padding: "20px 24px", flex: 1, overflowY: "auto" }}>
+            {step === 1 && (
+              <div>
+                <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 16 }}>What kind of environment are you building?</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                  {SCENE_TYPES.map(t => (
+                    <div key={t.id} onClick={() => setSceneType(t.id)} style={{ border: `1px solid ${sceneType === t.id ? colors.accent : colors.border}`, borderRadius: 10, padding: "14px 12px", cursor: "pointer", background: sceneType === t.id ? colors.accent + "12" : colors.bg, transition: "all 0.15s", textAlign: "center" }}>
+                      <Icon name={t.icon} size={22} style={{ marginBottom: 8, color: sceneType === t.id ? colors.accent : colors.textDim }} />
+                      <div style={{ fontSize: 13, fontWeight: 600, color: sceneType === t.id ? colors.accent : colors.text, marginBottom: 4 }}>{t.label}</div>
+                      <div style={{ fontSize: 11, color: colors.textDim, lineHeight: 1.4 }}>{t.desc}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div style={{ padding: "14px 16px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{s.name}</span>
-                  <StatusPill status={s.status} />
+            )}
+            {step === 2 && (
+              <div>
+                <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 16 }}>Start from a template or build from scratch.</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {SCENE_TEMPLATES.map(t => (
+                    <div key={t.id} onClick={() => setTemplateChoice(t.id)} style={{ border: `1px solid ${templateChoice === t.id ? colors.accent : colors.border}`, borderRadius: 10, padding: "14px 16px", cursor: "pointer", background: templateChoice === t.id ? colors.accent + "12" : colors.bg, display: "flex", alignItems: "center", gap: 14, transition: "all 0.15s" }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: templateChoice === t.id ? colors.accent + "20" : colors.surface, border: `1px solid ${colors.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <Icon name={t.icon} size={20} style={{ color: templateChoice === t.id ? colors.accent : colors.textDim }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: templateChoice === t.id ? colors.accent : colors.text }}>{t.label}</div>
+                        <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{t.desc}</div>
+                      </div>
+                      {templateChoice === t.id && <Icon name="lucide:check-circle-2" size={16} style={{ marginLeft: "auto", color: colors.accent, flexShrink: 0 }} />}
+                    </div>
+                  ))}
                 </div>
-                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 10 }}>{s.type}</div>
-                <div style={{ display: "flex", gap: 16, fontSize: 11, color: colors.textDim }}>
-                  <span>🎭 {s.actors} actors</span><span>🎨 {s.assets} assets</span>
+              </div>
+            )}
+            {step === 3 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: colors.textDim, marginBottom: 6, display: "block" }}>SCENE NAME *</label>
+                  <input value={form.name} onChange={e => setF("name", e.target.value)} placeholder="e.g. Moonlit Terrace" style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
                 </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: colors.textDim, marginBottom: 6, display: "block" }}>DESCRIPTION</label>
+                  <textarea value={form.description} onChange={e => setF("description", e.target.value)} placeholder="What is this space? What happens here?" rows={3} style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none", resize: "vertical" }} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: colors.textDim, marginBottom: 6, display: "block" }}>SPAWN POINT</label>
+                    <input value={form.spawnPoint} onChange={e => setF("spawnPoint", e.target.value)} placeholder="e.g. Main Entrance" style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: colors.textDim, marginBottom: 6, display: "block" }}>VISIBILITY</label>
+                    <select value={form.visibility} onChange={e => setF("visibility", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }}>
+                      <option>Members only</option><option>All visitors</option><option>Invite only</option><option>Hidden</option>
+                    </select>
+                  </div>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: colors.textDim, marginBottom: 6, display: "block" }}>BACKGROUND MUSIC</label>
+                    <input value={form.bgm} onChange={e => setF("bgm", e.target.value)} placeholder="e.g. forest-ambient.mp3" style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: colors.textDim, marginBottom: 6, display: "block" }}>AMBIENCE SOUNDS</label>
+                    <input value={form.ambience} onChange={e => setF("ambience", e.target.value)} placeholder="e.g. Wind, birds, water" style={{ width: "100%", boxSizing: "border-box", padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            {step === 4 && (
+              <div>
+                <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 16 }}>Which actors should inhabit this scene? You can add more later.</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 16 }}>
+                  {AVAILABLE_ACTORS.map(a => {
+                    const sel = assignedActors.includes(a);
+                    return (
+                      <div key={a} onClick={() => toggleActor(a)} style={{ border: `1px solid ${sel ? colors.accent : colors.border}`, borderRadius: 10, padding: "12px 14px", cursor: "pointer", background: sel ? colors.accent + "10" : colors.bg, display: "flex", alignItems: "center", gap: 10, transition: "all 0.15s" }}>
+                        <div style={{ width: 30, height: 30, borderRadius: 8, background: colors.surface, border: `1px solid ${colors.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon name="lucide:user-round" size={14} style={{ color: sel ? colors.accent : colors.textDim }} />
+                        </div>
+                        <span style={{ fontSize: 13, color: sel ? colors.accent : colors.text, flex: 1 }}>{a}</span>
+                        {sel && <Icon name="lucide:check" size={14} style={{ color: colors.accent }} />}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ padding: "14px 16px", background: colors.bg, borderRadius: 10, border: `1px solid ${colors.border}` }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: colors.textDim, marginBottom: 10, letterSpacing: 0.5 }}>SUMMARY</div>
+                  {[["Name", form.name || "—"], ["Type", sceneType || "—"], ["Template", templateChoice || "—"], ["Spawn", form.spawnPoint || "Default Spawn"], ["Actors", assignedActors.length ? assignedActors.join(", ") : "None"]].map(([k, v]) => (
+                    <div key={k} style={{ display: "flex", gap: 8, fontSize: 12, marginBottom: 4 }}>
+                      <span style={{ color: colors.textDim, width: 80, flexShrink: 0 }}>{k}</span>
+                      <span style={{ color: colors.text }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div style={{ padding: "14px 24px", borderTop: `1px solid ${colors.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <button onClick={() => step > 1 ? setStep(s => s - 1) : onClose()} style={{ background: "none", border: `1px solid ${colors.border}`, borderRadius: 8, padding: "8px 18px", color: colors.textDim, fontSize: 13, cursor: "pointer" }}>
+              {step === 1 ? "Cancel" : "Back"}
+            </button>
+            {step < TOTAL_STEPS
+              ? <Btn disabled={!canAdvance()} onClick={() => canAdvance() && setStep(s => s + 1)}>Continue</Btn>
+              : <Btn onClick={handleCreate}><Icon name="lucide:plus" size={14} style={{ marginRight: 6 }} /> Create Scene</Btn>}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const SceneDetail = ({ scene, onBack, onSave }) => {
+    const [tab, setTab] = useState("setup");
+    const [form, setForm] = useState({ ...scene });
+    const [triggers, setTriggers] = useState(scene.triggers || []);
+    const [dirty, setDirty] = useState(false);
+    const [newTrigger, setNewTrigger] = useState({ event: "", action: "" });
+    const [addingTrigger, setAddingTrigger] = useState(false);
+    const setF = (k, v) => { setForm(f => ({ ...f, [k]: v })); setDirty(true); };
+    const TABS = [
+      { id: "setup", label: "Setup", icon: "lucide:settings" },
+      { id: "actors", label: "Actors", icon: "lucide:user-round" },
+      { id: "triggers", label: "Triggers", icon: "lucide:zap" },
+      { id: "assets", label: "Assets", icon: "lucide:image" },
+      { id: "quests", label: "Quests", icon: "lucide:flag" },
+    ];
+    const SCENE_TYPES_LIST = ["Meditation", "Exploration", "Challenge", "Commerce", "Social", "Custom"];
+    const ALL_ACTORS = ["Elder Sage", "Forest Spirit", "Challenge Master", "Market Keeper", "Echo Guide", "Crystal Keeper", "Coin Oracle", "Welcome Host", "Herald", "Pace Keeper"];
+    const toggleSceneActor = (a) => { const list = form.actors || []; setF("actors", list.includes(a) ? list.filter(x => x !== a) : [...list, a]); };
+    const addTrigger = () => { if (newTrigger.event && newTrigger.action) { setTriggers(t => [...t, { ...newTrigger }]); setNewTrigger({ event: "", action: "" }); setAddingTrigger(false); setDirty(true); } };
+    const removeTrigger = (idx) => { setTriggers(t => t.filter((_, i) => i !== idx)); setDirty(true); };
+    const handleSave = () => { onSave({ ...form, triggers }); setDirty(false); };
+    return (
+      <div>
+        <PageHeader title={form.name} subtitle={`${form.type} · ${form.status}`} onBack={onBack}>
+          {dirty && <Btn onClick={handleSave}><Icon name="lucide:save" size={14} style={{ marginRight: 6 }} />Save Changes</Btn>}
+          <StatusPill status={form.status} />
+        </PageHeader>
+        <div style={{ height: 160, background: `linear-gradient(135deg, ${colors.surfaceActive} 0%, ${colors.bg} 100%)`, borderRadius: 12, marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "center", border: `1px solid ${colors.border}`, position: "relative", overflow: "hidden" }}>
+          <Icon name="lucide:map" size={48} style={{ opacity: 0.15, color: colors.accent }} />
+          <div style={{ position: "absolute", top: 12, right: 12 }}>
+            <Btn variant="secondary"><Icon name="lucide:upload" size={12} style={{ marginRight: 6 }} />Upload Thumbnail</Btn>
+          </div>
+          <div style={{ position: "absolute", bottom: 12, left: 16 }}>
+            <select value={form.status} onChange={e => setF("status", e.target.value)} style={{ padding: "5px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }}>
+              <option>Active</option><option>Pending Setup</option><option>Paused</option><option>Archived</option>
+            </select>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 2, marginBottom: 20, background: colors.bg, borderRadius: 10, padding: 4 }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{ flex: 1, padding: "8px 0", background: tab === t.id ? colors.surface : "transparent", border: `1px solid ${tab === t.id ? colors.border : "transparent"}`, borderRadius: 8, color: tab === t.id ? colors.text : colors.textDim, fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <Icon name={t.icon} size={13} />{t.label}
+            </button>
+          ))}
+        </div>
+        {tab === "setup" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>SCENE NAME</label>
+                <input value={form.name} onChange={e => setF("name", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>TYPE</label>
+                <select value={form.type} onChange={e => setF("type", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }}>
+                  {SCENE_TYPES_LIST.map(t => <option key={t}>{t}</option>)}
+                </select>
               </div>
             </div>
-          );
-        })}
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>DESCRIPTION</label>
+              <textarea value={form.description} onChange={e => setF("description", e.target.value)} rows={3} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none", resize: "vertical" }} />
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>SPAWN POINT</label>
+                <input value={form.spawnPoint} onChange={e => setF("spawnPoint", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>VISIBILITY</label>
+                <select value={form.visibility} onChange={e => setF("visibility", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }}>
+                  <option>Members only</option><option>All visitors</option><option>Invite only</option><option>Hidden</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>BACKGROUND MUSIC</label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input value={form.bgm} onChange={e => setF("bgm", e.target.value)} style={{ flex: 1, padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+                  <button style={{ padding: "0 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.textDim, cursor: "pointer" }}><Icon name="lucide:music" size={14} /></button>
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>AMBIENCE SOUNDS</label>
+                <input value={form.ambience} onChange={e => setF("ambience", e.target.value)} style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, marginBottom: 6, display: "block", letterSpacing: 0.5 }}>NOTES (internal)</label>
+              <textarea value={form.notes} onChange={e => setF("notes", e.target.value)} rows={2} placeholder="Internal notes for your team..." style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none", resize: "vertical" }} />
+            </div>
+          </div>
+        )}
+        {tab === "actors" && (
+          <div>
+            <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 16 }}>Actors currently assigned to this scene. Click to toggle.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+              {ALL_ACTORS.map(a => {
+                const sel = (form.actors || []).includes(a);
+                return (
+                  <div key={a} onClick={() => toggleSceneActor(a)} style={{ border: `1px solid ${sel ? colors.accent : colors.border}`, borderRadius: 10, padding: "12px 14px", cursor: "pointer", background: sel ? colors.accent + "10" : colors.bg, display: "flex", alignItems: "center", gap: 10, transition: "all 0.15s" }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: sel ? colors.accent + "20" : colors.surface, border: `1px solid ${sel ? colors.accent + "40" : colors.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon name="lucide:user-round" size={14} style={{ color: sel ? colors.accent : colors.textDim }} />
+                    </div>
+                    <span style={{ fontSize: 13, color: sel ? colors.accent : colors.text, flex: 1 }}>{a}</span>
+                    {sel && <Icon name="lucide:check" size={14} style={{ color: colors.accent }} />}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {tab === "triggers" && (
+          <div>
+            <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 16 }}>Define what happens when members take certain actions in this scene.</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+              {triggers.length === 0 && !addingTrigger && (
+                <div style={{ padding: 24, textAlign: "center", background: colors.bg, borderRadius: 10, border: `1px dashed ${colors.border}`, color: colors.textDim, fontSize: 13 }}>No triggers yet.</div>
+              )}
+              {triggers.map((tr, i) => (
+                <div key={i} style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 10, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                  <Icon name="lucide:zap" size={14} style={{ color: colors.accent, flexShrink: 0 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{tr.event}</div>
+                    <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{tr.action}</div>
+                  </div>
+                  <button onClick={() => removeTrigger(i)} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", padding: 4 }}><Icon name="lucide:trash-2" size={13} /></button>
+                </div>
+              ))}
+              {addingTrigger && (
+                <div style={{ background: colors.bg, border: `1px solid ${colors.accent}40`, borderRadius: 10, padding: 14 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                    <div>
+                      <label style={{ fontSize: 11, color: colors.textDim, marginBottom: 4, display: "block" }}>TRIGGER EVENT</label>
+                      <select value={newTrigger.event} onChange={e => setNewTrigger(t => ({ ...t, event: e.target.value }))} style={{ width: "100%", padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }}>
+                        <option value="">Select event...</option>
+                        <option>On Enter</option><option>On Exit</option><option>On 5 min idle</option>
+                        <option>On Quest Complete</option><option>On Purchase</option><option>On Actor Interaction</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: colors.textDim, marginBottom: 4, display: "block" }}>ACTION</label>
+                      <input value={newTrigger.action} onChange={e => setNewTrigger(t => ({ ...t, action: e.target.value }))} placeholder="e.g. Actor: Elder Sage greets member" style={{ width: "100%", boxSizing: "border-box", padding: "8px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, outline: "none" }} />
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Btn onClick={addTrigger}><Icon name="lucide:plus" size={13} style={{ marginRight: 4 }} />Add</Btn>
+                    <button onClick={() => setAddingTrigger(false)} style={{ background: "none", border: `1px solid ${colors.border}`, borderRadius: 6, padding: "6px 14px", color: colors.textDim, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
+            {!addingTrigger && <Btn variant="secondary" onClick={() => setAddingTrigger(true)}><Icon name="lucide:plus" size={13} style={{ marginRight: 6 }} />Add Trigger</Btn>}
+          </div>
+        )}
+        {tab === "assets" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: colors.textDim }}>{form.assets || 0} assets in this scene</div>
+              <Btn variant="secondary"><Icon name="lucide:upload" size={13} style={{ marginRight: 6 }} />Upload Asset</Btn>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+              {Array.from({ length: Math.min(form.assets || 0, 8) }, (_, i) => (
+                <div key={i} style={{ aspectRatio: "1", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Icon name="lucide:image" size={20} style={{ color: colors.border }} />
+                </div>
+              ))}
+              {(form.assets || 0) === 0 && <div style={{ gridColumn: "1/-1", padding: 32, textAlign: "center", background: colors.bg, border: `1px dashed ${colors.border}`, borderRadius: 10, color: colors.textDim, fontSize: 13 }}>No assets yet.</div>}
+              <div style={{ aspectRatio: "1", background: colors.bg, border: `1px dashed ${colors.border}`, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                <Icon name="lucide:plus" size={20} style={{ color: colors.textDim }} />
+              </div>
+            </div>
+          </div>
+        )}
+        {tab === "quests" && (
+          <div>
+            <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 16 }}>Quests linked to this scene.</div>
+            {(form.linkedQuests || []).length === 0
+              ? <div style={{ padding: 24, textAlign: "center", background: colors.bg, border: `1px dashed ${colors.border}`, borderRadius: 10, color: colors.textDim, fontSize: 13 }}>No quests linked yet.</div>
+              : (form.linkedQuests || []).map((q, i) => (
+                <div key={i} style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 10, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  <Icon name="lucide:flag" size={14} style={{ color: colors.accent }} />
+                  <span style={{ fontSize: 13, color: colors.text, flex: 1 }}>{q}</span>
+                  <Icon name="lucide:chevron-right" size={14} style={{ color: colors.textDim }} />
+                </div>
+              ))}
+            <div style={{ marginTop: 12 }}><Btn variant="secondary"><Icon name="lucide:link" size={13} style={{ marginRight: 6 }} />Link Quest</Btn></div>
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
+
+  if (page === "scenes") {
+    if (selectedScene) {
+      return (
+        <SceneDetail
+          scene={selectedScene}
+          onBack={() => setSelectedScene(null)}
+          onSave={(updated) => { setSceneList(sl => sl.map(s => s.id === updated.id ? updated : s)); setSelectedScene(updated); }}
+        />
+      );
+    }
+    const filtered = sceneList.filter(s => {
+      const matchText = !sceneSearch || s.name.toLowerCase().includes(sceneSearch.toLowerCase());
+      const matchType = sceneTypeFilter === "All" || s.type === sceneTypeFilter;
+      return matchText && matchType;
+    });
+    const TYPE_ICONS = { Meditation: "lucide:moon", Exploration: "lucide:compass", Challenge: "lucide:zap", Commerce: "lucide:store", Social: "lucide:users", Custom: "lucide:layers" };
+    return (
+      <div>
+        {showNewScene && <NewSceneModal onClose={() => setShowNewScene(false)} onCreate={(s) => { setSelectedScene(s); }} />}
+        <PageHeader title="Scenes" subtitle="Isometric environments where members explore and interact">
+          <Btn variant="secondary">From Template</Btn>
+          <Btn onClick={() => setShowNewScene(true)}><Icon name="lucide:plus" size={13} style={{ marginRight: 6 }} />New Scene</Btn>
+        </PageHeader>
+        <div style={{ display: "flex", gap: 8, marginBottom: 20, alignItems: "center" }}>
+          <div style={{ flex: 1, position: "relative" }}>
+            <Icon name="lucide:search" size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: colors.textDim, pointerEvents: "none" }} />
+            <input value={sceneSearch} onChange={e => setSceneSearch(e.target.value)} placeholder="Search scenes..." style={{ width: "100%", boxSizing: "border-box", padding: "8px 14px 8px 30px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, outline: "none" }} />
+          </div>
+          <select value={sceneTypeFilter} onChange={e => setSceneTypeFilter(e.target.value)} style={{ padding: "8px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.textDim, fontSize: 13, outline: "none" }}>
+            <option>All</option><option>Meditation</option><option>Exploration</option><option>Challenge</option><option>Commerce</option><option>Social</option>
+          </select>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+          {filtered.map((s, i) => {
+            const [h, setH] = useState(false);
+            const typeIcon = TYPE_ICONS[s.type] || "lucide:layers";
+            return (
+              <div key={s.id || i} onClick={() => setSelectedScene(s)} style={{ background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 12, overflow: "hidden", cursor: "pointer", transition: "all 0.15s" }}
+                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
+                <div style={{ height: 110, background: `linear-gradient(135deg, ${colors.surfaceActive}, ${colors.bg})`, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: `1px solid ${colors.border}`, position: "relative" }}>
+                  <Icon name="lucide:map" size={42} style={{ opacity: 0.18, color: colors.accent }} />
+                  <div style={{ position: "absolute", top: 10, right: 10 }}><StatusPill status={s.status} /></div>
+                  <div style={{ position: "absolute", top: 10, left: 10, width: 28, height: 28, borderRadius: 6, background: colors.bg + "cc", border: `1px solid ${colors.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon name={typeIcon} size={14} style={{ color: colors.accent }} />
+                  </div>
+                </div>
+                <div style={{ padding: "12px 14px" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4 }}>{s.name}</div>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 10 }}>{s.type}</div>
+                  <div style={{ display: "flex", gap: 14, fontSize: 11, color: colors.textDim }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Icon name="lucide:user-round" size={11} />{s.actors.length} actors</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 4 }}><Icon name="lucide:image" size={11} />{s.assets} assets</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   if (page === "actors") {
     const [activeFilter, setActiveFilter] = useState("All");
@@ -5375,7 +5844,7 @@ const CycleContent = ({ page, context }) => {
       <div style={{ display: "flex", flexDirection: "column", gap: 6, opacity: 0.55, marginBottom: 24 }}>
         {[{ name: "BlueSky", icon: "🦋" }, { name: "Telegram", icon: "✈️" }, { name: "Google Workspace", icon: "📧" }, { name: "Solana", icon: "◎" }].map((t, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: colors.surface, border: `1px solid ${colors.borderSubtle}`, borderRadius: 8 }}>
-            <span style={{ fontSize: 16 }}>{t.icon}</span>
+            <RenderIcon icon={t.icon} size={16} />
             <span style={{ flex: 1, fontSize: 13, color: colors.textMuted }}>{t.name}</span>
             <span style={{ fontSize: 10, color: colors.textDim, background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 4, border: `1px solid ${colors.border}` }}>🔒 Platform</span>
           </div>
@@ -5388,7 +5857,7 @@ const CycleContent = ({ page, context }) => {
           return (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s" }}
               onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
-              <span style={{ fontSize: 16 }}>{t.icon}</span>
+              <RenderIcon icon={t.icon} size={16} />
               <div style={{ flex: 1 }}>
                 <span style={{ fontSize: 13, color: colors.text }}>{t.name}</span>
                 <span style={{ fontSize: 11, color: colors.textDim, marginLeft: 8 }}>{t.type}</span>
@@ -5573,7 +6042,7 @@ const NewCycleModal = ({ onClose, onCreate }) => {
                   return (
                     <div key={opt.id} onClick={() => setStarter(opt)}
                       style={{ display: "flex", gap: 16, padding: "16px 18px", background: isSelected ? colors.accent + "12" : "rgba(255,255,255,0.04)", border: `2px solid ${isSelected ? colors.accent : "rgba(255,255,255,0.08)"}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
-                      <span style={{ fontSize: 28, lineHeight: 1, marginTop: 2 }}>{opt.icon}</span>
+                      <RenderIcon icon={opt.icon} size={28} style={{ lineHeight: 1, marginTop: 2 }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 14, fontWeight: 600, color: "#fff", marginBottom: 4 }}>{opt.name}</div>
                         <div style={{ fontSize: 12, color: "rgba(205,205,205,0.65)", lineHeight: 1.55, marginBottom: opt.scenes.length ? 8 : 0 }}>{opt.desc}</div>
@@ -5623,7 +6092,7 @@ const NewCycleModal = ({ onClose, onCreate }) => {
                     {CYCLE_ACCESS_TYPES.map(a => (
                       <div key={a.id} onClick={() => f("access", a.id)}
                         style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: form.access === a.id ? colors.accent + "10" : "rgba(255,255,255,0.04)", border: `1.5px solid ${form.access === a.id ? colors.accent : "rgba(255,255,255,0.08)"}`, borderRadius: 9, cursor: "pointer" }}>
-                        <span style={{ fontSize: 18 }}>{a.icon}</span>
+                        <RenderIcon icon={a.icon} size={18} />
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{a.label}</div>
                           <div style={{ fontSize: 11, color: "rgba(205,205,205,0.6)", marginTop: 1 }}>{a.desc}</div>
@@ -5648,7 +6117,7 @@ const NewCycleModal = ({ onClose, onCreate }) => {
                   return (
                     <div key={actor.id} onClick={() => setSelectedActor(isSelected ? null : actor.id)}
                       style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: isSelected ? colors.accent + "12" : "rgba(255,255,255,0.04)", border: `2px solid ${isSelected ? colors.accent : "rgba(255,255,255,0.08)"}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
-                      <span style={{ fontSize: 26 }}>{actor.icon}</span>
+                      <RenderIcon icon={actor.icon} size={26} />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{actor.name}</span>
@@ -5688,7 +6157,7 @@ const NewCycleModal = ({ onClose, onCreate }) => {
                     <div key={scene.id} onClick={() => toggleScene(scene.id)}
                       style={{ display: "flex", flexDirection: "column", gap: 6, padding: "14px 14px", background: isSelected ? colors.accent + "10" : "rgba(255,255,255,0.04)", border: `2px solid ${isSelected ? colors.accent : "rgba(255,255,255,0.08)"}`, borderRadius: 11, cursor: "pointer", transition: "all 0.15s" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 20 }}>{scene.icon}</span>
+                        <RenderIcon icon={scene.icon} size={20} />
                         <span style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{scene.name}</span>
                         {isSelected && <span style={{ marginLeft: "auto", fontSize: 11, width: 18, height: 18, borderRadius: 9, background: colors.accent, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>✓</span>}
                       </div>
@@ -5742,7 +6211,7 @@ const NewCycleModal = ({ onClose, onCreate }) => {
         <div style={{ padding: "16px 28px", borderTop: `1px solid rgba(255,255,255,0.08)`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <button onClick={() => step > 1 ? setStep(s => s - 1) : onClose()}
             style={{ background: "none", border: `1px solid rgba(255,255,255,0.12)`, borderRadius: 8, padding: "9px 18px", color: "rgba(205,205,205,0.7)", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-            {step === 1 ? "Cancel" : "← Back"}
+            {step === 1 ? "Cancel" : "Back"}
           </button>
           {step < TOTAL_STEPS ? (
             <button onClick={() => canProceed() && setStep(s => s + 1)}
@@ -5790,40 +6259,40 @@ function App() {
   }, [context, page, isWizard]);
 
   const platformNav = [
-    { id: "p-users", icon: "👤", label: "Members", count: 12 },
-    { id: "p-bots", icon: "🤖", label: "Bots (Global)", count: 8 },
-    { id: "p-tools", icon: "🔧", label: "Tools & Connectors", count: 8 },
-    { id: "p-prompts", icon: "💬", label: "System Prompts", count: 3 },
-    { id: "p-knowledge", icon: "📚", label: "Knowledge Base", count: 3 },
-    { id: "p-databases", icon: "🗄️", label: "Databases", count: 4 },
-    { id: "p-actors", icon: "🎙️", label: "Platform Actors", count: 2 },
-    { id: "p-templates", icon: "📦", label: "Templates", count: 5 },
-    { id: "p-teams", icon: "👥", label: "Teams & Roles", count: 4 },
-    { id: "p-commerce", icon: "💰", label: "Commerce & Coins", count: 6 },
+    { id: "p-users", icon: "lucide:users", label: "Members", count: 12 },
+    { id: "p-bots", icon: "lucide:bot", label: "Bots (Global)", count: 8 },
+    { id: "p-tools", icon: "lucide:plug-2", label: "Tools & Connectors", count: 8 },
+    { id: "p-prompts", icon: "lucide:message-square", label: "System Prompts", count: 3 },
+    { id: "p-knowledge", icon: "lucide:book-open", label: "Knowledge Base", count: 3 },
+    { id: "p-databases", icon: "lucide:database", label: "Databases", count: 4 },
+    { id: "p-actors", icon: "lucide:mic-2", label: "Platform Actors", count: 2 },
+    { id: "p-templates", icon: "lucide:layout-template", label: "Templates", count: 5 },
+    { id: "p-teams", icon: "lucide:shield", label: "Teams & Roles", count: 4 },
+    { id: "p-commerce", icon: "lucide:wallet", label: "Commerce & Coins", count: 6 },
   ];
 
   const cycleNav = {
     create: [
-      { id: "overview", icon: "📋", label: "Overview" },
-      { id: "scenes", icon: "🗺️", label: "Scenes", count: 4 },
-      { id: "quests", icon: "⚔️", label: "Quests", count: 2 },
-      { id: "actors", icon: "🎭", label: "Actors", count: 7 },
-      { id: "challenges", icon: "⚡", label: "Challenges", count: 3 },
-      { id: "assets", icon: "🎨", label: "Assets", count: 69 },
+      { id: "overview", icon: "lucide:layout-dashboard", label: "Overview" },
+      { id: "scenes", icon: "lucide:map", label: "Scenes", count: 4 },
+      { id: "quests", icon: "lucide:flag", label: "Quests", count: 2 },
+      { id: "actors", icon: "lucide:user-cog", label: "Actors", count: 7 },
+      { id: "challenges", icon: "lucide:zap", label: "Challenges", count: 3 },
+      { id: "assets", icon: "lucide:images", label: "Assets", count: 69 },
     ],
     connect: [
-      { id: "tools", icon: "🔧", label: "Tools", count: 6 },
-      { id: "prompts", icon: "💬", label: "Prompts", count: 2 },
-      { id: "knowledge", icon: "📚", label: "Knowledge", count: 1 },
+      { id: "tools", icon: "lucide:wrench", label: "Tools", count: 6 },
+      { id: "prompts", icon: "lucide:message-circle", label: "Prompts", count: 2 },
+      { id: "knowledge", icon: "lucide:book", label: "Knowledge", count: 1 },
     ],
     commerce: [
-      { id: "offerings", icon: "🏪", label: "Offerings", count: 5 },
-      { id: "economy", icon: "◎", label: "Economy" },
+      { id: "offerings", icon: "lucide:store", label: "Offerings", count: 5 },
+      { id: "economy", icon: "lucide:coins", label: "Economy" },
     ],
     manage: [
-      { id: "routes", icon: "🛤️", label: "Routes" },
-      { id: "progress", icon: "📊", label: "Progress" },
-      { id: "team", icon: "👥", label: "Team", count: 3 },
+      { id: "routes", icon: "lucide:git-branch", label: "Routes" },
+      { id: "progress", icon: "lucide:bar-chart-2", label: "Progress" },
+      { id: "team", icon: "lucide:users", label: "Team", count: 3 },
     ],
   };
 
@@ -5875,7 +6344,7 @@ function App() {
           </div>
           <button onClick={() => { setIsWizard(!isWizard); if (!isWizard && isPlatform) { setContext("mountain"); setPage("overview"); } }}
             style={{ fontSize: 12, background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, borderRadius: 6, padding: "4px 8px", color: colors.textDim, cursor: "pointer", fontFamily: "inherit" }}>
-            {isWizard ? "👑" : "✏️"}
+            <Icon name={isWizard ? "lucide:crown" : "lucide:pencil"} size={13} />
           </button>
         </div>
       </div>
@@ -5883,13 +6352,13 @@ function App() {
       <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px", background: colors.bg }}>
         <div style={{ marginBottom: 22, fontSize: 12, color: colors.textDim, display: "flex", alignItems: "center", gap: 6 }}>
           {isPlatform ? (
-            <span style={{ color: colors.textMuted }}>⚙️ Platform Settings</span>
+            <span style={{ display:"flex", alignItems:"center", gap:5, color: colors.textMuted }}><Icon name="lucide:settings" size={13} /> Platform Settings</span>
           ) : (
             <>
               <span>Studio</span>
-              <span style={{ opacity: 0.4 }}>›</span>
+              <Icon name="lucide:chevron-right" size={12} style={{ opacity: 0.35 }} />
               <span>{contextName}</span>
-              <span style={{ opacity: 0.4 }}>›</span>
+              <Icon name="lucide:chevron-right" size={12} style={{ opacity: 0.35 }} />
               <span style={{ color: colors.textMuted }}>{page.charAt(0).toUpperCase() + page.slice(1)}</span>
             </>
           )}
