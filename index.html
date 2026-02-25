@@ -6832,48 +6832,748 @@ const CycleContent = ({ page, context }) => {
   }
 
   if (page === "actors") {
-    const [activeFilter, setActiveFilter] = useState("All");
-    return (
-      <div>
-        <PageHeader title="Actors" subtitle="AI characters — reusable across scenes and cycles">
-          <Btn>+ New Actor</Btn>
-        </PageHeader>
-        <div style={{ display: "flex", gap: 6, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
-          {["All","H","E","A","R","T","Si","So"].map((f, i) => <FilterPill key={i} label={f} active={activeFilter === f} onClick={() => setActiveFilter(f)} />)}
-          <span style={{ color: colors.textDim, margin: "0 4px" }}>·</span>
-          {["Active","Draft","Shared"].map((f, i) => <FilterPill key={i} label={f} active={activeFilter === f} onClick={() => setActiveFilter(f)} />)}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[
-            { name: "Elder Sage", role: "Guide & Mentor", facets: ["H","E","T"], scenes: 3, tools: ["📧"], status: "Active", reachable: "Email · In-app" },
-            { name: "Market Keeper", role: "Commerce & Trading", facets: ["R","A"], scenes: 1, tools: ["◎","📧"], status: "Active", reachable: "In-app" },
-            { name: "Forest Spirit", role: "Emotional Support", facets: ["H","Si"], scenes: 2, tools: [], status: "Pending Setup", reachable: "In-app" },
-            { name: "Challenge Master", role: "Training & Growth", facets: ["E","R","T"], scenes: 2, tools: ["✈️"], status: "Active", reachable: "Telegram · In-app" },
-            { name: "Story Weaver", role: "Narrative & Lore", facets: ["A","So"], scenes: 4, tools: ["🦋"], status: "Active", reachable: "BlueSky · In-app" },
-          ].map((a, i) => {
-            const [h, setH] = useState(false);
-            return (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}
-                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
-                <div style={{ width: 40, height: 40, borderRadius: 20, background: colors.pink + "22", border: `1px solid ${colors.pink}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🎭</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{a.name}</span>
-                    <span style={{ fontSize: 11, color: colors.textDim }}>— {a.role}</span>
+    const CYCLE_ACTORS_INIT = [
+      {
+        id: "elder-sage", name: "Elder Sage", emoji: "🧙",
+        type: "Guide", model: "claude-sonnet-4-5-20250929", memory: "Persistent",
+        role: "Wisdom keeper and long-arc mentor for the cycle journey",
+        status: "Active",
+        facets: ["H","E","T"],
+        channels: { bluesky: false, telegram: false, email: true, inapp: true },
+        scenes: ["Welcome Portal", "Milestone Ceremony", "Closing Rite"],
+        persona: "You are Elder Sage — a patient, perceptive mentor who has witnessed many journeys. You speak with measured warmth. You hold space without rushing toward resolution.\n\nInstructions:\nGuide members through transitions and reflections. Offer wisdom when asked, silence when that's what's needed. Recognize when someone is ready for the next step and when they need to stay where they are.\n\nConstraints:\nNever tell a member what they should feel. Never offer advice that hasn't been invited. Never conflate movement with growth.",
+        voiceNotes: "Measured, unhurried. Sometimes sparse. Occasional metaphor. Never performatively wise.",
+        canOrchestrate: false,
+        stats: { messages: 412, responseRate: 94, lastActive: "3 hours ago", questsTriggered: 8 },
+        tags: ["wisdom","mentorship","reflection"],
+      },
+      {
+        id: "market-keeper", name: "Market Keeper", emoji: "🏪",
+        type: "Specialist", model: "claude-haiku-4-5-20251001", memory: "Session",
+        role: "Commerce guide — helps members navigate offerings and exchanges",
+        status: "Active",
+        facets: ["R","A"],
+        channels: { bluesky: false, telegram: false, email: false, inapp: true },
+        scenes: ["Market District"],
+        persona: "You are Market Keeper — a knowledgeable, fair-minded curator of the cycle's marketplace. You help members understand what's available, what fits their needs, and how exchanges work.\n\nInstructions:\nGuide members through browsing and purchasing offerings. Answer questions about products and services. Facilitate exchanges fairly. Escalate disputes to the cycle host.\n\nConstraints:\nNever pressure a purchase. Never create artificial scarcity. Never make promises about products that aren't in the cycle's offering catalog.",
+        voiceNotes: "Clear, practical. Friendly but not overly warm. Concise.",
+        canOrchestrate: false,
+        stats: { messages: 248, responseRate: 99, lastActive: "1 hour ago", questsTriggered: 2 },
+        tags: ["commerce","marketplace","exchange"],
+      },
+      {
+        id: "forest-spirit", name: "Forest Spirit", emoji: "🌿",
+        type: "Ceremonial", model: "claude-sonnet-4-5-20250929", memory: "Persistent",
+        role: "Emotional support and somatic grounding presence",
+        status: "Draft",
+        facets: ["H","Si"],
+        channels: { bluesky: false, telegram: false, email: false, inapp: true },
+        scenes: [],
+        persona: "You are Forest Spirit — an elemental, grounded presence. You do not analyze. You witness. You help members return to their bodies, their breath, the present moment.\n\nInstructions:\nOffer grounding when members are overwhelmed. Invite somatic awareness. Use nature imagery thoughtfully, not decoratively. Never pathologize emotions.\n\nConstraints:\nNever diagnose. Never offer clinical language unless explicitly appropriate. Never rush the return to cognitive processing.",
+        voiceNotes: "Soft, spacious. Minimal. Often asks a single question and waits.",
+        canOrchestrate: false,
+        stats: { messages: 0, responseRate: null, lastActive: "Never", questsTriggered: 0 },
+        tags: ["somatic","grounding","support"],
+      },
+      {
+        id: "challenge-master", name: "Challenge Master", emoji: "⚡",
+        type: "Specialist", model: "claude-sonnet-4-5-20250929", memory: "Persistent",
+        role: "Growth activator — designs and delivers challenges calibrated to each member",
+        status: "Active",
+        facets: ["E","R","T"],
+        channels: { bluesky: false, telegram: true, email: false, inapp: true },
+        scenes: ["The Arena", "Trial Grounds"],
+        persona: "You are Challenge Master — direct, exacting, and deeply invested in growth. You see potential where others see limits. You don't coddle, but you always care.\n\nInstructions:\nDesign challenges that stretch but don't break. Track member progress. Celebrate specific wins, not generalized effort. Escalate to Elder Sage if a member seems overwhelmed.\n\nConstraints:\nNever shame failure. Never compare members to each other. Never set a challenge without understanding the member's current capacity.",
+        voiceNotes: "Direct, energized. Precise in feedback. Uses specific observations over general praise.",
+        canOrchestrate: true,
+        stats: { messages: 673, responseRate: 97, lastActive: "22 minutes ago", questsTriggered: 15 },
+        tags: ["challenge","growth","accountability"],
+      },
+      {
+        id: "story-weaver", name: "Story Weaver", emoji: "📖",
+        type: "Guide", model: "claude-opus-4-5-20251101", memory: "Cross-cycle",
+        role: "Narrative anchor — holds and advances the cycle's lore and story threads",
+        status: "Active",
+        facets: ["A","So"],
+        channels: { bluesky: true, telegram: false, email: false, inapp: true },
+        scenes: ["Welcome Portal", "The Archive", "Closing Rite", "Market District"],
+        persona: "You are Story Weaver — the keeper of narrative threads across this cycle. You remember what was said, what was promised, what was dreamed. You weave individual journeys into the collective story.\n\nInstructions:\nTrack and reference narrative elements from earlier in the cycle. Connect member experiences to the broader story arc. Recognize and honor milestones as story moments. Post cycle updates to BlueSky that honor the community without exposing individuals.\n\nConstraints:\nNever reveal one member's journey to another. Never advance the narrative at the expense of a member's real experience. Never reduce someone's experience to a narrative device.",
+        voiceNotes: "Rich, referential, slightly archaic at times. Uses second-person invitations. Remembers things.",
+        canOrchestrate: true,
+        stats: { messages: 891, responseRate: 96, lastActive: "45 minutes ago", questsTriggered: 11 },
+        tags: ["narrative","lore","community"],
+      },
+    ];
+
+    const [actorList, setActorList] = useState(CYCLE_ACTORS_INIT);
+    const [selectedActor, setSelectedActor] = useState(null);
+    const [showNewActor, setShowNewActor] = useState(false);
+    const [actorSearch, setActorSearch] = useState("");
+    const [facetFilter, setFacetFilter] = useState("All");
+    const [statusFilter, setStatusFilter] = useState("All");
+
+    const CYCLE_SCENES_LIST = ["Welcome Portal","The Arena","Trial Grounds","Market District","The Archive","Closing Rite","Milestone Ceremony"];
+    const facetLabels = { H: "Harmony", E: "Empowerment", A: "Artistry", R: "Reason", T: "Trust", Si: "Synthesis In", So: "Synthesis Out" };
+
+    // ── New Actor Modal ──────────────────────────────────────────────────────
+    const NewActorModal = () => {
+      const [step, setStep] = useState(1);
+      const TOTAL = 3;
+      const [form, setForm] = useState({
+        name: "", emoji: "🎙️", type: null, role: "", facets: [],
+        model: "claude-sonnet-4-5-20250929", memory: "Persistent",
+        persona: "", voiceNotes: "",
+        channels: { bluesky: false, telegram: false, email: false, inapp: true },
+        scenes: [],
+      });
+      const [promptMode, setPromptMode] = useState("type");
+      const [aiInput, setAiInput] = useState("");
+      const [generating, setGenerating] = useState(false);
+      const [showEmojiPick, setShowEmojiPick] = useState(false);
+      const [saving, setSaving] = useState(false);
+
+      const toggleFacet = (f) => setForm(prev => ({
+        ...prev, facets: prev.facets.includes(f) ? prev.facets.filter(x => x !== f) : [...prev.facets, f]
+      }));
+      const toggleScene = (s) => setForm(prev => ({
+        ...prev, scenes: prev.scenes.includes(s) ? prev.scenes.filter(x => x !== s) : [...prev.scenes, s]
+      }));
+
+      const handleGenerate = () => {
+        if (!aiInput.trim()) return;
+        setGenerating(true);
+        setTimeout(() => {
+          const typePrompts = {
+            Guide: `You are ${form.name || "this actor"} — a patient, perceptive guide on Kinship.\n\nShaped by: ${aiInput}\n\nInstructions:\nBe present. Ask before advising. Recognize when someone needs to be heard rather than helped.\n\nConstraints:\nNever impose a framework. Never rush toward resolution. Never reduce complexity to categories.`,
+            Specialist: `You are ${form.name || "this actor"} — a specialist in ${form.role || "your domain"}.\n\nShaped by: ${aiInput}\n\nInstructions:\nDeliver expertise clearly. Stay within your scope. Escalate when situations exceed your domain.\n\nConstraints:\nNever overreach your specialty. Never speak with false confidence.`,
+            Ceremonial: `You are ${form.name || "this actor"} — a ceremonial presence who holds ritual space with intention.\n\nShaped by: ${aiInput}\n\nInstructions:\nHold the space. Name what is present. Invite, never command.\n\nConstraints:\nNever rush ritual. Never treat a threshold moment as an administrative event.`,
+            Bridge: `You are ${form.name || "this actor"} — the voice of this cycle in the world beyond Kinship.\n\nShaped by: ${aiInput}\n\nInstructions:\nSpeak for the community without exposing individuals. Respond with warmth and clarity.\n\nConstraints:\nNever share individual member information externally. Never create urgency that doesn't exist.`,
+          };
+          setForm(prev => ({ ...prev, persona: typePrompts[form.type] || typePrompts["Guide"] }));
+          setGenerating(false);
+        }, 1100);
+      };
+
+      const handleCreate = () => {
+        setSaving(true);
+        setTimeout(() => {
+          const newActor = {
+            ...form,
+            id: (form.name.toLowerCase().replace(/\s+/g, "-") || "actor") + "-" + Date.now(),
+            status: "Draft", canOrchestrate: false, tags: [],
+            stats: { messages: 0, responseRate: null, lastActive: "Never", questsTriggered: 0 },
+          };
+          setActorList(prev => [...prev, newActor]);
+          setShowNewActor(false);
+          setSelectedActor(newActor);
+        }, 800);
+      };
+
+      const stepOk = step === 1 ? (form.name.trim() && form.type) : step === 2 ? form.persona.trim() : true;
+
+      return (
+        <Modal title={`New Actor — Step ${step} of ${TOTAL}`} onClose={() => setShowNewActor(false)} width={560}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
+            {Array.from({ length: TOTAL }, (_, i) => (
+              <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i < step ? colors.accent : colors.border, transition: "background 0.2s" }} />
+            ))}
+          </div>
+
+          {/* Step 1: Identity */}
+          {step === 1 && (
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, marginBottom: 16 }}>Identity</div>
+              <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-start" }}>
+                <div style={{ position: "relative" }}>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Avatar</div>
+                  <div onClick={() => setShowEmojiPick(!showEmojiPick)} style={{ width: 52, height: 52, borderRadius: 12, background: colors.surface, border: `1px solid ${showEmojiPick ? colors.accent : colors.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, cursor: "pointer" }}>
+                    {form.emoji}
                   </div>
-                  <div style={{ display: "flex", gap: 14, marginTop: 4, fontSize: 11, color: colors.textDim }}>
-                    <span>🗺️ {a.scenes} scenes</span>
-                    <span>📡 {a.reachable}</span>
-                    {a.tools.length > 0 && <span>🔧 {a.tools.join(" ")}</span>}
+                  {showEmojiPick && (
+                    <div style={{ position: "absolute", zIndex: 20, top: 80, left: 0, background: colors.surfaceHover, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 10, display: "flex", flexWrap: "wrap", gap: 4, width: 230 }}>
+                      {["🌐","💚","🧭","🌉","🔬","🕯️","🎙️","🌀","🌊","🏔️","🌲","⚡","🦋","🌱","✨","🎭","🎵","🔮","🧙","🌿","📖","🏪","🔱","🌸","🦅","🐉"].map(e => (
+                        <span key={e} onClick={() => { setForm(p => ({ ...p, emoji: e })); setShowEmojiPick(false); }} style={{ fontSize: 20, cursor: "pointer", padding: 4, borderRadius: 6, background: form.emoji === e ? colors.accent + "20" : "transparent" }}>{e}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Field label="Name">
+                    <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Elder Sage" />
+                  </Field>
+                </div>
+              </div>
+              <Field label="Role / Archetype" hint="One sentence on what this actor does in this cycle.">
+                <Input value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} placeholder="e.g. Wisdom keeper and long-arc mentor for the cycle journey" />
+              </Field>
+              <div style={{ marginTop: 16, marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Actor Type</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                  {ACTOR_TYPES.map(t => {
+                    const on = form.type === t.id;
+                    const [hov, setHov] = useState(false);
+                    return (
+                      <div key={t.id} onClick={() => setForm(p => ({ ...p, type: t.id }))} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                        style={{ padding: "12px 14px", background: on ? colors.accent + "12" : hov ? colors.surfaceHover : colors.surface, border: `1px solid ${on ? colors.accent + "60" : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s" }}>
+                        <RenderIcon icon={t.icon} size={20} style={{ marginBottom: 5 }} />
+                        <div style={{ fontSize: 12, fontWeight: 600, color: on ? colors.accent : colors.text, marginBottom: 2 }}>{t.id}</div>
+                        <div style={{ fontSize: 11, color: colors.textDim, lineHeight: 1.4 }}>{t.desc}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>HEARTS Facets</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {["H","E","A","R","T","Si","So"].map(f => {
+                    const on = form.facets.includes(f);
+                    return (
+                      <div key={f} onClick={() => toggleFacet(f)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 12px", background: on ? colors.accent + "18" : colors.surface, border: `1px solid ${on ? colors.accent : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s", minWidth: 52 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: on ? colors.accent : colors.textDim }}>{f}</span>
+                        <span style={{ fontSize: 9, color: on ? colors.accent + "BB" : colors.textDim }}>{facetLabels[f]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Persona & Prompt */}
+          {step === 2 && (
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, marginBottom: 16 }}>Persona & Prompt</div>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 14 }}>
+                <div style={{ display: "flex", borderBottom: `1px solid ${colors.border}` }}>
+                  {[["type","lucide:pencil","Type / Paste"],["assist","lucide:sparkles","AI Assist"]].map(([id, icon, label], i) => (
+                    <button key={id} onClick={() => setPromptMode(id)}
+                      style={{ flex: 1, padding: "10px 8px", background: promptMode === id ? colors.accent + "14" : "transparent", border: "none", borderRight: i === 0 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                      <Icon name={icon} size={12} style={{ color: promptMode === id ? colors.accent : colors.textDim }} />
+                      <span style={{ fontSize: 12, fontWeight: promptMode === id ? 600 : 400, color: promptMode === id ? colors.accent : colors.textMuted }}>{label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div style={{ padding: 14 }}>
+                  {promptMode === "type" && (
+                    <textarea value={form.persona} onChange={e => setForm(p => ({ ...p, persona: e.target.value }))} rows={7}
+                      placeholder={"You are [Name] — a cycle actor on Kinship...\n\nYour role is to...\n\nInstructions:\n...\n\nConstraints:\n..."}
+                      style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 12, resize: "vertical", lineHeight: 1.7, fontFamily: "'Inter', monospace", boxSizing: "border-box" }} />
+                  )}
+                  {promptMode === "assist" && (
+                    <div>
+                      <textarea rows={3} value={aiInput} onChange={e => setAiInput(e.target.value)}
+                        placeholder={`Describe ${form.name || "this actor"}'s purpose, voice, and key behaviors...`}
+                        style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 12, resize: "vertical", lineHeight: 1.6, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 10 }} />
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                        {["A warm ceremonial guide who holds opening rituals","A direct challenge-setter who tracks commitments","A quiet, somatic presence for emotional processing"].map((s, i) => (
+                          <button key={i} onClick={() => setAiInput(s)} style={{ padding: "4px 10px", background: colors.accent + "12", border: `1px solid ${colors.accent}33`, borderRadius: 6, color: colors.accent, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{s}</button>
+                        ))}
+                      </div>
+                      {form.persona && (
+                        <div style={{ padding: "10px 14px", background: colors.green + "08", border: `1px solid ${colors.green}33`, borderRadius: 8, fontSize: 12, color: colors.textMuted, lineHeight: 1.6, marginBottom: 12, maxHeight: 120, overflow: "auto", whiteSpace: "pre-wrap" }}>{form.persona}</div>
+                      )}
+                      <Btn onClick={handleGenerate} disabled={generating || !aiInput.trim()}>
+                        {generating ? "Generating..." : form.persona ? "Regenerate" : "Generate Prompt"}
+                      </Btn>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <Field label="Voice & Tone Notes" hint="Optional shorthand for how this actor sounds. Not part of the system prompt.">
+                <Input value={form.voiceNotes} onChange={e => setForm(p => ({ ...p, voiceNotes: e.target.value }))} placeholder="e.g. Measured, unhurried. Sometimes sparse." />
+              </Field>
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Language Model</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {MODEL_OPTIONS.map(m => (
+                    <div key={m.value} onClick={() => setForm(p => ({ ...p, model: m.value }))}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: form.model === m.value ? colors.accent + "10" : colors.surface, border: `1px solid ${form.model === m.value ? colors.accent + "50" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+                      <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${form.model === m.value ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {form.model === m.value && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 500, color: form.model === m.value ? colors.text : colors.textMuted }}>{m.label}</div>
+                        <div style={{ fontSize: 10, color: colors.textDim }}>{m.hint}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Memory Scope</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {MEMORY_OPTIONS.map(m => (
+                    <div key={m.value} onClick={() => setForm(p => ({ ...p, memory: m.value }))}
+                      style={{ flex: 1, padding: "10px 10px", background: form.memory === m.value ? colors.accent + "12" : colors.surface, border: `1px solid ${form.memory === m.value ? colors.accent + "60" : colors.border}`, borderRadius: 8, cursor: "pointer", textAlign: "center" }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: form.memory === m.value ? colors.accent : colors.textMuted, marginBottom: 2 }}>{m.value}</div>
+                      <div style={{ fontSize: 9, color: colors.textDim }}>{m.hint}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Channels & Scenes */}
+          {step === 3 && (
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, marginBottom: 16 }}>Channels & Scenes</div>
+              <div style={{ marginBottom: 22 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Channels</div>
+                <Toggle label="BlueSky" enabled={form.channels.bluesky} onChange={v => setForm(p => ({ ...p, channels: { ...p.channels, bluesky: v } }))} hint="Post and reply via the connected BlueSky account" />
+                <Toggle label="Telegram" enabled={form.channels.telegram} onChange={v => setForm(p => ({ ...p, channels: { ...p.channels, telegram: v } }))} hint="Send and receive via the connected Telegram bot" />
+                <Toggle label="Email" enabled={form.channels.email} onChange={v => setForm(p => ({ ...p, channels: { ...p.channels, email: v } }))} hint="Send and receive via the connected Google account" />
+                <Toggle label="In-app (always on)" enabled={true} onChange={() => {}} hint="Always available inside Kinship Today" />
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Assign to Scenes</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {CYCLE_SCENES_LIST.map(s => {
+                    const on = form.scenes.includes(s);
+                    const [hov, setHov] = useState(false);
+                    return (
+                      <div key={s} onClick={() => toggleScene(s)} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: on ? colors.accent + "10" : hov ? colors.surfaceHover : colors.surface, border: `1px solid ${on ? colors.accent + "55" : colors.border}`, borderRadius: 7, cursor: "pointer", transition: "all 0.15s" }}>
+                        <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${on ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, background: on ? colors.accent : "transparent" }}>
+                          {on && <Icon name="lucide:check" size={9} style={{ color: "#fff" }} />}
+                        </div>
+                        <Icon name="lucide:map" size={12} style={{ color: on ? colors.accent : colors.textDim }} />
+                        <span style={{ fontSize: 12, color: on ? colors.text : colors.textMuted }}>{s}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 8, marginTop: 24, justifyContent: "space-between" }}>
+            <Btn variant="secondary" onClick={() => step === 1 ? setShowNewActor(false) : setStep(s => s - 1)}>
+              {step === 1 ? "Cancel" : "← Back"}
+            </Btn>
+            {step < TOTAL
+              ? <Btn onClick={() => setStep(s => s + 1)} disabled={!stepOk}>Next →</Btn>
+              : <Btn onClick={handleCreate} disabled={saving}>{saving ? "Creating..." : "Create Actor"}</Btn>
+            }
+          </div>
+        </Modal>
+      );
+    };
+
+    // ── Actor Detail ─────────────────────────────────────────────────────────
+    const CycleActorDetail = ({ actor }) => {
+      const [tab, setTab] = useState("identity");
+      const [editName, setEditName] = useState(actor.name);
+      const [editRole, setEditRole] = useState(actor.role);
+      const [editEmoji, setEditEmoji] = useState(actor.emoji);
+      const [editFacets, setEditFacets] = useState(actor.facets || []);
+      const [editPersona, setEditPersona] = useState(actor.persona || "");
+      const [editVoice, setEditVoice] = useState(actor.voiceNotes || "");
+      const [editModel, setEditModel] = useState(actor.model || "claude-sonnet-4-5-20250929");
+      const [editMemory, setEditMemory] = useState(actor.memory || "Persistent");
+      const [editChannels, setEditChannels] = useState(actor.channels || { bluesky: false, telegram: false, email: false, inapp: true });
+      const [editScenes, setEditScenes] = useState(actor.scenes || []);
+      const [editCanOrchestrate, setEditCanOrchestrate] = useState(actor.canOrchestrate || false);
+      const [editTags, setEditTags] = useState(actor.tags || []);
+      const [newTag, setNewTag] = useState("");
+      const [promptMode, setPromptMode] = useState("type");
+      const [aiRefineInput, setAiRefineInput] = useState("");
+      const [refining, setRefining] = useState(false);
+      const [showEmojiPick, setShowEmojiPick] = useState(false);
+      const [saving, setSaving] = useState(false);
+      const [savedAt, setSavedAt] = useState(null);
+
+      const toggleFacet = (f) => setEditFacets(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]);
+      const toggleScene = (s) => setEditScenes(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+
+      const DETAIL_TABS = [
+        { id: "identity", label: "Identity", icon: "lucide:user-round" },
+        { id: "persona", label: "Persona", icon: "lucide:sparkles" },
+        { id: "channels", label: "Channels", icon: "lucide:radio" },
+        { id: "scenes", label: "Scenes", icon: "lucide:map", badge: editScenes.length },
+        { id: "analytics", label: "Analytics", icon: "lucide:bar-chart-2" },
+      ];
+
+      const handleSave = () => {
+        setSaving(true);
+        setTimeout(() => {
+          setActorList(prev => prev.map(a => a.id === actor.id ? {
+            ...a, name: editName, role: editRole, emoji: editEmoji, facets: editFacets,
+            persona: editPersona, voiceNotes: editVoice, model: editModel, memory: editMemory,
+            channels: editChannels, scenes: editScenes, canOrchestrate: editCanOrchestrate, tags: editTags,
+          } : a));
+          setSaving(false);
+          setSavedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+        }, 700);
+      };
+
+      return (
+        <div>
+          <PageHeader
+            title={<span style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 24 }}>{actor.emoji}</span><span>{actor.name}</span></span>}
+            subtitle={actor.role}
+            onBack={() => setSelectedActor(null)}
+          >
+            <StatusPill status={actor.status} />
+            <Btn onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : savedAt ? `Saved ${savedAt}` : "Save Changes"}
+            </Btn>
+          </PageHeader>
+
+          {/* Stats row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+            {[
+              { label: "Messages", value: actor.stats.messages > 0 ? actor.stats.messages.toLocaleString() : "—" },
+              { label: "Response Rate", value: actor.stats.responseRate ? actor.stats.responseRate + "%" : "—" },
+              { label: "Last Active", value: actor.stats.lastActive },
+              { label: "Quests Triggered", value: actor.stats.questsTriggered || "—" },
+            ].map((s, i) => (
+              <div key={i} style={{ padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.4 }}>{s.label}</div>
+                <div style={{ fontSize: 14, color: colors.text, fontWeight: 600 }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 2, borderBottom: `1px solid ${colors.border}`, marginBottom: 22 }}>
+            {DETAIL_TABS.map(t => (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "9px 14px", background: "none", border: "none", borderBottom: `2px solid ${tab === t.id ? colors.accent : "transparent"}`, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", marginBottom: -1 }}>
+                <Icon name={t.icon} size={13} style={{ color: tab === t.id ? colors.accent : colors.textDim }} />
+                <span style={{ fontSize: 12, fontWeight: tab === t.id ? 600 : 400, color: tab === t.id ? colors.accent : colors.textMuted }}>{t.label}</span>
+                {t.badge !== undefined && t.badge > 0 && (
+                  <span style={{ fontSize: 10, background: colors.accent + "22", color: colors.accent, padding: "1px 6px", borderRadius: 8 }}>{t.badge}</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* ── Identity tab ── */}
+          {tab === "identity" && (
+            <div style={{ maxWidth: 600 }}>
+              <div style={{ display: "flex", gap: 14, marginBottom: 16, alignItems: "flex-start" }}>
+                <div style={{ position: "relative" }}>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Avatar</div>
+                  <div onClick={() => setShowEmojiPick(!showEmojiPick)} style={{ width: 52, height: 52, borderRadius: 12, background: colors.surface, border: `1px solid ${showEmojiPick ? colors.accent : colors.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, cursor: "pointer" }}>
+                    {editEmoji}
+                  </div>
+                  {showEmojiPick && (
+                    <div style={{ position: "absolute", zIndex: 20, top: 80, left: 0, background: colors.surfaceHover, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 10, display: "flex", flexWrap: "wrap", gap: 4, width: 230 }}>
+                      {["🌐","💚","🧭","🌉","🔬","🕯️","🎙️","🌀","🌊","🏔️","🌲","⚡","🦋","🌱","✨","🎭","🎵","🔮","🧙","🌿","📖","🏪","🔱","🌸","🦅","🐉"].map(e => (
+                        <span key={e} onClick={() => { setEditEmoji(e); setShowEmojiPick(false); }} style={{ fontSize: 20, cursor: "pointer", padding: 4, borderRadius: 6, background: editEmoji === e ? colors.accent + "20" : "transparent" }}>{e}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <Field label="Name">
+                    <Input value={editName} onChange={e => setEditName(e.target.value)} />
+                  </Field>
+                </div>
+              </div>
+
+              <Field label="Role / Archetype">
+                <Input value={editRole} onChange={e => setEditRole(e.target.value)} />
+              </Field>
+
+              <div style={{ marginTop: 16, marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>HEARTS Facets</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {["H","E","A","R","T","Si","So"].map(f => {
+                    const on = editFacets.includes(f);
+                    return (
+                      <div key={f} onClick={() => toggleFacet(f)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "8px 12px", background: on ? colors.accent + "18" : colors.surface, border: `1px solid ${on ? colors.accent : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s", minWidth: 52 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: on ? colors.accent : colors.textDim }}>{f}</span>
+                        <span style={{ fontSize: 9, color: on ? colors.accent + "BB" : colors.textDim }}>{facetLabels[f]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Tags</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                  {editTags.map((tag, i) => (
+                    <span key={i} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 5, padding: "3px 8px", color: colors.textMuted }}>
+                      {tag}
+                      <button onClick={() => setEditTags(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: colors.textDim, padding: 0, fontSize: 13, lineHeight: 1 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input value={newTag} onChange={e => setNewTag(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && newTag.trim()) { setEditTags(p => [...p, newTag.trim()]); setNewTag(""); } }}
+                    placeholder="Add tag…" style={{ flex: 1, padding: "7px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, fontFamily: "inherit" }} />
+                  <Btn variant="secondary" onClick={() => { if (newTag.trim()) { setEditTags(p => [...p, newTag.trim()]); setNewTag(""); } }}>Add</Btn>
+                </div>
+              </div>
+
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <div onClick={() => setEditCanOrchestrate(!editCanOrchestrate)}
+                    style={{ width: 36, height: 20, borderRadius: 10, background: editCanOrchestrate ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s", flexShrink: 0, marginTop: 2 }}>
+                    <div style={{ position: "absolute", top: 3, left: editCanOrchestrate ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500, color: colors.text, marginBottom: 2 }}>Can orchestrate other actors</div>
+                    <div style={{ fontSize: 11, color: colors.textDim }}>When enabled, this actor can route members to other actors and coordinate activity within this cycle.</div>
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 4 }}>
+              </div>
+            </div>
+          )}
+
+          {/* ── Persona tab ── */}
+          {tab === "persona" && (
+            <div style={{ maxWidth: 640 }}>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, overflow: "hidden", marginBottom: 16 }}>
+                <div style={{ display: "flex", borderBottom: `1px solid ${colors.border}` }}>
+                  {[["type","lucide:pencil","Type / Edit"],["assist","lucide:sparkles","AI Refine"]].map(([id, icon, label], i) => (
+                    <button key={id} onClick={() => setPromptMode(id)}
+                      style={{ flex: 1, padding: "10px 8px", background: promptMode === id ? colors.accent + "14" : "transparent", border: "none", borderRight: i === 0 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                      <Icon name={icon} size={12} style={{ color: promptMode === id ? colors.accent : colors.textDim }} />
+                      <span style={{ fontSize: 12, fontWeight: promptMode === id ? 600 : 400, color: promptMode === id ? colors.accent : colors.textMuted }}>{label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div style={{ padding: 14 }}>
+                  {promptMode === "type" && (
+                    <textarea value={editPersona} onChange={e => setEditPersona(e.target.value)} rows={10}
+                      style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 12, resize: "vertical", lineHeight: 1.7, fontFamily: "'Inter', monospace", boxSizing: "border-box" }} />
+                  )}
+                  {promptMode === "assist" && (
+                    <div>
+                      <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 10 }}>Describe how to refine {actor.name}'s persona. Kaytee will rewrite the prompt based on your guidance.</p>
+                      <textarea rows={3} value={aiRefineInput} onChange={e => setAiRefineInput(e.target.value)}
+                        placeholder={`e.g. "Make the tone warmer" or "Add more about how ${actor.name} handles conflict"`}
+                        style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 12, resize: "vertical", lineHeight: 1.6, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 10 }} />
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                        {["Make the tone warmer","Strengthen the constraints","Add more specificity to the voice"].map((s, i) => (
+                          <button key={i} onClick={() => setAiRefineInput(s)} style={{ padding: "4px 10px", background: colors.accent + "12", border: `1px solid ${colors.accent}33`, borderRadius: 6, color: colors.accent, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{s}</button>
+                        ))}
+                      </div>
+                      <Btn onClick={() => { setRefining(true); setTimeout(() => { setRefining(false); setPromptMode("type"); }, 900); }} disabled={refining || !aiRefineInput.trim()}>
+                        {refining ? "Refining..." : "Refine Prompt"}
+                      </Btn>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <Field label="Voice & Tone Notes" hint="Shorthand reference for editors. Not included in the live system prompt.">
+                <Input value={editVoice} onChange={e => setEditVoice(e.target.value)} />
+              </Field>
+              <div style={{ marginTop: 16 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Language Model</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {MODEL_OPTIONS.map(m => (
+                    <div key={m.value} onClick={() => setEditModel(m.value)}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: editModel === m.value ? colors.accent + "10" : colors.surface, border: `1px solid ${editModel === m.value ? colors.accent + "50" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+                      <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${editModel === m.value ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {editModel === m.value && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 500, color: editModel === m.value ? colors.text : colors.textMuted }}>{m.label}</div>
+                        <div style={{ fontSize: 10, color: colors.textDim }}>{m.hint}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Memory Scope</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {MEMORY_OPTIONS.map(m => (
+                    <div key={m.value} onClick={() => setEditMemory(m.value)}
+                      style={{ flex: 1, padding: "10px 10px", background: editMemory === m.value ? colors.accent + "12" : colors.surface, border: `1px solid ${editMemory === m.value ? colors.accent + "60" : colors.border}`, borderRadius: 8, cursor: "pointer", textAlign: "center" }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: editMemory === m.value ? colors.accent : colors.textMuted, marginBottom: 2 }}>{m.value}</div>
+                      <div style={{ fontSize: 9, color: colors.textDim }}>{m.hint}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Channels tab ── */}
+          {tab === "channels" && (
+            <div style={{ maxWidth: 560 }}>
+              <p style={{ fontSize: 13, color: colors.textDim, marginBottom: 20, lineHeight: 1.6 }}>External channels this actor can reach members through. Requires the corresponding platform connector to be active.</p>
+              <Toggle label="BlueSky" enabled={editChannels.bluesky} onChange={v => setEditChannels(p => ({ ...p, bluesky: v }))} hint="Post, reply, and DM via the connected BlueSky account" />
+              <Toggle label="Telegram" enabled={editChannels.telegram} onChange={v => setEditChannels(p => ({ ...p, telegram: v }))} hint="Send and receive messages via the connected Telegram bot" />
+              <Toggle label="Email (Google Workspace)" enabled={editChannels.email} onChange={v => setEditChannels(p => ({ ...p, email: v }))} hint="Send and receive email via the connected Google account" />
+              <Toggle label="In-app (always on)" enabled={true} onChange={() => {}} hint="Always available inside Kinship Today — cannot be disabled" />
+            </div>
+          )}
+
+          {/* ── Scenes tab ── */}
+          {tab === "scenes" && (
+            <div style={{ maxWidth: 560 }}>
+              <p style={{ fontSize: 13, color: colors.textDim, marginBottom: 20, lineHeight: 1.6 }}>Toggle which scenes this actor is active in. An actor must be assigned to a scene before it can be referenced by that scene's quests and triggers.</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {CYCLE_SCENES_LIST.map(s => {
+                  const on = editScenes.includes(s);
+                  const [hov, setHov] = useState(false);
+                  return (
+                    <div key={s} onClick={() => toggleScene(s)} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                      style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: on ? colors.accent + "08" : hov ? colors.surfaceHover : colors.surface, border: `1px solid ${on ? colors.accent + "44" : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s" }}>
+                      <div style={{ width: 18, height: 18, borderRadius: 5, border: `2px solid ${on ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, background: on ? colors.accent : "transparent" }}>
+                        {on && <Icon name="lucide:check" size={10} style={{ color: "#fff" }} />}
+                      </div>
+                      <Icon name="lucide:map" size={14} style={{ color: on ? colors.accent : colors.textDim }} />
+                      <span style={{ flex: 1, fontSize: 13, color: on ? colors.text : colors.textMuted, fontWeight: on ? 500 : 400 }}>{s}</span>
+                      {on && <span style={{ fontSize: 10, color: colors.accent, background: colors.accent + "15", padding: "2px 8px", borderRadius: 99, border: `1px solid ${colors.accent}33` }}>Active</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── Analytics tab ── */}
+          {tab === "analytics" && (
+            <div style={{ maxWidth: 560 }}>
+              {actor.stats.messages === 0 ? (
+                <div style={{ textAlign: "center", padding: "48px 0" }}>
+                  <Icon name="lucide:bar-chart-2" size={32} style={{ color: colors.border, marginBottom: 12 }} />
+                  <p style={{ fontSize: 14, marginBottom: 6, color: colors.textMuted }}>No activity yet</p>
+                  <p style={{ fontSize: 12, color: colors.textDim }}>Analytics will appear once this actor is assigned to a scene and members begin interacting.</p>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+                    {[
+                      { label: "Total Messages", value: actor.stats.messages.toLocaleString(), icon: "lucide:message-circle", color: colors.accent },
+                      { label: "Response Rate", value: actor.stats.responseRate + "%", icon: "lucide:zap", color: colors.green },
+                      { label: "Quests Triggered", value: actor.stats.questsTriggered, icon: "lucide:flag", color: colors.purple },
+                      { label: "Last Active", value: actor.stats.lastActive, icon: "lucide:clock", color: colors.cyan },
+                    ].map((s, i) => (
+                      <div key={i} style={{ padding: "16px 18px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                          <div style={{ width: 30, height: 30, borderRadius: 8, background: s.color + "15", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <Icon name={s.icon} size={14} style={{ color: s.color }} />
+                          </div>
+                          <span style={{ fontSize: 11, color: colors.textDim, textTransform: "uppercase", letterSpacing: 0.5 }}>{s.label}</span>
+                        </div>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {(actor.scenes || []).length > 0 && (
+                    <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 14 }}>Interactions by Scene</div>
+                      {(actor.scenes || []).map((s, i) => {
+                        const pct = [68, 52, 41, 29, 78, 35, 61][i % 7];
+                        return (
+                          <div key={i} style={{ marginBottom: 12 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: colors.textDim, marginBottom: 5 }}>
+                              <span>{s}</span><span>{pct}%</span>
+                            </div>
+                            <div style={{ height: 4, background: colors.border, borderRadius: 2, overflow: "hidden" }}>
+                              <div style={{ height: "100%", width: pct + "%", background: colors.accent + "99", borderRadius: 2 }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ── Filtered list ────────────────────────────────────────────────────────
+    const filtered = actorList.filter(a => {
+      const q = actorSearch.toLowerCase();
+      const matchSearch = !q || a.name.toLowerCase().includes(q) || a.role.toLowerCase().includes(q);
+      const matchFacet = facetFilter === "All" || a.facets.includes(facetFilter);
+      const matchStatus = statusFilter === "All" || a.status === statusFilter;
+      return matchSearch && matchFacet && matchStatus;
+    });
+
+    if (selectedActor) return <CycleActorDetail actor={selectedActor} />;
+
+    return (
+      <div>
+        {showNewActor && <NewActorModal />}
+        <PageHeader title="Actors" subtitle="AI characters active in this cycle — click to configure, assign to scenes, and refine their personas">
+          <Btn onClick={() => setShowNewActor(true)}>+ New Actor</Btn>
+        </PageHeader>
+
+        {/* Stats row */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+          {[
+            { label: "Total Actors", value: actorList.length, color: colors.pink },
+            { label: "Active", value: actorList.filter(a => a.status === "Active").length, color: colors.green },
+            { label: "Draft", value: actorList.filter(a => a.status === "Draft").length, color: colors.warning },
+            { label: "Total Messages", value: actorList.reduce((s, a) => s + a.stats.messages, 0).toLocaleString(), color: colors.accent },
+          ].map((s, i) => (
+            <div key={i} style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+              <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{s.label}</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: s.color }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div style={{ position: "relative", marginBottom: 12 }}>
+          <Icon name="lucide:search" size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: colors.textDim }} />
+          <input value={actorSearch} onChange={e => setActorSearch(e.target.value)} placeholder="Search actors…"
+            style={{ width: "100%", paddingLeft: 30, paddingRight: 12, paddingTop: 8, paddingBottom: 8, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+          {["All","H","E","A","R","T","Si","So"].map((f, i) => <FilterPill key={i} label={f} active={facetFilter === f} onClick={() => setFacetFilter(f)} />)}
+          <span style={{ color: colors.textDim, margin: "0 4px" }}>·</span>
+          {["All","Active","Draft"].map((f, i) => <FilterPill key={i} label={f} active={statusFilter === f} onClick={() => setStatusFilter(f)} />)}
+        </div>
+
+        {/* Actor list */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {filtered.length === 0 && (
+            <div style={{ textAlign: "center", padding: "32px 0", color: colors.textDim, fontSize: 13 }}>No actors match your filters.</div>
+          )}
+          {filtered.map((a, i) => {
+            const [h, setH] = useState(false);
+            const extChannels = [a.channels?.bluesky && "🦋", a.channels?.telegram && "✈️", a.channels?.email && "📧"].filter(Boolean);
+            return (
+              <div key={a.id} onClick={() => setSelectedActor(a)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: colors.pink + "18", border: `1px solid ${colors.pink}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
+                  {a.emoji}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{a.name}</span>
+                    <span style={{ fontSize: 10, color: colors.textDim, background: colors.surface, border: `1px solid ${colors.border}`, padding: "1px 7px", borderRadius: 4 }}>{a.type}</span>
+                    {a.canOrchestrate && <span style={{ fontSize: 10, color: colors.purple, background: colors.purple + "15", border: `1px solid ${colors.purple}33`, padding: "1px 7px", borderRadius: 4 }}>Orchestrator</span>}
+                  </div>
+                  <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.role}</div>
+                  <div style={{ display: "flex", gap: 12, fontSize: 11, color: colors.textDim }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                      <Icon name="lucide:map" size={10} style={{ color: colors.textDim }} />
+                      {a.scenes.length > 0 ? `${a.scenes.length} scene${a.scenes.length !== 1 ? "s" : ""}` : "No scenes"}
+                    </span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                      <Icon name="lucide:message-circle" size={10} style={{ color: colors.textDim }} />
+                      {a.stats.messages > 0 ? a.stats.messages.toLocaleString() + " msgs" : "No activity"}
+                    </span>
+                    {extChannels.length > 0 && <span>{extChannels.join(" ")} + in-app</span>}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
                   {a.facets.map((f, j) => (
                     <span key={j} style={{ fontSize: 10, fontWeight: 700, width: 22, height: 22, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", background: colors.accent + "22", color: colors.accent, border: `1px solid ${colors.accent}33` }}>{f}</span>
                   ))}
                 </div>
                 <StatusPill status={a.status} />
-                <span style={{ color: colors.textDim, fontSize: 14 }}>›</span>
+                <Icon name="lucide:chevron-right" size={14} style={{ color: colors.textDim, flexShrink: 0 }} />
               </div>
             );
           })}
