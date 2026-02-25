@@ -2837,6 +2837,640 @@ const PlatformDatabasesContent = () => {
   );
 };
 
+// ─── Platform Teams & Roles ───────────────────────────────────────────────────
+
+const PERMISSION_CATEGORIES = [
+  {
+    id: "system",
+    label: "System Settings",
+    perms: [
+      { id: "manage_connectors", label: "Manage connectors & integrations" },
+      { id: "manage_databases", label: "Manage databases" },
+      { id: "manage_platform_settings", label: "Edit platform-level settings" },
+      { id: "restrict_resources", label: "Restrict resources to Wizard-only" },
+      { id: "manage_commerce", label: "Manage commerce & Solana settings" },
+    ],
+  },
+  {
+    id: "platform_actors",
+    label: "Platform Actors",
+    perms: [
+      { id: "create_platform_actors", label: "Create new platform actors" },
+      { id: "edit_platform_actors", label: "Edit platform actors" },
+      { id: "edit_platform_core", label: "Edit Platform Core (Mage only)" },
+      { id: "remove_platform_actors", label: "Remove platform actors" },
+    ],
+  },
+  {
+    id: "content",
+    label: "Content & Cycles",
+    perms: [
+      { id: "edit_cycles", label: "Edit any cycle" },
+      { id: "remove_cycles", label: "Remove cycles" },
+      { id: "manage_scenes", label: "Manage scenes & quests" },
+      { id: "manage_assets", label: "Manage assets" },
+      { id: "manage_templates", label: "Manage templates & starters" },
+    ],
+  },
+  {
+    id: "knowledge",
+    label: "Knowledge & Prompts",
+    perms: [
+      { id: "manage_knowledge", label: "Add / remove knowledge base documents" },
+      { id: "manage_prompts", label: "Edit system prompts" },
+      { id: "edit_core_prompt", label: "Edit Platform Core system prompt (Mage only)" },
+    ],
+  },
+  {
+    id: "members",
+    label: "Member Management",
+    perms: [
+      { id: "view_members", label: "View member list & profiles" },
+      { id: "manage_accounts", label: "Edit member accounts & status" },
+      { id: "ban_members", label: "Suspend or ban members" },
+      { id: "remove_members", label: "Permanently remove members" },
+    ],
+  },
+  {
+    id: "team",
+    label: "Team & Roles",
+    perms: [
+      { id: "invite_team", label: "Invite members to the team" },
+      { id: "assign_roles", label: "Assign / change roles" },
+      { id: "assign_wizard", label: "Assign or remove Wizard role (Mage only)" },
+      { id: "customize_roles", label: "Customize role permission templates" },
+    ],
+  },
+];
+
+const MAGE_ONLY_PERMS = new Set(["edit_platform_core", "edit_core_prompt", "assign_wizard"]);
+const WIZARD_PERMS = new Set([
+  "manage_connectors","manage_databases","manage_platform_settings","restrict_resources","manage_commerce",
+  "create_platform_actors","edit_platform_actors","remove_platform_actors",
+  "edit_cycles","remove_cycles","manage_scenes","manage_assets","manage_templates",
+  "manage_knowledge","manage_prompts",
+  "view_members","manage_accounts","ban_members","remove_members",
+  "invite_team","assign_roles","customize_roles",
+]);
+const PRODUCER_PERMS = new Set([
+  "create_platform_actors","edit_platform_actors","remove_platform_actors",
+  "edit_cycles","manage_scenes","manage_assets","manage_templates",
+  "manage_knowledge","manage_prompts",
+  "view_members",
+]);
+const GUIDE_PERMS = new Set([
+  "view_members","manage_accounts","ban_members",
+]);
+
+const PLATFORM_ROLES = [
+  {
+    id: "mage",
+    name: "Mage",
+    icon: "🔮",
+    color: colors.pink,
+    desc: "Platform owner. The only role that can promote or demote Wizards, and the only one who can modify Platform Core's system prompt. There should only ever be one Mage.",
+    isTemplate: false,
+    locked: true,
+    perms: new Set([...MAGE_ONLY_PERMS, ...WIZARD_PERMS]),
+  },
+  {
+    id: "wizard",
+    name: "Wizard",
+    icon: "⚡",
+    color: colors.warning,
+    desc: "Administrator. Full access to platform settings, content, and team management. Can mark specific resources as Wizard-only, restricting them from Producers and Guides.",
+    isTemplate: false,
+    locked: false,
+    perms: WIZARD_PERMS,
+  },
+  {
+    id: "producer",
+    name: "Producer",
+    icon: "🎬",
+    color: colors.purple,
+    desc: "Manages content, cycles, actors, and the knowledge base. Cannot touch system-level settings or Platform Core. Producer is a template — permissions can be customized per team member.",
+    isTemplate: true,
+    locked: false,
+    perms: PRODUCER_PERMS,
+  },
+  {
+    id: "guide",
+    name: "Guide",
+    icon: "🧭",
+    color: colors.cyan,
+    desc: "In-app member support. Manages member accounts, provides assistance, and can suspend members. Guide is a template — permissions can be customized per team member.",
+    isTemplate: true,
+    locked: false,
+    perms: GUIDE_PERMS,
+  },
+];
+
+const TEAM_MEMBERS = [
+  { id: "moto", name: "moto", email: "motodave@gmail.com", role: "mage", joined: "2024-03-15", lastActive: "2026-02-25", status: "Active" },
+  { id: "eloy", name: "Eloy", email: "andres.lara@kinship.systems", role: "wizard", joined: "2024-04-02", lastActive: "2026-02-20", status: "Active" },
+  { id: "kinship", name: "Kinship", email: "test.kinship@kinship.systems", role: "producer", joined: "2024-08-01", lastActive: "2026-02-24", status: "Active" },
+  { id: "syren", name: "Syren", email: "syrenwind@gmail.com", role: "guide", joined: "2024-09-15", lastActive: "2026-01-03", status: "Active" },
+];
+
+const PENDING_INVITES = [
+  { email: "newcreator@example.com", role: "producer", sentBy: "moto", sentOn: "2026-02-22", expires: "2026-03-01" },
+];
+
+// Current logged-in user — Mage
+const CURRENT_USER_ROLE = "mage";
+
+const RoleBadge = ({ roleId, size = "sm" }) => {
+  const role = PLATFORM_ROLES.find(r => r.id === roleId);
+  if (!role) return null;
+  const pad = size === "lg" ? "5px 14px" : "3px 9px";
+  const fs = size === "lg" ? 13 : 10;
+  return (
+    <span style={{ fontSize: fs, padding: pad, borderRadius: 6, background: role.color + "18", color: role.color, fontWeight: 700, border: `1px solid ${role.color}33`, display: "inline-flex", alignItems: "center", gap: 4 }}>
+      {role.icon} {role.name}
+    </span>
+  );
+};
+
+const PermissionGrid = ({ enabledPerms, mageOnly = false, readOnly = false, onChange }) => (
+  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    {PERMISSION_CATEGORIES.map(cat => (
+      <div key={cat.id}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>{cat.label}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {cat.perms.map(perm => {
+            const isMageOnly = MAGE_ONLY_PERMS.has(perm.id);
+            const isEnabled = enabledPerms.has(perm.id);
+            const isLocked = readOnly || (isMageOnly && !mageOnly);
+            return (
+              <div key={perm.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", background: isEnabled ? colors.accent + "06" : "transparent", borderRadius: 7, opacity: isLocked && !isEnabled ? 0.45 : 1 }}>
+                <div onClick={() => !isLocked && onChange && onChange(perm.id, !isEnabled)}
+                  style={{ width: 32, height: 18, borderRadius: 9, background: isEnabled ? colors.accent : "rgba(255,255,255,0.10)", cursor: isLocked ? "default" : "pointer", position: "relative", transition: "background 0.15s", flexShrink: 0 }}>
+                  <div style={{ position: "absolute", top: 2, left: isEnabled ? 16 : 2, width: 14, height: 14, borderRadius: 7, background: isEnabled ? "#fff" : "rgba(255,255,255,0.5)", transition: "left 0.15s" }} />
+                </div>
+                <span style={{ fontSize: 12, color: isEnabled ? colors.textMuted : colors.textDim, flex: 1 }}>{perm.label}</span>
+                {isMageOnly && (
+                  <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: colors.pink + "18", color: colors.pink, fontWeight: 700 }}>Mage only</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+// ── Role detail / editor ──────────────────────────────────────────────────────
+
+const RoleEditor = ({ role, onBack }) => {
+  const isMage = role.id === "mage";
+  const isMageUser = CURRENT_USER_ROLE === "mage";
+  const [perms, setPerms] = useState(new Set(role.perms));
+  const [desc, setDesc] = useState(role.desc);
+  const [saving, setSaving] = useState(false);
+  const [saveLabel, setSaveLabel] = useState("Save Changes");
+
+  const togglePerm = (permId, val) => {
+    const next = new Set(perms);
+    val ? next.add(permId) : next.delete(permId);
+    setPerms(next);
+  };
+
+  return (
+    <div style={{ maxWidth: 640 }}>
+      <PageHeader
+        title={`${role.icon} ${role.name}`}
+        subtitle={role.isTemplate ? "Template role — permissions apply by default but can be overridden per team member" : "Core role — permissions apply to all holders of this role"}
+        onBack={onBack}
+      >
+        <RoleBadge roleId={role.id} size="lg" />
+      </PageHeader>
+
+      {isMage && (
+        <InfoBox color={colors.pink}>
+          🔮 The Mage role is fixed. Its permissions cannot be modified — it must retain full access to all Mage-only functions. There can only be one Mage on a platform.
+        </InfoBox>
+      )}
+      {role.id === "wizard" && (
+        <InfoBox color={colors.warning}>
+          ⚡ Wizard permissions apply platform-wide. Mage-only functions (assigning Wizard, editing Platform Core) are locked and cannot be granted to Wizards.
+        </InfoBox>
+      )}
+      {role.isTemplate && (
+        <InfoBox color={colors.blue}>
+          ℹ️ {role.name} is a template. These default permissions apply when assigning this role, but Wizards can adjust individual permissions per team member after assignment.
+        </InfoBox>
+      )}
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 20 }}>
+        <Field label="Description" hint="Shown in the invite flow and on the team member's profile.">
+          <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={2} readOnly={isMage}
+            style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box", opacity: isMage ? 0.6 : 1 }} />
+        </Field>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 24 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 16 }}>Permissions</div>
+        <PermissionGrid enabledPerms={perms} mageOnly={isMageUser && isMage} readOnly={isMage} onChange={togglePerm} />
+      </div>
+
+      {!isMage && (
+        <div style={{ display: "flex", gap: 8 }}>
+          <Btn onClick={() => { setSaving(true); setTimeout(() => { setSaving(false); setSaveLabel("✓ Saved"); setTimeout(() => setSaveLabel("Save Changes"), 2000); }, 700); }}>
+            {saving ? "Saving..." : saveLabel}
+          </Btn>
+          <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Team member detail ────────────────────────────────────────────────────────
+
+const TeamMemberDetail = ({ member, onBack }) => {
+  const role = PLATFORM_ROLES.find(r => r.id === member.role);
+  const isMageUser = CURRENT_USER_ROLE === "mage";
+  const isWizardUser = CURRENT_USER_ROLE === "wizard" || isMageUser;
+  const [selectedRole, setSelectedRole] = useState(member.role);
+  const [customPerms, setCustomPerms] = useState(new Set(role?.perms || []));
+  const [permOverride, setPermOverride] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveLabel, setSaveLabel] = useState("Save Changes");
+
+  const canChangeRole = isWizardUser;
+  const canAssignWizard = isMageUser;
+
+  const togglePerm = (permId, val) => {
+    const next = new Set(customPerms);
+    val ? next.add(permId) : next.delete(permId);
+    setCustomPerms(next);
+  };
+
+  const availableRoles = PLATFORM_ROLES.filter(r => {
+    if (r.id === "mage") return false;
+    if (r.id === "wizard" && !canAssignWizard) return false;
+    return true;
+  });
+
+  const initials = member.name.slice(0, 2).toUpperCase();
+
+  return (
+    <div style={{ maxWidth: 640 }}>
+      <PageHeader title={member.name} subtitle={member.email} onBack={onBack}>
+        <RoleBadge roleId={member.role} size="lg" />
+      </PageHeader>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 22 }}>
+        {[
+          { label: "Joined Team", value: member.joined },
+          { label: "Last Active", value: member.lastActive },
+          { label: "Status", value: member.status },
+        ].map((s, i) => (
+          <div key={i} style={{ padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+            <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.4 }}>{s.label}</div>
+            <div style={{ fontSize: 13, color: colors.text, fontWeight: 500 }}>{s.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Role assignment */}
+      {canChangeRole && member.role !== "mage" && (
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>Role</div>
+          <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 14 }}>
+            {canAssignWizard ? "You can assign any role including Wizard." : "You can assign Producer or Guide. Only a Mage can assign the Wizard role."}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {availableRoles.map(r => (
+              <div key={r.id} onClick={() => { setSelectedRole(r.id); setCustomPerms(new Set(r.perms)); }}
+                style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px", background: selectedRole === r.id ? r.color + "10" : colors.bg, border: `1px solid ${selectedRole === r.id ? r.color + "50" : colors.border}`, borderRadius: 8, cursor: "pointer" }}>
+                <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${selectedRole === r.id ? r.color : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                  {selectedRole === r.id && <div style={{ width: 6, height: 6, borderRadius: 3, background: r.color }} />}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 2 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{r.icon} {r.name}</span>
+                    {r.isTemplate && <span style={{ fontSize: 9, color: colors.textDim, background: "rgba(255,255,255,0.07)", padding: "2px 6px", borderRadius: 4 }}>template</span>}
+                  </div>
+                  <div style={{ fontSize: 11, color: colors.textDim }}>{r.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {!canAssignWizard && (
+            <div style={{ marginTop: 10, padding: "8px 12px", background: colors.pink + "06", border: `1px solid ${colors.pink}22`, borderRadius: 7, fontSize: 11, color: colors.pink }}>
+              🔮 Assigning the Wizard role requires Mage access.
+            </div>
+          )}
+        </div>
+      )}
+
+      {member.role === "mage" && (
+        <InfoBox color={colors.pink}>
+          🔮 This member holds the Mage role. Only a Mage can transfer or remove the Mage role.
+        </InfoBox>
+      )}
+
+      {/* Permission overrides (for template roles) */}
+      {PLATFORM_ROLES.find(r => r.id === selectedRole)?.isTemplate && (
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Permission Overrides</div>
+              <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>Customize permissions for this member specifically. Overrides the {PLATFORM_ROLES.find(r => r.id === selectedRole)?.name} defaults.</div>
+            </div>
+            <div onClick={() => setPermOverride(!permOverride)}
+              style={{ width: 36, height: 20, borderRadius: 10, background: permOverride ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s", flexShrink: 0 }}>
+              <div style={{ position: "absolute", top: 3, left: permOverride ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+            </div>
+          </div>
+          {permOverride && (
+            <PermissionGrid enabledPerms={customPerms} mageOnly={false} readOnly={false} onChange={togglePerm} />
+          )}
+        </div>
+      )}
+
+      {member.role !== "mage" && (
+        <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
+          <Btn onClick={() => { setSaving(true); setTimeout(() => { setSaving(false); setSaveLabel("✓ Saved"); setTimeout(() => setSaveLabel("Save Changes"), 2000); }, 700); }}>
+            {saving ? "Saving..." : saveLabel}
+          </Btn>
+          <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+        </div>
+      )}
+
+      {member.role !== "mage" && (
+        <div style={{ background: colors.red + "08", border: `1px solid ${colors.red}33`, borderRadius: 10, padding: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.red, marginBottom: 6 }}>Danger Zone</div>
+          <p style={{ fontSize: 12, color: colors.textDim, margin: "0 0 12px" }}>Removing {member.name} from the team revokes all team permissions immediately. Their member account is preserved.</p>
+          {!confirmRemove ? (
+            <Btn variant="danger" onClick={() => setConfirmRemove(true)}>Remove from Team</Btn>
+          ) : (
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn variant="danger">Confirm Remove</Btn>
+              <Btn variant="secondary" onClick={() => setConfirmRemove(false)}>Cancel</Btn>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Invite member flow ────────────────────────────────────────────────────────
+
+const InviteMemberFlow = ({ onBack }) => {
+  const [email, setEmail] = useState("");
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [permOverride, setPermOverride] = useState(false);
+  const [customPerms, setCustomPerms] = useState(new Set());
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const isMageUser = CURRENT_USER_ROLE === "mage";
+
+  const invitableRoles = PLATFORM_ROLES.filter(r => {
+    if (r.id === "mage") return false;
+    if (r.id === "wizard" && !isMageUser) return false;
+    return true;
+  });
+
+  const roleObj = PLATFORM_ROLES.find(r => r.id === selectedRole);
+
+  if (sent) return (
+    <div style={{ textAlign: "center", padding: "48px 24px" }}>
+      <div style={{ fontSize: 52, marginBottom: 14 }}>📨</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 8 }}>Invite sent</div>
+      <div style={{ fontSize: 14, color: colors.textDim, marginBottom: 6 }}>
+        An invitation was sent to <strong style={{ color: colors.textMuted }}>{email}</strong> with the <strong style={{ color: roleObj?.color }}>{roleObj?.icon} {roleObj?.name}</strong> role.
+      </div>
+      <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 28 }}>The invite expires in 7 days. You can resend or cancel it from the Members list.</div>
+      <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+        <Btn onClick={onBack}>Back to Team</Btn>
+        <Btn variant="secondary" onClick={() => { setSent(false); setEmail(""); setSelectedRole(null); setPermOverride(false); setMessage(""); }}>Invite Another</Btn>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth: 600 }}>
+      <PageHeader title="Invite Team Member" subtitle="Invites are sent by email. The recipient must have or create a Kinship account." onBack={onBack} />
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 14 }}>
+        <Field label="Email Address" hint="Must match their Kinship account email or the email they'll use to sign up.">
+          <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="e.g. name@example.com"
+            style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+        </Field>
+        <div style={{ marginTop: 14 }}>
+          <Field label="Personal Message (optional)" hint="Included in the invite email.">
+            <textarea value={message} onChange={e => setMessage(e.target.value)} rows={2} placeholder="e.g. Hi — we'd love to have you help facilitate on Kinship..."
+              style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+          </Field>
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 14 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>Assign Role</div>
+        <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 14 }}>
+          {isMageUser
+            ? "As Mage, you can assign any role up to and including Wizard."
+            : "As Wizard, you can assign Producer or Guide. Only a Mage can grant the Wizard role."}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {invitableRoles.map(r => (
+            <div key={r.id} onClick={() => { setSelectedRole(r.id); setCustomPerms(new Set(r.perms)); }}
+              style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 16px", background: selectedRole === r.id ? r.color + "10" : colors.bg, border: `1px solid ${selectedRole === r.id ? r.color + "50" : colors.border}`, borderRadius: 9, cursor: "pointer" }}>
+              <div style={{ width: 16, height: 16, borderRadius: 8, border: `2px solid ${selectedRole === r.id ? r.color : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                {selectedRole === r.id && <div style={{ width: 7, height: 7, borderRadius: 4, background: r.color }} />}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", align: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: r.color }}>{r.icon}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{r.name}</span>
+                  {r.isTemplate && <span style={{ fontSize: 9, color: colors.textDim, background: "rgba(255,255,255,0.07)", padding: "2px 6px", borderRadius: 4, border: `1px solid ${colors.border}` }}>template · customizable</span>}
+                </div>
+                <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.5 }}>{r.desc}</div>
+                <div style={{ marginTop: 8, display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  {[...r.perms].slice(0, 5).map(pid => {
+                    const label = PERMISSION_CATEGORIES.flatMap(c => c.perms).find(p => p.id === pid)?.label;
+                    return label ? <span key={pid} style={{ fontSize: 9, padding: "2px 7px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: colors.textDim }}>{label}</span> : null;
+                  })}
+                  {r.perms.size > 5 && <span style={{ fontSize: 9, color: colors.textDim }}>+{r.perms.size - 5} more</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {roleObj?.isTemplate && selectedRole && (
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: permOverride ? 16 : 0 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Customize Permissions</div>
+              <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>Adjust the default {roleObj.name} permissions for this specific invite.</div>
+            </div>
+            <div onClick={() => setPermOverride(!permOverride)}
+              style={{ width: 36, height: 20, borderRadius: 10, background: permOverride ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s", flexShrink: 0 }}>
+              <div style={{ position: "absolute", top: 3, left: permOverride ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+            </div>
+          </div>
+          {permOverride && (
+            <PermissionGrid enabledPerms={customPerms} mageOnly={false} readOnly={false}
+              onChange={(id, val) => { const n = new Set(customPerms); val ? n.add(id) : n.delete(id); setCustomPerms(n); }} />
+          )}
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <Btn
+          onClick={() => { if (!email || !selectedRole) return; setSending(true); setTimeout(() => { setSending(false); setSent(true); }, 900); }}
+          style={{ opacity: !email || !selectedRole ? 0.5 : 1 }}>
+          {sending ? "Sending..." : "Send Invite"}
+        </Btn>
+        <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+      </div>
+    </div>
+  );
+};
+
+// ── Main Teams & Roles content ────────────────────────────────────────────────
+
+const PlatformTeamsContent = () => {
+  const [tab, setTab] = useState("members");
+  const [view, setView] = useState("list");
+  const [selected, setSelected] = useState(null);
+
+  const isMageUser = CURRENT_USER_ROLE === "mage";
+  const isWizardUser = CURRENT_USER_ROLE === "wizard" || isMageUser;
+
+  if (view === "invite") return <InviteMemberFlow onBack={() => setView("list")} />;
+  if (view === "member" && selected) {
+    const m = TEAM_MEMBERS.find(m => m.id === selected);
+    return m ? <TeamMemberDetail member={m} onBack={() => { setView("list"); setSelected(null); }} /> : null;
+  }
+  if (view === "role" && selected) {
+    const r = PLATFORM_ROLES.find(r => r.id === selected);
+    return r ? <RoleEditor role={r} onBack={() => { setView("list"); setSelected(null); }} /> : null;
+  }
+
+  return (
+    <div>
+      <PageHeader title="Teams & Roles" subtitle="Platform team membership and role permissions">
+        {isWizardUser && tab === "members" && <Btn onClick={() => setView("invite")}>+ Invite Member</Btn>}
+      </PageHeader>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 0, marginBottom: 20, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden", width: "fit-content" }}>
+        {[{ id: "members", label: "👥 Members", count: TEAM_MEMBERS.length }, { id: "roles", label: "🔑 Roles", count: PLATFORM_ROLES.length }].map((t, i) => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{ padding: "10px 24px", background: tab === t.id ? colors.accent + "16" : "transparent", border: "none", borderRight: i === 0 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit" }}>
+            <span style={{ fontSize: 13, fontWeight: tab === t.id ? 600 : 400, color: tab === t.id ? colors.accent : colors.textMuted }}>{t.label}</span>
+            <span style={{ marginLeft: 6, fontSize: 11, color: colors.textDim }}>({t.count})</span>
+          </button>
+        ))}
+      </div>
+
+      {tab === "members" && (
+        <div>
+          {/* Active members */}
+          <div style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>Active Team Members</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 22 }}>
+            {TEAM_MEMBERS.map(m => {
+              const role = PLATFORM_ROLES.find(r => r.id === m.role);
+              const [hovered, setHovered] = useState(false);
+              const initials = m.name.slice(0, 2).toUpperCase();
+              const isSelf = m.id === "moto";
+              return (
+                <div key={m.id} onClick={() => { setSelected(m.id); setView("member"); }}
+                  onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+                  style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 20, background: (role?.color || colors.accent) + "20", border: `1px solid ${(role?.color || colors.accent)}40`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: role?.color || colors.accent }}>
+                    {initials}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{m.name}</span>
+                      {isSelf && <span style={{ fontSize: 9, color: colors.textDim, background: "rgba(255,255,255,0.07)", padding: "2px 6px", borderRadius: 4 }}>you</span>}
+                    </div>
+                    <div style={{ fontSize: 12, color: colors.textDim }}>{m.email}</div>
+                    <div style={{ fontSize: 11, color: colors.textDim, marginTop: 3 }}>Last active {m.lastActive}</div>
+                  </div>
+                  <RoleBadge roleId={m.role} />
+                  <span style={{ color: colors.textDim, fontSize: 16 }}>›</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Pending invites */}
+          {isWizardUser && PENDING_INVITES.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 10 }}>Pending Invites</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {PENDING_INVITES.map((inv, i) => {
+                  const role = PLATFORM_ROLES.find(r => r.id === inv.role);
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 9, opacity: 0.9 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 18, background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📨</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>{inv.email}</div>
+                        <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>Sent by {inv.sentBy} · expires {inv.expires}</div>
+                      </div>
+                      <RoleBadge roleId={inv.role} />
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <Btn variant="secondary" style={{ fontSize: 10, padding: "4px 10px" }}>Resend</Btn>
+                        <Btn variant="secondary" style={{ fontSize: 10, padding: "4px 10px", color: colors.red }}>Cancel</Btn>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "roles" && (
+        <div>
+          <div style={{ padding: "10px 14px", background: colors.blue + "08", border: `1px solid ${colors.blue}33`, borderRadius: 8, fontSize: 12, color: colors.blue, marginBottom: 18 }}>
+            ℹ️ Producer and Guide are role templates — their default permissions can be adjusted per team member after assignment. Mage and Wizard permissions are applied uniformly to all holders.
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {PLATFORM_ROLES.map(role => {
+              const [hovered, setHovered] = useState(false);
+              const holders = TEAM_MEMBERS.filter(m => m.role === role.id);
+              return (
+                <div key={role.id} onClick={() => { setSelected(role.id); setView("role"); }}
+                  onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+                  style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "18px 20px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? role.color + "40" : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: role.color + "16", border: `1px solid ${role.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{role.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 5 }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: role.color }}>{role.name}</span>
+                      {role.isTemplate && <span style={{ fontSize: 9, color: colors.textDim, background: "rgba(255,255,255,0.07)", padding: "2px 7px", borderRadius: 4, border: `1px solid ${colors.border}` }}>template</span>}
+                      {role.locked && <span style={{ fontSize: 9, color: colors.warning, background: colors.warning + "14", padding: "2px 7px", borderRadius: 4 }}>locked</span>}
+                    </div>
+                    <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.5, marginBottom: 10 }}>{role.desc}</div>
+                    <div style={{ display: "flex", align: "center", gap: 12 }}>
+                      <span style={{ fontSize: 11, color: colors.textDim }}>{role.perms.size} permissions</span>
+                      <span style={{ fontSize: 11, color: colors.textDim }}>{holders.length} {holders.length === 1 ? "member" : "members"}{holders.length > 0 ? `: ${holders.map(h => h.name).join(", ")}` : ""}</span>
+                    </div>
+                  </div>
+                  <span style={{ color: colors.textDim, fontSize: 16, marginTop: 10 }}>›</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Other platform pages ─────────────────────────────────────────────────────
 
 const PlatformContent = ({ page }) => {
@@ -2848,17 +3482,9 @@ const PlatformContent = ({ page }) => {
   if (page === "p-knowledge") return <PlatformKnowledgeContent />;
   if (page === "p-databases") return <PlatformDatabasesContent />;
   if (page === "p-templates") return <PlatformTemplatesContent />;
+  if (page === "p-teams") return <PlatformTeamsContent />;
 
   const pages = {
-    "p-teams": {
-      title: "Teams & Roles",
-      subtitle: "Manage team membership and permissions across the platform",
-      items: [
-        { name: "Core Team", status: "Active", icon: "👥", account: "5 members" },
-        { name: "Content Creators", status: "Active", icon: "✏️", account: "12 members" },
-        { name: "Guest Builders", status: "Active", icon: "🎫", account: "3 members" },
-      ]
-    },
     "p-commerce": {
       title: "Platform Commerce",
       subtitle: "Solana integration, coins, and marketplace settings",
@@ -3957,7 +4583,7 @@ function App() {
     { id: "p-databases", icon: "🗄️", label: "Databases", count: 4 },
     { id: "p-actors", icon: "🎙️", label: "Platform Actors", count: 2 },
     { id: "p-templates", icon: "📦", label: "Templates", count: 5 },
-    { id: "p-teams", icon: "👥", label: "Teams & Roles", count: 3 },
+    { id: "p-teams", icon: "👥", label: "Teams & Roles", count: 4 },
     { id: "p-commerce", icon: "💰", label: "Commerce & Coins", count: 4 },
   ];
 
