@@ -1736,6 +1736,292 @@ const PlatformKnowledgeContent = () => {
   );
 };
 
+// ─── Platform Databases ──────────────────────────────────────────────────────
+
+const PLATFORM_DATABASES = [
+  { id: "pinecone-knowledge", name: "Pinecone — Platform Knowledge", engine: "Pinecone", type: "Vector", status: "Active", icon: "🌲", stats: "3 namespaces · 12K vectors", region: "us-east-1", version: "Serverless", created: "2024-03-20", lastSync: "2026-02-25", owner: "moto", usage: "Embeddings for knowledge base, system prompts, and actor memory" },
+  { id: "mongo-users", name: "MongoDB — Users & Auth", engine: "MongoDB", type: "Document", status: "Active", icon: "🍃", stats: "24 collections · 847 documents", region: "us-east-1", version: "Atlas M10", created: "2024-03-15", lastSync: "2026-02-25", owner: "moto", usage: "User profiles, authentication, sessions, roles, and permissions" },
+  { id: "postgres-context", name: "PostgreSQL — Context & Checkpoints", engine: "PostgreSQL", type: "Relational", status: "Active", icon: "🐘", stats: "18 tables · 3.2K rows", region: "us-east-1", version: "16.2", created: "2024-06-10", lastSync: "2026-02-25", owner: "moto", usage: "Cycle state, actor checkpoints, conversation context windows, and orchestration logs" },
+  { id: "supabase-commerce", name: "Supabase — Commerce", engine: "Supabase", type: "Relational", status: "Active", icon: "💰", stats: "8 tables", region: "us-east-1", version: "Supabase Pro", created: "2024-04-01", lastSync: "2026-02-24", owner: "moto", usage: "Transactions, wallet balances, marketplace listings, and bonding curves" },
+];
+
+const engineColors = { Pinecone: colors.green, MongoDB: colors.green, PostgreSQL: colors.blue, Supabase: colors.cyan };
+
+const DatabaseDetail = ({ db, onBack }) => {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  return (
+    <div>
+      <PageHeader title={db.name} subtitle={db.usage} onBack={onBack}>
+        <StatusPill status={db.status} />
+      </PageHeader>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
+        {[
+          { label: "Engine", value: db.engine },
+          { label: "Type", value: db.type },
+          { label: "Region", value: db.region },
+          { label: "Version", value: db.version },
+          { label: "Created", value: db.created },
+          { label: "Last Sync", value: db.lastSync },
+          { label: "Owner", value: db.owner },
+          { label: "Stats", value: db.stats },
+        ].map((f, i) => (
+          <div key={i} style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+            <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{f.label}</div>
+            <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>{f.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Connection</div>
+        <div style={{ padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, fontFamily: "monospace", fontSize: 12, color: colors.textDim, wordBreak: "break-all", marginBottom: 12 }}>
+          {db.engine === "Pinecone" && "pinecone://kinship-prod.us-east-1.pinecone.io"}
+          {db.engine === "MongoDB" && "mongodb+srv://kinship-prod.xxxxx.mongodb.net/kinship"}
+          {db.engine === "PostgreSQL" && "postgresql://kinship-prod.us-east-1.rds.amazonaws.com:5432/kinship"}
+          {db.engine === "Supabase" && "https://xxxxx.supabase.co"}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Btn variant="secondary">Test Connection</Btn>
+          <Btn variant="secondary">View Logs</Btn>
+        </div>
+      </div>
+
+      {db.engine === "Pinecone" && (
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Namespaces</div>
+          {["knowledge-base", "system-prompts", "actor-memory"].map((ns, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, marginBottom: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 12, fontFamily: "monospace", color: colors.textMuted }}>{ns}</span>
+              </div>
+              <span style={{ fontSize: 11, color: colors.textDim }}>{[5200, 3800, 3000][i]} vectors</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {db.engine === "MongoDB" && (
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Collections</div>
+          {[{ name: "users", docs: 347 }, { name: "sessions", docs: 182 }, { name: "roles", docs: 8 }, { name: "auth_tokens", docs: 310 }].map((col, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 12, fontFamily: "monospace", color: colors.textMuted }}>{col.name}</span>
+              <span style={{ fontSize: 11, color: colors.textDim }}>{col.docs} documents</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {db.engine === "PostgreSQL" && (
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 20 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Tables</div>
+          {[{ name: "cycle_state", rows: 892 }, { name: "actor_checkpoints", rows: 1240 }, { name: "context_windows", rows: 756 }, { name: "orchestration_logs", rows: 312 }].map((tbl, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, marginBottom: 6 }}>
+              <span style={{ fontSize: 12, fontFamily: "monospace", color: colors.textMuted }}>{tbl.name}</span>
+              <span style={{ fontSize: 11, color: colors.textDim }}>{tbl.rows} rows</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Sync & Maintenance</div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Btn variant="secondary">Force Sync</Btn>
+          <Btn variant="secondary">Run Backup</Btn>
+          <Btn variant="secondary">View Metrics</Btn>
+        </div>
+      </div>
+
+      <div style={{ background: colors.red + "08", border: `1px solid ${colors.red}33`, borderRadius: 10, padding: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.red, marginBottom: 6 }}>Danger Zone</div>
+        <p style={{ fontSize: 12, color: colors.textDim, margin: "0 0 12px" }}>Disconnecting this database will remove Platform Core's access. Data in the external service is preserved.</p>
+        {!confirmDelete ? (
+          <Btn variant="danger" onClick={() => setConfirmDelete(true)}>Disconnect Database</Btn>
+        ) : (
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn variant="danger">Confirm Disconnect</Btn>
+            <Btn variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Btn>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const DatabaseAddNew = ({ onBack }) => {
+  const [tab, setTab] = useState("managed");
+  const [engine, setEngine] = useState(null);
+  const [name, setName] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const tabs = [
+    { id: "managed", label: "Managed Service" },
+    { id: "external", label: "External Connection" },
+  ];
+
+  const managedEngines = [
+    { id: "pinecone", name: "Pinecone", icon: "🌲", desc: "Vector database for embeddings and semantic search", types: ["Vector"] },
+    { id: "mongodb", name: "MongoDB", icon: "🍃", desc: "Document database for flexible schemas and nested data", types: ["Document"] },
+    { id: "postgresql", name: "PostgreSQL", icon: "🐘", desc: "Relational database for structured data and complex queries", types: ["Relational"] },
+    { id: "supabase", name: "Supabase", icon: "⚡", desc: "Postgres with auth, realtime, and edge functions built in", types: ["Relational", "Auth"] },
+    { id: "redis", name: "Redis", icon: "🔴", desc: "In-memory cache and message broker for real-time state", types: ["Cache", "Pub/Sub"] },
+  ];
+
+  return (
+    <div>
+      <PageHeader title="Add New Database" subtitle="Connect a managed service or external database" onBack={onBack}>
+        <div style={{ display: "flex", gap: 4, padding: 3, background: "rgba(255,255,255,0.06)", borderRadius: 8 }}>
+          {tabs.map(t => (
+            <button key={t.id} onClick={() => { setTab(t.id); setEngine(null); }}
+              style={{ padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", border: "none", background: tab === t.id ? colors.accent : "transparent", color: tab === t.id ? "#fff" : colors.textDim }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </PageHeader>
+
+      {tab === "managed" && !engine && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 8 }}>Select a database engine</div>
+          {managedEngines.map(eng => {
+            const [hovered, setHovered] = useState(false);
+            return (
+              <div key={eng.id} onClick={() => setEngine(eng.id)} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                <span style={{ fontSize: 28 }}>{eng.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{eng.name}</div>
+                  <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{eng.desc}</div>
+                </div>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {eng.types.map(t => (
+                    <span key={t} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 9999, background: "rgba(255,255,255,0.06)", color: colors.textDim, border: `1px solid ${colors.border}` }}>{t}</span>
+                  ))}
+                </div>
+                <span style={{ color: colors.textDim }}>›</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {tab === "managed" && engine && (
+        <div>
+          <button onClick={() => setEngine(null)} style={{ background: "none", border: "none", color: colors.accent, fontSize: 12, cursor: "pointer", marginBottom: 16, fontFamily: "inherit" }}>← Back to engine selection</button>
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+              <span style={{ fontSize: 24 }}>{managedEngines.find(e => e.id === engine)?.icon}</span>
+              <div style={{ fontSize: 15, fontWeight: 600, color: colors.text }}>{managedEngines.find(e => e.id === engine)?.name}</div>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 11, color: colors.textDim, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Database Name</label>
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Actor Memory Store"
+                style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 11, color: colors.textDim, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Purpose</label>
+              <textarea value={purpose} onChange={e => setPurpose(e.target.value)} placeholder="What will this database be used for?"
+                style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", minHeight: 60, resize: "vertical", boxSizing: "border-box" }} />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 11, color: colors.textDim, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Region</label>
+              <select style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                <option>us-east-1 (Virginia)</option>
+                <option>us-west-2 (Oregon)</option>
+                <option>eu-west-1 (Ireland)</option>
+                <option>ap-southeast-1 (Singapore)</option>
+              </select>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+              <Btn>Provision & Connect</Btn>
+              <Btn variant="secondary" onClick={() => setEngine(null)}>Cancel</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === "external" && (
+        <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20 }}>
+          <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 16 }}>Connect to an existing database using a connection string</div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 11, color: colors.textDim, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Database Name</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Production Analytics"
+              style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 11, color: colors.textDim, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Engine Type</label>
+            <select style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+              <option>PostgreSQL</option>
+              <option>MongoDB</option>
+              <option>MySQL</option>
+              <option>Pinecone</option>
+              <option>Redis</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 11, color: colors.textDim, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Connection String</label>
+            <input placeholder="postgresql://user:pass@host:5432/dbname"
+              style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "monospace", boxSizing: "border-box" }} />
+          </div>
+          <div style={{ padding: "10px 14px", background: colors.blue + "08", border: `1px solid ${colors.blue}33`, borderRadius: 8, marginBottom: 16 }}>
+            <div style={{ fontSize: 12, color: colors.blue }}>🔒 Connection strings are encrypted at rest and never exposed in the UI after saving.</div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn>Test & Connect</Btn>
+            <Btn variant="secondary">Cancel</Btn>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PlatformDatabasesContent = () => {
+  const [view, setView] = useState("list");
+  const [selectedDb, setSelectedDb] = useState(null);
+  const [filter, setFilter] = useState("All");
+
+  if (view === "detail" && selectedDb) {
+    const db = PLATFORM_DATABASES.find(d => d.id === selectedDb);
+    return db ? <DatabaseDetail db={db} onBack={() => { setView("list"); setSelectedDb(null); }} /> : null;
+  }
+  if (view === "add") return <DatabaseAddNew onBack={() => setView("list")} />;
+
+  const filters = ["All", "Vector", "Document", "Relational"];
+  const filtered = filter === "All" ? PLATFORM_DATABASES : PLATFORM_DATABASES.filter(d => d.type === filter);
+
+  return (
+    <div>
+      <PageHeader title="Platform Databases" subtitle="Vector stores and structured databases shared across all cycles">
+        <Btn onClick={() => setView("add")}>+ Add New</Btn>
+      </PageHeader>
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        {filters.map(f => <FilterPill key={f} label={f} active={filter === f} onClick={() => setFilter(f)} />)}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {filtered.map(db => {
+          const [hovered, setHovered] = useState(false);
+          return (
+            <div key={db.id} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: hovered ? colors.surfaceHover : colors.surface, border: `1px solid ${hovered ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}
+              onClick={() => { setSelectedDb(db.id); setView("detail"); }}>
+              <span style={{ fontSize: 22 }}>{db.icon}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{db.name}</div>
+                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 2 }}>{db.stats}</div>
+              </div>
+              <span style={{ fontSize: 10, padding: "3px 10px", borderRadius: 9999, background: (engineColors[db.engine] || colors.accent) + "18", color: engineColors[db.engine] || colors.accent, fontWeight: 600 }}>{db.type}</span>
+              <StatusPill status={db.status} />
+              <Btn variant="secondary" style={{ fontSize: 11, padding: "5px 12px" }}>Manage</Btn>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ─── Other platform pages ─────────────────────────────────────────────────────
 
 const PlatformContent = ({ page }) => {
@@ -1745,17 +2031,9 @@ const PlatformContent = ({ page }) => {
   if (page === "p-users") return <PlatformUsersContent />;
   if (page === "p-bots") return <PlatformBotsContent />;
   if (page === "p-knowledge") return <PlatformKnowledgeContent />;
+  if (page === "p-databases") return <PlatformDatabasesContent />;
 
   const pages = {
-    "p-databases": {
-      title: "Platform Databases",
-      subtitle: "Vector stores and structured databases shared across all cycles",
-      items: [
-        { name: "Pinecone — Platform Knowledge", status: "Active", icon: "🌲", account: "3 namespaces · 12K vectors" },
-        { name: "Supabase — Users & Auth", status: "Active", icon: "⚡", account: "24 tables" },
-        { name: "Supabase — Commerce", status: "Active", icon: "💰", account: "8 tables" },
-      ]
-    },
     "p-templates": {
       title: "Templates & Starters",
       subtitle: "Pre-built components creators can use in their cycles",
@@ -2104,11 +2382,29 @@ const CycleContent = ({ page, context }) => {
 
 // ─── App shell ────────────────────────────────────────────────────────────────
 
+// ─── Session persistence ─────────────────────────────────────────────────────
+const loadSession = () => {
+  try {
+    const raw = document.cookie.split("; ").find(c => c.startsWith("ks_session="));
+    if (raw) return JSON.parse(decodeURIComponent(raw.split("=")[1]));
+  } catch (e) {}
+  return null;
+};
+const saveSession = (data) => {
+  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = "ks_session=" + encodeURIComponent(JSON.stringify(data)) + ";expires=" + expires + ";path=/;SameSite=Lax";
+};
+
 function App() {
-  const [context, setContext] = useState("mountain");
-  const [page, setPage] = useState("overview");
-  const [isWizard, setIsWizard] = useState(true);
+  const saved = React.useMemo(() => loadSession(), []);
+  const [context, setContext] = useState(saved?.context || "mountain");
+  const [page, setPage] = useState(saved?.page || "overview");
+  const [isWizard, setIsWizard] = useState(saved?.isWizard !== undefined ? saved.isWizard : true);
   const isPlatform = context === "platform";
+
+  React.useEffect(() => {
+    saveSession({ context, page, isWizard });
+  }, [context, page, isWizard]);
 
   const platformNav = [
     { id: "p-users", icon: "👤", label: "Users", count: 12 },
@@ -2116,7 +2412,7 @@ function App() {
     { id: "p-tools", icon: "🔧", label: "Tools & Connectors", count: 5 },
     { id: "p-prompts", icon: "💬", label: "System Prompts", count: 3 },
     { id: "p-knowledge", icon: "📚", label: "Knowledge Base", count: 3 },
-    { id: "p-databases", icon: "🗄️", label: "Databases", count: 3 },
+    { id: "p-databases", icon: "🗄️", label: "Databases", count: 4 },
     { id: "p-actors", icon: "🎙️", label: "Platform Actors", count: 1 },
     { id: "p-templates", icon: "📦", label: "Templates", count: 4 },
     { id: "p-teams", icon: "👥", label: "Teams & Roles", count: 3 },
