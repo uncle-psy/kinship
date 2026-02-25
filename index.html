@@ -7582,6 +7582,737 @@ const CycleContent = ({ page, context }) => {
     );
   }
 
+  if (page === "assets") {
+
+    // ── Data ──────────────────────────────────────────────────────────────────
+    const ASSET_TYPES = [
+      { id: "image",    label: "Image",    icon: "lucide:image",        color: "#6FC3FF", ext: ["png","jpg","svg","webp"] },
+      { id: "audio",    label: "Audio",    icon: "lucide:music",        color: "#A8E063", ext: ["mp3","wav","ogg","flac"] },
+      { id: "video",    label: "Video",    icon: "lucide:video",        color: "#FF6FAE", ext: ["mp4","webm","mov"]       },
+      { id: "document", label: "Document", icon: "lucide:file-text",    color: "#FFB347", ext: ["pdf","md","txt","docx"]  },
+      { id: "badge",    label: "Badge",    icon: "lucide:award",        color: "#C3A6FF", ext: ["svg","png"]              },
+      { id: "template", label: "Template", icon: "lucide:layout",       color: "#4ECDC4", ext: ["json","yaml"]            },
+    ];
+
+    const ASSET_CATEGORIES = [
+      "Scene Art", "Character Art", "Ambient Audio", "Music", "Sound Effect",
+      "Badge / Icon", "Quest Asset", "Knowledge Doc", "Intro Video", "Template",
+    ];
+
+    const INIT_ASSETS = [
+      { id: "a1",  name: "Mountain Temple — Dawn",  type: "image",    category: "Scene Art",      size: "2.4 MB", status: "Active", scenes: ["Welcome Portal"],                    tags: ["background","dawn","temple"],  thumb: "🏔️", uploaded: "Jan 12", usedIn: 3,  dims: "2400×1350" },
+      { id: "a2",  name: "Forest Path — Dusk",       type: "image",    category: "Scene Art",      size: "3.1 MB", status: "Active", scenes: ["The Archive","Closing Rite"],        tags: ["background","forest","dusk"],  thumb: "🌲", uploaded: "Jan 12", usedIn: 2,  dims: "2400×1350" },
+      { id: "a3",  name: "Market Square — Noon",     type: "image",    category: "Scene Art",      size: "2.8 MB", status: "Active", scenes: ["Market District"],                   tags: ["background","market"],         thumb: "🏪", uploaded: "Jan 14", usedIn: 1,  dims: "2400×1350" },
+      { id: "a4",  name: "Arena Ground — Night",     type: "image",    category: "Scene Art",      size: "2.2 MB", status: "Active", scenes: ["The Arena","Trial Grounds"],         tags: ["background","arena","night"],  thumb: "⚡", uploaded: "Jan 14", usedIn: 4,  dims: "2400×1350" },
+      { id: "a5",  name: "Elder Sage Portrait",       type: "image",    category: "Character Art",  size: "890 KB", status: "Active", scenes: ["Welcome Portal","Closing Rite"],     tags: ["character","elder","portrait"],thumb: "🧙", uploaded: "Jan 15", usedIn: 5,  dims: "800×1000"  },
+      { id: "a6",  name: "Challenge Master Portrait", type: "image",    category: "Character Art",  size: "920 KB", status: "Active", scenes: ["The Arena","Trial Grounds"],         tags: ["character","challenge"],       thumb: "⚡", uploaded: "Jan 15", usedIn: 3,  dims: "800×1000"  },
+      { id: "a7",  name: "Story Weaver Portrait",     type: "image",    category: "Character Art",  size: "870 KB", status: "Draft",  scenes: ["The Archive"],                      tags: ["character","weaver"],          thumb: "📖", uploaded: "Jan 16", usedIn: 1,  dims: "800×1000"  },
+      { id: "a8",  name: "Temple Ambience",           type: "audio",    category: "Ambient Audio",  size: "8.2 MB", status: "Active", scenes: ["Welcome Portal","Milestone Ceremony"],tags: ["ambient","temple","loop"],     thumb: "🎵", uploaded: "Jan 13", usedIn: 2,  dims: "4m 22s"    },
+      { id: "a9",  name: "Forest Rain Loop",          type: "audio",    category: "Ambient Audio",  size: "6.4 MB", status: "Active", scenes: ["The Archive"],                      tags: ["ambient","rain","forest"],     thumb: "🌧️", uploaded: "Jan 13", usedIn: 1,  dims: "3m 55s"    },
+      { id: "a10", name: "Quest Complete Chime",      type: "audio",    category: "Sound Effect",   size: "120 KB", status: "Active", scenes: [],                                   tags: ["sfx","reward","complete"],     thumb: "🔔", uploaded: "Jan 17", usedIn: 12, dims: "1.8s"      },
+      { id: "a11", name: "Welcome Intro",             type: "video",    category: "Intro Video",    size: "42 MB",  status: "Active", scenes: ["Welcome Portal"],                   tags: ["intro","welcome","onboarding"],thumb: "🎬", uploaded: "Jan 10", usedIn: 1,  dims: "0:45 · 1080p"},
+      { id: "a12", name: "Cycle Journey Guide",       type: "document", category: "Knowledge Doc",  size: "340 KB", status: "Active", scenes: [],                                   tags: ["guide","cycle","onboarding"],  thumb: "📄", uploaded: "Jan 11", usedIn: 4,  dims: "18 pages"  },
+      { id: "a13", name: "HEARTS Framework Overview", type: "document", category: "Knowledge Doc",  size: "215 KB", status: "Active", scenes: [],                                   tags: ["hearts","framework"],          thumb: "📖", uploaded: "Jan 11", usedIn: 7,  dims: "12 pages"  },
+      { id: "a14", name: "First Steps Badge",         type: "badge",    category: "Badge / Icon",   size: "44 KB",  status: "Active", scenes: [],                                   tags: ["badge","onboarding","quest"],  thumb: "🏅", uploaded: "Jan 16", usedIn: 1,  dims: "256×256"   },
+      { id: "a15", name: "Inner Mirror Badge",        type: "badge",    category: "Badge / Icon",   size: "48 KB",  status: "Active", scenes: [],                                   tags: ["badge","reflection","mirror"], thumb: "🪞", uploaded: "Jan 16", usedIn: 1,  dims: "256×256"   },
+      { id: "a16", name: "Quest Structure Template",  type: "template", category: "Template",       size: "12 KB",  status: "Active", scenes: [],                                   tags: ["template","quest","structure"],thumb: "📋", uploaded: "Jan 18", usedIn: 3,  dims: "JSON"      },
+    ];
+
+    const [assetList, setAssetList] = useState(INIT_ASSETS);
+    const [selectedAsset, setSelectedAsset] = useState(null);
+    const [showUpload, setShowUpload] = useState(false);
+    const [viewMode, setViewMode] = useState("grid");
+    const [typeFilter, setTypeFilter] = useState("All");
+    const [sceneFilter, setSceneFilter] = useState("All");
+    const [statusFilter, setStatusFilter] = useState("All");
+    const [assetSearch, setAssetSearch] = useState("");
+
+    const CYCLE_SCENES_LIST = ["Welcome Portal","The Arena","Trial Grounds","Market District","The Archive","Closing Rite","Milestone Ceremony"];
+
+    const getTypeInfo = (id) => ASSET_TYPES.find(t => t.id === id) || ASSET_TYPES[0];
+
+    // ── Upload / New Asset Modal ──────────────────────────────────────────────
+    const UploadModal = () => {
+      const [step, setStep] = useState(1);
+      const [dragOver, setDragOver] = useState(false);
+      const [files, setFiles] = useState([]); // simulated uploaded files
+      const [form, setForm] = useState({
+        name: "", type: "image", category: "Scene Art",
+        tags: [], scenes: [], license: "cycle-only",
+        description: "",
+      });
+      const [newTag, setNewTag] = useState("");
+      const [saving, setSaving] = useState(false);
+
+      const toggleScene = (s) => setForm(prev => ({
+        ...prev, scenes: prev.scenes.includes(s) ? prev.scenes.filter(x => x !== s) : [...prev.scenes, s]
+      }));
+
+      // Simulate file drop / selection
+      const simulateFileDrop = () => {
+        const names = ["background-dawn.jpg","ambient-loop.mp3","quest-badge.svg","guide-document.pdf"];
+        const chosen = names[Math.floor(Math.random() * names.length)];
+        const ext = chosen.split(".").pop();
+        const typeMap = { jpg: "image", png: "image", svg: "badge", mp3: "audio", wav: "audio", pdf: "document", mp4: "video" };
+        setFiles([{ name: chosen, size: "2.4 MB", ext }]);
+        setForm(prev => ({
+          ...prev,
+          name: chosen.replace(/\.[^.]+$/, "").replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()),
+          type: typeMap[ext] || "image",
+        }));
+        setStep(2);
+      };
+
+      const handleCreate = () => {
+        setSaving(true);
+        setTimeout(() => {
+          const newAsset = {
+            id: "a" + Date.now(),
+            name: form.name || files[0]?.name || "Untitled Asset",
+            type: form.type,
+            category: form.category,
+            size: files[0]?.size || "—",
+            status: "Active",
+            scenes: form.scenes,
+            tags: form.tags,
+            thumb: getTypeInfo(form.type).icon.includes("image") ? "🖼️" : getTypeInfo(form.type).icon.includes("music") ? "🎵" : "📄",
+            uploaded: "Just now",
+            usedIn: 0,
+            dims: "—",
+            description: form.description,
+          };
+          setAssetList(prev => [newAsset, ...prev]);
+          setShowUpload(false);
+          setSelectedAsset(newAsset);
+        }, 900);
+      };
+
+      return (
+        <Modal title="Add Asset" onClose={() => setShowUpload(false)} width={540}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 24 }}>
+            {[1,2].map(i => (
+              <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= step ? colors.accent : colors.border, transition: "background 0.2s" }} />
+            ))}
+          </div>
+
+          {/* Step 1: Upload */}
+          {step === 1 && (
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, marginBottom: 16 }}>Upload or link a file</div>
+
+              {/* Drop zone */}
+              <div
+                onClick={simulateFileDrop}
+                onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={e => { e.preventDefault(); setDragOver(false); simulateFileDrop(); }}
+                style={{ border: `2px dashed ${dragOver ? colors.accent : colors.border}`, borderRadius: 12, padding: "40px 24px", textAlign: "center", cursor: "pointer", background: dragOver ? colors.accent + "08" : "transparent", transition: "all 0.15s", marginBottom: 16 }}
+              >
+                <Icon name="lucide:upload-cloud" size={36} style={{ color: dragOver ? colors.accent : colors.textDim, marginBottom: 12 }} />
+                <div style={{ fontSize: 14, fontWeight: 500, color: colors.textMuted, marginBottom: 6 }}>Drop files here or click to browse</div>
+                <div style={{ fontSize: 12, color: colors.textDim }}>Images, audio, video, documents, badges, templates</div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginTop: 4 }}>Max 100 MB per file · PNG, JPG, SVG, MP3, MP4, PDF, JSON…</div>
+              </div>
+
+              {/* Divider */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                <div style={{ flex: 1, height: 1, background: colors.border }} />
+                <span style={{ fontSize: 11, color: colors.textDim }}>or import from URL</span>
+                <div style={{ flex: 1, height: 1, background: colors.border }} />
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <input placeholder="https://…" style={{ flex: 1, padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit" }} />
+                <Btn variant="secondary" onClick={simulateFileDrop}>Import</Btn>
+              </div>
+
+              {/* Type shortcuts */}
+              <div style={{ marginTop: 20 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Quick Add by Type</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+                  {ASSET_TYPES.map(t => {
+                    const [h, setH] = useState(false);
+                    return (
+                      <div key={t.id} onClick={simulateFileDrop} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+                        style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? t.color + "55" : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 7, background: t.color + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <Icon name={t.icon} size={14} style={{ color: t.color }} />
+                        </div>
+                        <span style={{ fontSize: 12, color: h ? colors.text : colors.textMuted }}>{t.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Metadata */}
+          {step === 2 && (
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, marginBottom: 16 }}>Metadata</div>
+
+              {/* File preview strip */}
+              {files.length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, marginBottom: 16 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 8, background: getTypeInfo(form.type).color + "18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon name={getTypeInfo(form.type).icon} size={16} style={{ color: getTypeInfo(form.type).color }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: colors.text }}>{files[0].name}</div>
+                    <div style={{ fontSize: 11, color: colors.textDim }}>{files[0].size} · .{files[0].ext}</div>
+                  </div>
+                  <button onClick={() => { setFiles([]); setStep(1); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: colors.textDim, fontSize: 16 }}>×</button>
+                </div>
+              )}
+
+              <Field label="Name">
+                <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Mountain Temple — Dawn" />
+              </Field>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
+                <Field label="Type">
+                  <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value }))}
+                    style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                    {ASSET_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                  </select>
+                </Field>
+                <Field label="Category">
+                  <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                    style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                    {ASSET_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </Field>
+              </div>
+
+              <div style={{ marginTop: 12 }}>
+                <Field label="Description" hint="Optional. Visible to actors and quest designers.">
+                  <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2}
+                    placeholder="Brief description of this asset's purpose or context…"
+                    style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+                </Field>
+              </div>
+
+              {/* Tags */}
+              <div style={{ marginTop: 12, marginBottom: 12 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>Tags</div>
+                <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 7 }}>
+                  {form.tags.map((t, i) => (
+                    <span key={i} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 5, padding: "3px 8px", color: colors.textMuted }}>
+                      {t}
+                      <button onClick={() => setForm(p => ({ ...p, tags: p.tags.filter((_, j) => j !== i) }))} style={{ background: "none", border: "none", cursor: "pointer", color: colors.textDim, padding: 0, fontSize: 13 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input value={newTag} onChange={e => setNewTag(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter" && newTag.trim()) { setForm(p => ({ ...p, tags: [...p.tags, newTag.trim()] })); setNewTag(""); } }}
+                    placeholder="Add tag…" style={{ flex: 1, padding: "7px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, fontFamily: "inherit" }} />
+                  <Btn variant="secondary" onClick={() => { if (newTag.trim()) { setForm(p => ({ ...p, tags: [...p.tags, newTag.trim()] })); setNewTag(""); } }}>Add</Btn>
+                </div>
+              </div>
+
+              {/* Scene assignment */}
+              <div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Assign to Scenes <span style={{ fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional)</span></div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                  {CYCLE_SCENES_LIST.map(s => {
+                    const on = form.scenes.includes(s);
+                    return (
+                      <div key={s} onClick={() => toggleScene(s)}
+                        style={{ padding: "5px 11px", background: on ? colors.accent + "16" : colors.surface, border: `1px solid ${on ? colors.accent + "55" : colors.border}`, borderRadius: 6, cursor: "pointer", fontSize: 11, color: on ? colors.accent : colors.textDim, transition: "all 0.15s" }}>
+                        {s}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* License */}
+              <div style={{ marginTop: 14 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Usage License</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {[
+                    { id: "cycle-only", label: "Cycle Only", hint: "Only this cycle can use it" },
+                    { id: "platform", label: "Platform", hint: "Available to all cycles" },
+                    { id: "cc0", label: "CC0 / Public", hint: "No restrictions" },
+                  ].map(l => (
+                    <div key={l.id} onClick={() => setForm(p => ({ ...p, license: l.id }))}
+                      style={{ flex: 1, padding: "9px 10px", background: form.license === l.id ? colors.accent + "12" : colors.surface, border: `1px solid ${form.license === l.id ? colors.accent + "55" : colors.border}`, borderRadius: 8, cursor: "pointer", textAlign: "center" }}>
+                      <div style={{ fontSize: 11, fontWeight: 600, color: form.license === l.id ? colors.accent : colors.textMuted, marginBottom: 2 }}>{l.label}</div>
+                      <div style={{ fontSize: 9, color: colors.textDim }}>{l.hint}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 8, marginTop: 24, justifyContent: "space-between" }}>
+            <Btn variant="secondary" onClick={() => step === 1 ? setShowUpload(false) : setStep(1)}>
+              {step === 1 ? "Cancel" : "← Back"}
+            </Btn>
+            {step === 1
+              ? <Btn variant="secondary" onClick={() => setStep(2)}>Skip Upload →</Btn>
+              : <Btn onClick={handleCreate} disabled={saving || !form.name.trim()}>{saving ? "Adding..." : "Add Asset"}</Btn>
+            }
+          </div>
+        </Modal>
+      );
+    };
+
+    // ── Asset Detail ─────────────────────────────────────────────────────────
+    const AssetDetail = ({ asset }) => {
+      const [editName, setEditName] = useState(asset.name);
+      const [editType, setEditType] = useState(asset.type);
+      const [editCategory, setEditCategory] = useState(asset.category);
+      const [editDescription, setEditDescription] = useState(asset.description || "");
+      const [editTags, setEditTags] = useState(asset.tags || []);
+      const [editScenes, setEditScenes] = useState(asset.scenes || []);
+      const [editStatus, setEditStatus] = useState(asset.status);
+      const [newTag, setNewTag] = useState("");
+      const [tab, setTab] = useState("info");
+      const [saving, setSaving] = useState(false);
+      const [savedAt, setSavedAt] = useState(null);
+      const [deleting, setDeleting] = useState(false);
+      const [confirmDelete, setConfirmDelete] = useState(false);
+
+      const typeInfo = getTypeInfo(editType);
+
+      const toggleScene = (s) => setEditScenes(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+
+      const DETAIL_TABS = [
+        { id: "info", label: "Info", icon: "lucide:info" },
+        { id: "usage", label: "Usage", icon: "lucide:link-2", badge: asset.usedIn },
+        { id: "versions", label: "Versions", icon: "lucide:git-branch" },
+      ];
+
+      const handleSave = () => {
+        setSaving(true);
+        setTimeout(() => {
+          setAssetList(prev => prev.map(a => a.id === asset.id ? {
+            ...a, name: editName, type: editType, category: editCategory,
+            description: editDescription, tags: editTags, scenes: editScenes, status: editStatus,
+          } : a));
+          setSaving(false);
+          setSavedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+        }, 600);
+      };
+
+      const handleDelete = () => {
+        setDeleting(true);
+        setTimeout(() => {
+          setAssetList(prev => prev.filter(a => a.id !== asset.id));
+          setSelectedAsset(null);
+        }, 700);
+      };
+
+      return (
+        <div>
+          <PageHeader
+            title={<span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: typeInfo.color + "18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon name={typeInfo.icon} size={16} style={{ color: typeInfo.color }} />
+              </div>
+              <span>{asset.name}</span>
+            </span>}
+            subtitle={`${asset.category} · ${asset.size}${asset.dims ? ` · ${asset.dims}` : ""}`}
+            onBack={() => setSelectedAsset(null)}
+          >
+            <StatusPill status={editStatus} />
+            <Btn onClick={handleSave} disabled={saving}>
+              {saving ? "Saving..." : savedAt ? `Saved ${savedAt}` : "Save Changes"}
+            </Btn>
+          </PageHeader>
+
+          <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+
+            {/* Preview panel */}
+            <div style={{ width: 200, flexShrink: 0 }}>
+              <div style={{ width: "100%", height: 160, borderRadius: 12, background: typeInfo.color + "12", border: `1px solid ${typeInfo.color}30`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10, flexDirection: "column", gap: 8 }}>
+                <span style={{ fontSize: 48 }}>{asset.thumb}</span>
+                <span style={{ fontSize: 10, color: typeInfo.color, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>{typeInfo.label}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <Btn variant="secondary" style={{ width: "100%", justifyContent: "center", fontSize: 12 }}>
+                  <Icon name="lucide:download" size={12} style={{ marginRight: 5 }} /> Download
+                </Btn>
+                <Btn variant="secondary" style={{ width: "100%", justifyContent: "center", fontSize: 12 }}>
+                  <Icon name="lucide:copy" size={12} style={{ marginRight: 5 }} /> Copy URL
+                </Btn>
+                <div style={{ fontSize: 10, color: colors.textDim, textAlign: "center", marginTop: 4 }}>Uploaded {asset.uploaded}</div>
+              </div>
+            </div>
+
+            {/* Main panel */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {/* Tabs */}
+              <div style={{ display: "flex", gap: 2, borderBottom: `1px solid ${colors.border}`, marginBottom: 20 }}>
+                {DETAIL_TABS.map(t => (
+                  <button key={t.id} onClick={() => setTab(t.id)}
+                    style={{ display: "flex", alignItems: "center", gap: 5, padding: "9px 14px", background: "none", border: "none", borderBottom: `2px solid ${tab === t.id ? colors.accent : "transparent"}`, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", marginBottom: -1 }}>
+                    <Icon name={t.icon} size={13} style={{ color: tab === t.id ? colors.accent : colors.textDim }} />
+                    <span style={{ fontSize: 12, fontWeight: tab === t.id ? 600 : 400, color: tab === t.id ? colors.accent : colors.textMuted }}>{t.label}</span>
+                    {t.badge > 0 && <span style={{ fontSize: 10, background: colors.accent + "22", color: colors.accent, padding: "1px 6px", borderRadius: 8 }}>{t.badge}</span>}
+                  </button>
+                ))}
+              </div>
+
+              {/* Info tab */}
+              {tab === "info" && (
+                <div>
+                  <Field label="Name">
+                    <Input value={editName} onChange={e => setEditName(e.target.value)} />
+                  </Field>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 12 }}>
+                    <Field label="Type">
+                      <select value={editType} onChange={e => setEditType(e.target.value)}
+                        style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                        {ASSET_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                      </select>
+                    </Field>
+                    <Field label="Category">
+                      <select value={editCategory} onChange={e => setEditCategory(e.target.value)}
+                        style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                        {ASSET_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </Field>
+                  </div>
+
+                  <div style={{ marginTop: 12 }}>
+                    <Field label="Description">
+                      <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} rows={2}
+                        placeholder="Brief description of this asset's purpose…"
+                        style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+                    </Field>
+                  </div>
+
+                  {/* Status toggle */}
+                  <div style={{ marginTop: 14 }}>
+                    <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Status</div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {["Active","Draft","Archived"].map(s => (
+                        <div key={s} onClick={() => setEditStatus(s)}
+                          style={{ flex: 1, padding: "8px 10px", background: editStatus === s ? colors.accent + "12" : colors.surface, border: `1px solid ${editStatus === s ? colors.accent + "55" : colors.border}`, borderRadius: 7, cursor: "pointer", textAlign: "center", fontSize: 12, fontWeight: editStatus === s ? 600 : 400, color: editStatus === s ? colors.accent : colors.textMuted }}>
+                          {s}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  <div style={{ marginTop: 14, marginBottom: 14 }}>
+                    <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 7, textTransform: "uppercase", letterSpacing: 0.5 }}>Tags</div>
+                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 7 }}>
+                      {editTags.map((t, i) => (
+                        <span key={i} style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 11, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 5, padding: "3px 8px", color: colors.textMuted }}>
+                          {t}
+                          <button onClick={() => setEditTags(prev => prev.filter((_, j) => j !== i))} style={{ background: "none", border: "none", cursor: "pointer", color: colors.textDim, padding: 0, fontSize: 13 }}>×</button>
+                        </span>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <input value={newTag} onChange={e => setNewTag(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter" && newTag.trim()) { setEditTags(p => [...p, newTag.trim()]); setNewTag(""); } }}
+                        placeholder="Add tag…" style={{ flex: 1, padding: "7px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.text, fontSize: 12, fontFamily: "inherit" }} />
+                      <Btn variant="secondary" onClick={() => { if (newTag.trim()) { setEditTags(p => [...p, newTag.trim()]); setNewTag(""); } }}>Add</Btn>
+                    </div>
+                  </div>
+
+                  {/* Scene assignment */}
+                  <div>
+                    <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Scene Assignment</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                      {CYCLE_SCENES_LIST.map(s => {
+                        const on = editScenes.includes(s);
+                        return (
+                          <div key={s} onClick={() => toggleScene(s)}
+                            style={{ padding: "5px 11px", background: on ? colors.accent + "16" : colors.surface, border: `1px solid ${on ? colors.accent + "55" : colors.border}`, borderRadius: 6, cursor: "pointer", fontSize: 11, color: on ? colors.accent : colors.textDim, transition: "all 0.15s" }}>
+                            {s}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Danger zone */}
+                  <div style={{ marginTop: 32, paddingTop: 20, borderTop: `1px solid ${colors.border}` }}>
+                    {!confirmDelete ? (
+                      <button onClick={() => setConfirmDelete(true)}
+                        style={{ fontSize: 12, color: colors.error || "#FF6B6B", background: "none", border: `1px solid ${colors.error || "#FF6B6B"}33`, borderRadius: 7, padding: "7px 14px", cursor: "pointer", fontFamily: "inherit" }}>
+                        Delete Asset
+                      </button>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "#FF6B6B0D", border: "1px solid #FF6B6B33", borderRadius: 8 }}>
+                        <span style={{ fontSize: 12, color: colors.textMuted, flex: 1 }}>Remove this asset permanently? This cannot be undone.</span>
+                        <Btn onClick={handleDelete} disabled={deleting} style={{ background: "#FF6B6B22", color: "#FF6B6B", borderColor: "#FF6B6B55" }}>
+                          {deleting ? "Deleting..." : "Confirm Delete"}
+                        </Btn>
+                        <Btn variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Btn>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Usage tab */}
+              {tab === "usage" && (
+                <div>
+                  {asset.usedIn === 0 ? (
+                    <div style={{ textAlign: "center", padding: "40px 0", color: colors.textDim }}>
+                      <Icon name="lucide:link-2" size={28} style={{ color: colors.border, marginBottom: 10 }} />
+                      <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 4 }}>Not used anywhere yet</p>
+                      <p style={{ fontSize: 12 }}>When this asset is referenced in scenes, quests, or actor prompts, those links will appear here.</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 16 }}>This asset is referenced in {asset.usedIn} place{asset.usedIn !== 1 ? "s" : ""} across this cycle.</p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                        {[
+                          ...(asset.scenes || []).map(s => ({ type: "Scene", name: s, icon: "lucide:map", color: colors.cyan })),
+                          ...(asset.usedIn > (asset.scenes || []).length ? [
+                            { type: "Quest", name: "First Steps", icon: "lucide:flag", color: colors.purple },
+                            { type: "Actor Prompt", name: "Elder Sage — persona image", icon: "lucide:user-round", color: colors.pink },
+                          ].slice(0, asset.usedIn - (asset.scenes || []).length) : []),
+                        ].map((ref, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 7, background: ref.color + "18", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              <Icon name={ref.icon} size={13} style={{ color: ref.color }} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 12, fontWeight: 500, color: colors.text }}>{ref.name}</div>
+                              <div style={{ fontSize: 10, color: colors.textDim }}>{ref.type}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Versions tab */}
+              {tab === "versions" && (
+                <div>
+                  <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 16, lineHeight: 1.6 }}>Uploading a new version preserves previous files and updates any references automatically.</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+                    {[
+                      { v: "v1 (current)", date: asset.uploaded, size: asset.size, note: "Original upload" },
+                    ].map((ver, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: colors.surface, border: `1px solid ${i === 0 ? colors.accent + "44" : colors.border}`, borderRadius: 8 }}>
+                        <Icon name="lucide:file" size={14} style={{ color: i === 0 ? colors.accent : colors.textDim }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: i === 0 ? colors.accent : colors.text }}>{ver.v}</div>
+                          <div style={{ fontSize: 11, color: colors.textDim }}>{ver.date} · {ver.size}{ver.note ? ` · ${ver.note}` : ""}</div>
+                        </div>
+                        {i > 0 && <Btn variant="secondary" style={{ fontSize: 11 }}>Restore</Btn>}
+                      </div>
+                    ))}
+                  </div>
+                  <Btn variant="secondary">
+                    <Icon name="lucide:upload" size={13} style={{ marginRight: 6 }} />
+                    Upload New Version
+                  </Btn>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ── Storage summary ───────────────────────────────────────────────────────
+    const totalMB = 68.4;
+    const limitMB = 500;
+    const pct = Math.round((totalMB / limitMB) * 100);
+    const byType = ASSET_TYPES.map(t => ({ ...t, count: assetList.filter(a => a.type === t.id).length }));
+
+    // ── Filtering ─────────────────────────────────────────────────────────────
+    const filtered = assetList.filter(a => {
+      const q = assetSearch.toLowerCase();
+      const matchSearch = !q || a.name.toLowerCase().includes(q) || (a.tags || []).some(t => t.includes(q)) || a.category.toLowerCase().includes(q);
+      const matchType = typeFilter === "All" || a.type === typeFilter;
+      const matchScene = sceneFilter === "All" || (a.scenes || []).includes(sceneFilter);
+      const matchStatus = statusFilter === "All" || a.status === statusFilter;
+      return matchSearch && matchType && matchScene && matchStatus;
+    });
+
+    if (selectedAsset) return <AssetDetail asset={selectedAsset} />;
+
+    return (
+      <div>
+        {showUpload && <UploadModal />}
+
+        <PageHeader title="Assets" subtitle="Images, audio, video, documents, badges — the media library for this cycle">
+          <Btn variant="secondary" onClick={() => setShowUpload(true)}>
+            <Icon name="lucide:folder-open" size={13} style={{ marginRight: 5 }} /> Browse Library
+          </Btn>
+          <Btn onClick={() => setShowUpload(true)}>
+            <Icon name="lucide:upload" size={13} style={{ marginRight: 5 }} /> Add Asset
+          </Btn>
+        </PageHeader>
+
+        {/* Storage + type summary row */}
+        <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr 1fr 1fr 1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+          {/* Storage card */}
+          <div style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+              <span style={{ fontSize: 10, color: colors.textDim, textTransform: "uppercase", letterSpacing: 0.5 }}>Storage</span>
+              <span style={{ fontSize: 11, color: colors.textMuted }}>{totalMB} MB / {limitMB} MB</span>
+            </div>
+            <div style={{ height: 5, background: colors.border, borderRadius: 3, overflow: "hidden", marginBottom: 6 }}>
+              <div style={{ height: "100%", width: pct + "%", background: pct > 80 ? colors.warning : colors.accent, borderRadius: 3, transition: "width 0.3s" }} />
+            </div>
+            <div style={{ fontSize: 11, color: colors.textDim }}>{pct}% used · {assetList.length} files</div>
+          </div>
+          {/* Per-type cards */}
+          {byType.map(t => (
+            <div key={t.id} onClick={() => setTypeFilter(typeFilter === t.id ? "All" : t.id)}
+              style={{ padding: "10px 12px", background: typeFilter === t.id ? t.color + "12" : colors.surface, border: `1px solid ${typeFilter === t.id ? t.color + "55" : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <Icon name={t.icon} size={13} style={{ color: t.color }} />
+                <span style={{ fontSize: 10, color: colors.textDim, textTransform: "uppercase", letterSpacing: 0.4 }}>{t.label}</span>
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: t.color }}>{t.count}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Search + view toggle + filters */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 12, alignItems: "center" }}>
+          <div style={{ position: "relative", flex: 1 }}>
+            <Icon name="lucide:search" size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: colors.textDim }} />
+            <input value={assetSearch} onChange={e => setAssetSearch(e.target.value)} placeholder="Search by name, tag, category…"
+              style={{ width: "100%", paddingLeft: 30, paddingRight: 12, paddingTop: 8, paddingBottom: 8, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" }} />
+          </div>
+          {/* View toggle */}
+          <div style={{ display: "flex", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
+            {[["grid","lucide:layout-grid"],["list","lucide:list"]].map(([mode, icon]) => (
+              <button key={mode} onClick={() => setViewMode(mode)}
+                style={{ padding: "7px 11px", background: viewMode === mode ? colors.accent + "18" : "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                <Icon name={icon} size={14} style={{ color: viewMode === mode ? colors.accent : colors.textDim }} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Scene + status filters */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
+          <select value={sceneFilter} onChange={e => setSceneFilter(e.target.value)}
+            style={{ padding: "5px 10px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: sceneFilter === "All" ? colors.textDim : colors.text, fontSize: 12, fontFamily: "inherit", cursor: "pointer" }}>
+            <option value="All">All Scenes</option>
+            {CYCLE_SCENES_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          {["All","Active","Draft","Archived"].map(f => (
+            <FilterPill key={f} label={f} active={statusFilter === f} onClick={() => setStatusFilter(f)} />
+          ))}
+          {(typeFilter !== "All" || sceneFilter !== "All" || statusFilter !== "All" || assetSearch) && (
+            <button onClick={() => { setTypeFilter("All"); setSceneFilter("All"); setStatusFilter("All"); setAssetSearch(""); }}
+              style={{ fontSize: 11, color: colors.accent, background: "none", border: `1px solid ${colors.accent}33`, borderRadius: 5, padding: "3px 10px", cursor: "pointer", fontFamily: "inherit" }}>
+              Clear filters
+            </button>
+          )}
+        </div>
+
+        {/* Empty state */}
+        {filtered.length === 0 && (
+          <div style={{ textAlign: "center", padding: "48px 0" }}>
+            <Icon name="lucide:images" size={32} style={{ color: colors.border, marginBottom: 12 }} />
+            <p style={{ fontSize: 14, color: colors.textMuted, marginBottom: 4 }}>No assets match your filters</p>
+            <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 16 }}>Try adjusting the search or filter criteria.</p>
+            <Btn onClick={() => setShowUpload(true)}>Add Asset</Btn>
+          </div>
+        )}
+
+        {/* Grid view */}
+        {viewMode === "grid" && filtered.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10 }}>
+            {filtered.map(a => {
+              const ti = getTypeInfo(a.type);
+              const [h, setH] = useState(false);
+              return (
+                <div key={a.id} onClick={() => setSelectedAsset(a)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+                  style={{ background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? ti.color + "55" : colors.border}`, borderRadius: 10, overflow: "hidden", cursor: "pointer", transition: "all 0.15s" }}>
+                  {/* Thumbnail */}
+                  <div style={{ height: 100, background: ti.color + "10", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 6, borderBottom: `1px solid ${colors.border}` }}>
+                    <span style={{ fontSize: 36 }}>{a.thumb}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "2px 8px", background: ti.color + "22", borderRadius: 4 }}>
+                      <Icon name={ti.icon} size={9} style={{ color: ti.color }} />
+                      <span style={{ fontSize: 9, color: ti.color, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 }}>{ti.label}</span>
+                    </div>
+                  </div>
+                  {/* Meta */}
+                  <div style={{ padding: "9px 10px" }}>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: colors.text, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: 10, color: colors.textDim }}>{a.size}</span>
+                      <StatusPill status={a.status} />
+                    </div>
+                    {(a.scenes || []).length > 0 && (
+                      <div style={{ fontSize: 10, color: colors.textDim, marginTop: 4, display: "flex", alignItems: "center", gap: 3 }}>
+                        <Icon name="lucide:map" size={9} style={{ color: colors.textDim }} />
+                        {a.scenes.length} scene{a.scenes.length !== 1 ? "s" : ""}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Add tile */}
+            <div onClick={() => setShowUpload(true)}
+              style={{ height: 160, background: "transparent", border: `2px dashed ${colors.border}`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexDirection: "column", gap: 8, transition: "border-color 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = colors.accent}
+              onMouseLeave={e => e.currentTarget.style.borderColor = colors.border}>
+              <Icon name="lucide:plus" size={24} style={{ color: colors.textDim }} />
+              <span style={{ fontSize: 12, color: colors.textDim }}>Add Asset</span>
+            </div>
+          </div>
+        )}
+
+        {/* List view */}
+        {viewMode === "list" && filtered.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+            {/* Header */}
+            <div style={{ display: "grid", gridTemplateColumns: "2.5fr 1fr 1fr 1fr 80px 80px", gap: 10, padding: "6px 14px", fontSize: 10, color: colors.textDim, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <span>Name</span><span>Category</span><span>Size</span><span>Scenes</span><span>Uses</span><span>Status</span>
+            </div>
+            {filtered.map(a => {
+              const ti = getTypeInfo(a.type);
+              const [h, setH] = useState(false);
+              return (
+                <div key={a.id} onClick={() => setSelectedAsset(a)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+                  style={{ display: "grid", gridTemplateColumns: "2.5fr 1fr 1fr 1fr 80px 80px", gap: 10, alignItems: "center", padding: "12px 14px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 9, cursor: "pointer", transition: "all 0.15s" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, background: ti.color + "14", border: `1px solid ${ti.color}25`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 16 }}>
+                      {a.thumb}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: colors.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
+                        <Icon name={ti.icon} size={10} style={{ color: ti.color }} />
+                        <span style={{ fontSize: 10, color: ti.color }}>{ti.label}</span>
+                        {a.dims && <span style={{ fontSize: 10, color: colors.textDim }}>· {a.dims}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 12, color: colors.textDim }}>{a.category}</span>
+                  <span style={{ fontSize: 12, color: colors.textMuted }}>{a.size}</span>
+                  <span style={{ fontSize: 12, color: colors.textDim }}>
+                    {(a.scenes || []).length > 0 ? `${a.scenes.length} scene${a.scenes.length !== 1 ? "s" : ""}` : "—"}
+                  </span>
+                  <span style={{ fontSize: 12, color: a.usedIn > 0 ? colors.textMuted : colors.textDim }}>{a.usedIn > 0 ? a.usedIn : "—"}</span>
+                  <StatusPill status={a.status} />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (page === "tools") return (
     <div>
       <PageHeader title="Cycle Tools" subtitle="Connectors and integrations specific to this cycle">
