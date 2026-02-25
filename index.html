@@ -3004,6 +3004,8 @@ function App() {
   const [context, setContext] = useState(saved?.context || "mountain");
   const [page, setPage] = useState(saved?.page || "overview");
   const [isWizard, setIsWizard] = useState(saved?.isWizard !== undefined ? saved.isWizard : true);
+  const [sectionKey, setSectionKey] = useState(0);
+  const navTo = (id) => { setPage(id); setSectionKey(k => k + 1); };
   const isPlatform = context === "platform";
 
   React.useEffect(() => {
@@ -3063,25 +3065,25 @@ function App() {
         </div>
 
         <div style={{ padding: "10px 0 4px" }}>
-          <CycleSelector current={context} onSwitch={(id) => { setContext(id); setPage(id === "platform" ? "p-tools" : "overview"); }} isWizard={isWizard} />
+          <CycleSelector current={context} onSwitch={(id) => { setContext(id); navTo(id === "platform" ? "p-tools" : "overview"); }} isWizard={isWizard} />
         </div>
 
         <div style={{ flex: 1, padding: "4px 0", overflowY: "auto" }}>
           {isPlatform ? (
             <>
               <SectionLabel>Platform Administration</SectionLabel>
-              {platformNav.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />)}
+              {platformNav.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => navTo(item.id)} />)}
             </>
           ) : (
             <>
               <SectionLabel>Create</SectionLabel>
-              {cycleNav.create.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />)}
+              {cycleNav.create.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => navTo(item.id)} />)}
               <SectionLabel>Connect</SectionLabel>
-              {cycleNav.connect.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />)}
+              {cycleNav.connect.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => navTo(item.id)} />)}
               <SectionLabel>Commerce</SectionLabel>
-              {cycleNav.commerce.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />)}
+              {cycleNav.commerce.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => navTo(item.id)} />)}
               <SectionLabel>Manage</SectionLabel>
-              {cycleNav.manage.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => setPage(item.id)} />)}
+              {cycleNav.manage.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => navTo(item.id)} />)}
             </>
           )}
         </div>
@@ -3113,7 +3115,7 @@ function App() {
             </>
           )}
         </div>
-        {isPlatform ? <PlatformContent page={page} /> : <CycleContent page={page} context={context} />}
+        {isPlatform ? <PlatformContent key={`${page}-${sectionKey}`} page={page} /> : <CycleContent key={`${page}-${sectionKey}`} page={page} context={context} />}
       </div>
     </div>
   );
