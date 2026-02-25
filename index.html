@@ -8313,80 +8313,2163 @@ const CycleContent = ({ page, context }) => {
     );
   }
 
-  if (page === "tools") return (
-    <div>
-      <PageHeader title="Cycle Tools" subtitle="Connectors and integrations specific to this cycle">
-        <Btn variant="secondary">Create Custom Tool</Btn>
-        <Btn>+ Connect Tool</Btn>
-      </PageHeader>
-      <div style={{ marginBottom: 20, padding: "12px 16px", background: colors.warning + "0D", border: `1px solid ${colors.warning}33`, borderRadius: 10 }}>
-        <span style={{ fontSize: 12, color: colors.warning }}>ℹ️  Platform-level tools are inherited automatically. Add cycle-specific connections below.</span>
-      </div>
-      <h3 style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>Inherited from Platform</h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, opacity: 0.55, marginBottom: 24 }}>
-        {[{ name: "BlueSky", icon: "🦋" }, { name: "Telegram", icon: "✈️" }, { name: "Google Workspace", icon: "📧" }, { name: "Solana", icon: "◎" }].map((t, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: colors.surface, border: `1px solid ${colors.borderSubtle}`, borderRadius: 8 }}>
-            <RenderIcon icon={t.icon} size={16} />
-            <span style={{ flex: 1, fontSize: 13, color: colors.textMuted }}>{t.name}</span>
-            <span style={{ fontSize: 10, color: colors.textDim, background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: 4, border: `1px solid ${colors.border}` }}>🔒 Platform</span>
-          </div>
-        ))}
-      </div>
-      <h3 style={{ fontSize: 11, fontWeight: 700, color: colors.textDim, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10 }}>Cycle-Specific</h3>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {[{ name: "Meditation Timer API", icon: "🧘", type: "Custom" }, { name: "Weather Service", icon: "🌤️", type: "REST API" }].map((t, i) => {
-          const [h, setH] = useState(false);
-          return (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s" }}
-              onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
-              <RenderIcon icon={t.icon} size={16} />
-              <div style={{ flex: 1 }}>
-                <span style={{ fontSize: 13, color: colors.text }}>{t.name}</span>
-                <span style={{ fontSize: 11, color: colors.textDim, marginLeft: 8 }}>{t.type}</span>
-              </div>
-              <StatusPill status="Connected" />
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
+  if (page === "tools") {
 
-  if (page === "offerings") {
-    const [activeFilter, setActiveFilter] = useState("All");
+    // ── Cycle-level connection and tool data ────────────────────────────────
+    const CYCLE_CONNECTIONS_INIT = [
+      {
+        id: "telegram-cycle", service: "telegram", name: "Telegram",
+        icon: "simple-icons:telegram", category: "Messaging",
+        account: "@MountainTempleBot", status: "Connected",
+        scope: "cycle", // "platform" = using platform account | "cycle" = own account
+        note: "Dedicated bot for this cycle. Members receive session announcements and actor messages here.",
+        addedBy: "moto", addedOn: "Jan 10",
+        actors: ["Challenge Master"],
+      },
+      {
+        id: "bluesky-cycle", service: "bluesky", name: "BlueSky",
+        icon: "simple-icons:bluesky", category: "Social",
+        account: "@mountaintemple.bsky.social", status: "Connected",
+        scope: "cycle",
+        note: "Cycle-specific BlueSky account. Story Weaver posts weekly narrative updates here.",
+        addedBy: "moto", addedOn: "Jan 10",
+        actors: ["Story Weaver"],
+      },
+      {
+        id: "google-platform", service: "google", name: "Google Workspace",
+        icon: "simple-icons:google", category: "Productivity",
+        account: "admin@kinship.today", status: "Connected",
+        scope: "platform",
+        note: "Using the platform's Google Workspace account. Elder Sage sends session recaps via email.",
+        addedBy: "platform", addedOn: "—",
+        actors: ["Elder Sage"],
+      },
+      {
+        id: "notion-cycle", service: "notion", name: "Notion",
+        icon: "simple-icons:notion", category: "Productivity",
+        account: "Mountain Temple Workspace", status: "Connected",
+        scope: "cycle",
+        note: "Community knowledge base and member journal archive for this cycle.",
+        addedBy: "moto", addedOn: "Jan 14",
+        actors: [],
+      },
+    ];
+
+    const CYCLE_TOOLS_INIT = [
+      {
+        id: "ritual-timer-cycle", platformToolId: "ritual-timer",
+        name: "Ritual Timer", icon: "lucide:timer", category: "Facilitation",
+        status: "Active", scope: "platform",
+        heartsAligned: ["H","A","Si"],
+        desc: "Manages timed ritual structures — opening rounds, silence periods, closing reflections.",
+        config: { defaultDuration: 5, cueSounds: true, facilitatorDM: true },
+        addedOn: "Jan 11",
+      },
+      {
+        id: "pattern-tracker-cycle", platformToolId: "pattern-tracker",
+        name: "Pattern Tracker", icon: "lucide:activity", category: "Analytics",
+        status: "Active", scope: "platform",
+        heartsAligned: ["R","Si","So"],
+        desc: "Tracks recurring interaction patterns and surfaces growth trajectory insights per member.",
+        config: { granularity: "session", outputMode: "actor-context" },
+        addedOn: "Jan 11",
+      },
+      {
+        id: "meditation-timer", platformToolId: null,
+        name: "Meditation Timer", icon: "lucide:clock", category: "Wellness",
+        status: "Active", scope: "cycle",
+        heartsAligned: ["H","Si"],
+        desc: "Triggered at the start of reflection scenes. Plays a timed countdown with configurable bell cues.",
+        config: { duration: 8, bellOnStart: true, bellOnEnd: true, endpoint: "https://api.meditationtimer.io/v1/session" },
+        addedOn: "Jan 18",
+      },
+    ];
+
+    const [connections, setConnections] = useState(CYCLE_CONNECTIONS_INIT);
+    const [tools, setTools] = useState(CYCLE_TOOLS_INIT);
+    const [tab, setTab] = useState("connections");
+    const [view, setView] = useState("list"); // "list" | "add-connection" | "add-tool" | "custom-tool" | conn-detail:<id> | tool-detail:<id>
+
+    // ── Add Connection Modal ────────────────────────────────────────────────
+    const AddConnectionModal = ({ onClose }) => {
+      const [step, setStep] = useState("pick"); // "pick" | "configure" | "done"
+      const [selected, setSelected] = useState(null);
+      const [useScope, setUseScope] = useState("cycle"); // "platform" | "cycle"
+      const [account, setAccount] = useState("");
+      const [note, setNote] = useState("");
+      const [connecting, setConnecting] = useState(false);
+
+      // Platform's active connectors available to borrow
+      const platformConnectors = CONNECTORS.map(c => ({ ...c, source: "platform" }));
+      // All other available connectors not yet connected at platform level
+      const availableNew = AVAILABLE_CONNECTORS.filter(c => !CONNECTORS.find(p => p.id === c.id));
+      const allOptions = [
+        ...platformConnectors.map(c => ({ ...c, alreadyOnPlatform: true })),
+        ...availableNew.map(c => ({ ...c, alreadyOnPlatform: false })),
+      ].filter(c => !connections.find(cx => cx.service === c.id));
+
+      const [catFilter, setCatFilter] = useState("All");
+      const cats = ["All", "Social", "Messaging", "Productivity", "Commerce", "Scheduling", "Media", "Developer", "Video"];
+      const filtered = catFilter === "All" ? allOptions : allOptions.filter(c => c.category === catFilter);
+
+      const handleConnect = () => {
+        setConnecting(true);
+        setTimeout(() => {
+          const svc = allOptions.find(c => c.id === selected);
+          const newConn = {
+            id: selected + "-" + Date.now(),
+            service: selected,
+            name: svc.name,
+            icon: svc.icon,
+            category: svc.category,
+            account: account || (useScope === "platform" ? svc.account || "Platform account" : "—"),
+            status: "Connected",
+            scope: useScope,
+            note,
+            addedBy: "moto",
+            addedOn: "Just now",
+            actors: [],
+          };
+          setConnections(prev => [...prev, newConn]);
+          setStep("done");
+          setConnecting(false);
+        }, 900);
+      };
+
+      if (step === "done") {
+        const svc = allOptions.find(c => c.id === selected) || {};
+        return (
+          <Modal title="Connection Added" onClose={onClose} width={480}>
+            <div style={{ textAlign: "center", padding: "24px 0" }}>
+              <div style={{ width: 60, height: 60, borderRadius: 16, background: colors.green + "18", border: `1px solid ${colors.green}33`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                <RenderIcon icon={svc.icon || "lucide:check"} size={28} />
+              </div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: colors.text, marginBottom: 6 }}>{svc.name} connected</div>
+              <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 24 }}>
+                {useScope === "platform" ? "Using the platform's account." : "Using a cycle-specific account."} Actors assigned to this channel can now reach members through it.
+              </div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                <Btn onClick={onClose}>Done</Btn>
+                <Btn variant="secondary" onClick={() => { setStep("pick"); setSelected(null); setAccount(""); setNote(""); }}>Add Another</Btn>
+              </div>
+            </div>
+          </Modal>
+        );
+      }
+
+      if (step === "configure" && selected) {
+        const svc = allOptions.find(c => c.id === selected);
+        return (
+          <Modal title={`Configure ${svc.name}`} onClose={onClose} width={500}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 9, marginBottom: 20 }}>
+              <RenderIcon icon={svc.icon} size={24} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{svc.name}</div>
+                <div style={{ fontSize: 11, color: colors.textDim }}>{svc.category} · {svc.auth || "OAuth"}</div>
+              </div>
+            </div>
+
+            {/* Scope picker */}
+            {svc.alreadyOnPlatform && (
+              <div style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Account to use</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {[
+                    { id: "platform", label: "Use platform account", hint: svc.account || "Shared across all cycles", icon: "lucide:share-2" },
+                    { id: "cycle", label: "Use a different account", hint: "Configure a separate account for this cycle", icon: "lucide:user-round" },
+                  ].map(opt => (
+                    <div key={opt.id} onClick={() => setUseScope(opt.id)}
+                      style={{ flex: 1, padding: "12px 14px", background: useScope === opt.id ? colors.accent + "12" : colors.surface, border: `1px solid ${useScope === opt.id ? colors.accent + "55" : colors.border}`, borderRadius: 9, cursor: "pointer", transition: "all 0.15s" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                        <Icon name={opt.icon} size={13} style={{ color: useScope === opt.id ? colors.accent : colors.textDim }} />
+                        <span style={{ fontSize: 12, fontWeight: 600, color: useScope === opt.id ? colors.accent : colors.text }}>{opt.label}</span>
+                      </div>
+                      <div style={{ fontSize: 10, color: colors.textDim }}>{opt.hint}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Account field — only if cycle scope or not on platform */}
+            {(useScope === "cycle" || !svc.alreadyOnPlatform) && (
+              <div style={{ marginBottom: 14 }}>
+                <Field label={svc.auth === "API Key" ? "API Key" : svc.auth === "Webhook URL" ? "Webhook URL" : "Account / Username"} hint={svc.auth === "OAuth" ? "Enter the handle or account name — OAuth flow will open in a new tab." : undefined}>
+                  <Input value={account} onChange={e => setAccount(e.target.value)} placeholder={
+                    svc.auth === "API Key" ? "sk-…" :
+                    svc.auth === "Webhook URL" ? "https://…" :
+                    svc.id === "telegram" ? "@YourCycleBotName" :
+                    svc.id === "bluesky" ? "@yourcycle.bsky.social" :
+                    "Account name or handle"
+                  } />
+                </Field>
+                {svc.auth === "OAuth" && (
+                  <div style={{ marginTop: 8 }}>
+                    <Btn variant="secondary" style={{ fontSize: 12 }}>
+                      <Icon name="lucide:external-link" size={12} style={{ marginRight: 5 }} />
+                      Authorize with {svc.name}
+                    </Btn>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <Field label="Notes" hint="Optional — describe how this connection is used in this cycle.">
+              <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
+                placeholder={`e.g. "Dedicated ${svc.name} account for community announcements"`}
+                style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+            </Field>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 20, justifyContent: "space-between" }}>
+              <Btn variant="secondary" onClick={() => setStep("pick")}>← Back</Btn>
+              <Btn onClick={handleConnect} disabled={connecting || (useScope === "cycle" && !svc.alreadyOnPlatform && !account.trim())}>
+                {connecting ? "Connecting…" : "Add to Cycle"}
+              </Btn>
+            </div>
+          </Modal>
+        );
+      }
+
+      // Step: pick service
+      return (
+        <Modal title="Add Connection" onClose={onClose} width={580}>
+          <p style={{ fontSize: 13, color: colors.textDim, marginBottom: 16, lineHeight: 1.6 }}>
+            Connect a service to this cycle. You can use an account already connected to the platform, or configure a separate account just for this cycle.
+          </p>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+            {cats.map(c => <FilterPill key={c} label={c} active={catFilter === c} onClick={() => setCatFilter(c)} />)}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 360, overflowY: "auto" }}>
+            {filtered.map(c => {
+              const [h, setH] = useState(false);
+              return (
+                <div key={c.id} onClick={() => { setSelected(c.id); setStep("configure"); }}
+                  onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 16px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 9, cursor: "pointer", transition: "all 0.15s" }}>
+                  <RenderIcon icon={c.icon} size={22} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{c.name}</span>
+                      {c.alreadyOnPlatform && (
+                        <span style={{ fontSize: 9, fontWeight: 700, color: colors.green, background: colors.green + "15", border: `1px solid ${colors.green}33`, padding: "1px 6px", borderRadius: 4 }}>On Platform</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 11, color: colors.textDim, marginTop: 1 }}>{c.desc || c.category}</div>
+                  </div>
+                  <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 4, background: (authColors[c.auth] || colors.accent) + "18", color: authColors[c.auth] || colors.accent, fontWeight: 700 }}>{c.auth || "OAuth"}</span>
+                  <Icon name="lucide:chevron-right" size={13} style={{ color: colors.textDim }} />
+                </div>
+              );
+            })}
+          </div>
+        </Modal>
+      );
+    };
+
+    // ── Add Tool Modal ──────────────────────────────────────────────────────
+    const AddToolModal = ({ onClose }) => {
+      const [mode, setMode] = useState(null); // null | "platform" | "custom"
+      const [saving, setSaving] = useState(false);
+      const [done, setDone] = useState(null);
+
+      // Custom tool form
+      const [customForm, setCustomForm] = useState({
+        name: "", category: "Facilitation", desc: "",
+        inputType: "event-hook", heartsAligned: [],
+        endpoint: "", endpointMethod: "POST",
+        outputMode: "actor-context",
+        triggerOn: "",
+      });
+      const categories = ["Communication","Facilitation","Analytics","Learning","Commerce","Wellness","Custom"];
+      const inputTypes = [
+        { id: "event-hook", label: "Event Hook", icon: "lucide:zap", hint: "Fires when a platform event occurs — scene change, quest complete, member joins" },
+        { id: "schedule", label: "Scheduled", icon: "lucide:clock", hint: "Runs at a configured time or interval within a session" },
+        { id: "transcript", label: "Transcript", icon: "lucide:file-text", hint: "Reads text from session messages and actor conversations" },
+        { id: "api-call", label: "API Call", icon: "lucide:plug-2", hint: "An external system sends a payload to a webhook on this cycle" },
+      ];
+      const outputModes = [
+        { id: "actor-context", label: "Actor Context", hint: "Feeds into actor's real-time context window" },
+        { id: "facilitator-dm", label: "Facilitator DM", hint: "Sends a private message to the cycle host" },
+        { id: "chat-overlay", label: "Chat Overlay", hint: "Displays a message in the session chat" },
+        { id: "webhook-out", label: "Outgoing Webhook", hint: "POSTs a payload to the configured endpoint" },
+      ];
+
+      const handleSaveCustom = () => {
+        setSaving(true);
+        setTimeout(() => {
+          const newTool = {
+            id: "custom-" + Date.now(),
+            platformToolId: null,
+            name: customForm.name,
+            icon: "lucide:wrench",
+            category: customForm.category,
+            status: "Active",
+            scope: "cycle",
+            heartsAligned: customForm.heartsAligned,
+            desc: customForm.desc,
+            config: { inputType: customForm.inputType, endpoint: customForm.endpoint, outputMode: customForm.outputMode },
+            addedOn: "Just now",
+          };
+          setTools(prev => [...prev, newTool]);
+          setDone(newTool);
+          setSaving(false);
+        }, 900);
+      };
+
+      const handleAddPlatformTool = (platformTool) => {
+        setSaving(true);
+        setTimeout(() => {
+          const newTool = {
+            id: platformTool.id + "-cycle-" + Date.now(),
+            platformToolId: platformTool.id,
+            name: platformTool.name,
+            icon: platformTool.icon,
+            category: platformTool.category,
+            status: "Active",
+            scope: "platform",
+            heartsAligned: platformTool.heartsAligned || [],
+            desc: platformTool.desc,
+            config: {},
+            addedOn: "Just now",
+          };
+          setTools(prev => [...prev, newTool]);
+          setDone(newTool);
+          setSaving(false);
+        }, 700);
+      };
+
+      const toggleHeart = (f) => setCustomForm(prev => ({
+        ...prev, heartsAligned: prev.heartsAligned.includes(f) ? prev.heartsAligned.filter(x => x !== f) : [...prev.heartsAligned, f]
+      }));
+
+      if (done) {
+        return (
+          <Modal title="Tool Added" onClose={onClose} width={460}>
+            <div style={{ textAlign: "center", padding: "24px 0" }}>
+              <div style={{ width: 56, height: 56, borderRadius: 14, background: colors.green + "18", border: `1px solid ${colors.green}33`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+                <Icon name="lucide:check" size={24} style={{ color: colors.green }} />
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: colors.text, marginBottom: 6 }}>{done.name} added</div>
+              <div style={{ fontSize: 13, color: colors.textDim, marginBottom: 22 }}>
+                {done.scope === "platform" ? "Platform tool activated for this cycle." : "Custom tool saved and active in this cycle."}
+              </div>
+              <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+                <Btn onClick={onClose}>Done</Btn>
+                <Btn variant="secondary" onClick={() => { setDone(null); setMode(null); }}>Add Another</Btn>
+              </div>
+            </div>
+          </Modal>
+        );
+      }
+
+      // Entry: pick mode
+      if (!mode) {
+        return (
+          <Modal title="Add Tool" onClose={onClose} width={520}>
+            <p style={{ fontSize: 13, color: colors.textDim, marginBottom: 18, lineHeight: 1.6 }}>
+              Activate a tool from the platform library, or craft a custom tool specific to this cycle.
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              {[
+                { id: "platform", icon: "lucide:boxes", color: colors.accent, label: "Platform Tool", desc: "Enable one of the platform's built-in tools — Ritual Timer, Pattern Tracker, Meeting Facilitator, and more." },
+                { id: "custom", icon: "lucide:wrench", color: colors.purple, label: "Craft Custom Tool", desc: "Define a cycle-specific tool — set its input type, HEARTS alignment, trigger logic, and output mode." },
+              ].map(opt => {
+                const [h, setH] = useState(false);
+                return (
+                  <div key={opt.id} onClick={() => setMode(opt.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+                    style={{ padding: "20px 18px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? opt.color + "55" : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: opt.color + "18", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+                      <Icon name={opt.icon} size={18} style={{ color: opt.color }} />
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: colors.text, marginBottom: 5 }}>{opt.label}</div>
+                    <div style={{ fontSize: 11, color: colors.textDim, lineHeight: 1.5 }}>{opt.desc}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </Modal>
+        );
+      }
+
+      // Platform tool picker
+      if (mode === "platform") {
+        const alreadyAdded = tools.map(t => t.platformToolId).filter(Boolean);
+        return (
+          <Modal title="Activate Platform Tool" onClose={onClose} width={520}>
+            <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: colors.accent, fontSize: 12, cursor: "pointer", marginBottom: 16, fontFamily: "inherit" }}>← Back</button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {PLATFORM_TOOLS_DATA.map(t => {
+                const active = alreadyAdded.includes(t.id);
+                const [h, setH] = useState(false);
+                return (
+                  <div key={t.id} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+                    style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: active ? colors.accent + "08" : h ? colors.surfaceHover : colors.surface, border: `1px solid ${active ? colors.accent + "33" : h ? colors.borderHover : colors.border}`, borderRadius: 10, transition: "all 0.15s", opacity: active ? 0.65 : 1 }}>
+                    <RenderIcon icon={t.icon} size={22} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{t.name}</span>
+                        <span style={{ fontSize: 9, color: colors.textDim, background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 3, border: `1px solid ${colors.border}` }}>{t.category}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: colors.textDim }}>{t.desc}</div>
+                      <div style={{ display: "flex", gap: 4, marginTop: 5 }}>
+                        {t.heartsAligned.map(f => (
+                          <span key={f} style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: colors.accent + "14", color: colors.accent, fontWeight: 700 }}>{f}</span>
+                        ))}
+                      </div>
+                    </div>
+                    {active
+                      ? <span style={{ fontSize: 11, color: colors.accent, background: colors.accent + "12", border: `1px solid ${colors.accent}33`, padding: "4px 10px", borderRadius: 6 }}>Already active</span>
+                      : <Btn onClick={() => handleAddPlatformTool(t)} disabled={saving} style={{ fontSize: 12 }}>
+                          {saving ? "Adding…" : "Add to Cycle"}
+                        </Btn>
+                    }
+                  </div>
+                );
+              })}
+              {/* Also show available built-in tools not yet on platform */}
+              {[
+                { id: "mood-barometer", icon: "lucide:heart-pulse", name: "Mood Barometer", category: "Facilitation", desc: "Tracks emotional temperature of a group in real time.", heartsAligned: ["H","E","Si"], version: "beta" },
+                { id: "reflection-prompter", icon: "lucide:brain", name: "Reflection Prompter", category: "Learning", desc: "Injects guided reflection questions at configured session moments.", heartsAligned: ["H","R","T"], version: "beta" },
+                { id: "engagement-lens", icon: "lucide:users", name: "Engagement Lens", category: "Analytics", desc: "Tracks participation balance and surfaces quieter voices.", heartsAligned: ["E","So"], version: "beta" },
+              ].map(t => {
+                const [h, setH] = useState(false);
+                return (
+                  <div key={t.id} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+                    style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 10, transition: "all 0.15s" }}>
+                    <Icon name={t.icon} size={22} style={{ color: colors.textDim }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 2 }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{t.name}</span>
+                        <span style={{ fontSize: 9, color: colors.warning, background: colors.warning + "15", padding: "1px 6px", borderRadius: 3, border: `1px solid ${colors.warning}33` }}>Beta</span>
+                        <span style={{ fontSize: 9, color: colors.textDim, background: "rgba(255,255,255,0.06)", padding: "1px 6px", borderRadius: 3, border: `1px solid ${colors.border}` }}>{t.category}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: colors.textDim }}>{t.desc}</div>
+                      <div style={{ display: "flex", gap: 4, marginTop: 5 }}>
+                        {t.heartsAligned.map(f => (
+                          <span key={f} style={{ fontSize: 9, padding: "1px 5px", borderRadius: 3, background: colors.accent + "14", color: colors.accent, fontWeight: 700 }}>{f}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <Btn onClick={() => handleAddPlatformTool(t)} disabled={saving} style={{ fontSize: 12 }}>
+                      {saving ? "Adding…" : "Add to Cycle"}
+                    </Btn>
+                  </div>
+                );
+              })}
+            </div>
+          </Modal>
+        );
+      }
+
+      // Custom tool builder
+      if (mode === "custom") {
+        return (
+          <Modal title="Craft Custom Tool" onClose={onClose} width={560}>
+            <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: colors.accent, fontSize: 12, cursor: "pointer", marginBottom: 16, fontFamily: "inherit" }}>← Back</button>
+
+            <Field label="Tool Name">
+              <Input value={customForm.name} onChange={e => setCustomForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Meditation Timer" />
+            </Field>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+              <Field label="Category">
+                <select value={customForm.category} onChange={e => setCustomForm(p => ({ ...p, category: e.target.value }))}
+                  style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </Field>
+              <Field label="Output Mode">
+                <select value={customForm.outputMode} onChange={e => setCustomForm(p => ({ ...p, outputMode: e.target.value }))}
+                  style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit" }}>
+                  {outputModes.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
+                </select>
+              </Field>
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <Field label="Description" hint="What does this tool do? Visible to creators who browse tools.">
+                <textarea value={customForm.desc} onChange={e => setCustomForm(p => ({ ...p, desc: e.target.value }))} rows={2}
+                  placeholder="Brief description of this tool's purpose…"
+                  style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+              </Field>
+            </div>
+
+            {/* Input type */}
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Input Type</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                {inputTypes.map(it => {
+                  const on = customForm.inputType === it.id;
+                  return (
+                    <div key={it.id} onClick={() => setCustomForm(p => ({ ...p, inputType: it.id }))}
+                      style={{ padding: "10px 12px", background: on ? colors.accent + "12" : colors.surface, border: `1px solid ${on ? colors.accent + "55" : colors.border}`, borderRadius: 8, cursor: "pointer", transition: "all 0.15s" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                        <Icon name={it.icon} size={12} style={{ color: on ? colors.accent : colors.textDim }} />
+                        <span style={{ fontSize: 12, fontWeight: 600, color: on ? colors.accent : colors.text }}>{it.label}</span>
+                      </div>
+                      <div style={{ fontSize: 10, color: colors.textDim, lineHeight: 1.4 }}>{it.hint}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Endpoint (for api-call) */}
+            {customForm.inputType === "api-call" && (
+              <div style={{ marginTop: 12 }}>
+                <Field label="Endpoint URL" hint="POST requests from this URL will trigger the tool.">
+                  <Input value={customForm.endpoint} onChange={e => setCustomForm(p => ({ ...p, endpoint: e.target.value }))} placeholder="https://…" />
+                </Field>
+              </div>
+            )}
+
+            {/* Trigger condition */}
+            <div style={{ marginTop: 12 }}>
+              <Field label="Trigger Condition" hint="Optional. Describe when this tool should activate.">
+                <Input value={customForm.triggerOn} onChange={e => setCustomForm(p => ({ ...p, triggerOn: e.target.value }))} placeholder="e.g. when a reflection scene starts" />
+              </Field>
+            </div>
+
+            {/* HEARTS facets */}
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>HEARTS Alignment</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {["H","E","A","R","T","Si","So"].map(f => {
+                  const on = customForm.heartsAligned.includes(f);
+                  return (
+                    <div key={f} onClick={() => toggleHeart(f)}
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "7px 10px", background: on ? colors.accent + "18" : colors.surface, border: `1px solid ${on ? colors.accent : colors.border}`, borderRadius: 7, cursor: "pointer", minWidth: 40 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: on ? colors.accent : colors.textDim }}>{f}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 22, justifyContent: "flex-end" }}>
+              <Btn variant="secondary" onClick={onClose}>Cancel</Btn>
+              <Btn onClick={handleSaveCustom} disabled={saving || !customForm.name.trim()}>
+                {saving ? "Saving…" : "Create Tool"}
+              </Btn>
+            </div>
+          </Modal>
+        );
+      }
+
+      return null;
+    };
+
+    // ── Connection detail ────────────────────────────────────────────────────
+    const ConnDetail = ({ conn, onBack }) => {
+      const [editNote, setEditNote] = useState(conn.note || "");
+      const [editActors, setEditActors] = useState(conn.actors || []);
+      const [saving, setSaving] = useState(false);
+      const [savedAt, setSavedAt] = useState(null);
+      const [disconnecting, setDisconnecting] = useState(false);
+      const [confirmDisc, setConfirmDisc] = useState(false);
+      const allActors = ["Elder Sage","Market Keeper","Forest Spirit","Challenge Master","Story Weaver"];
+      const toggleActor = (a) => setEditActors(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
+
+      const handleSave = () => {
+        setSaving(true);
+        setTimeout(() => {
+          setConnections(prev => prev.map(c => c.id === conn.id ? { ...c, note: editNote, actors: editActors } : c));
+          setSaving(false);
+          setSavedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+        }, 600);
+      };
+
+      const handleDisconnect = () => {
+        setDisconnecting(true);
+        setTimeout(() => {
+          setConnections(prev => prev.filter(c => c.id !== conn.id));
+          onBack();
+        }, 700);
+      };
+
+      return (
+        <div>
+          <PageHeader
+            title={<span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <RenderIcon icon={conn.icon} size={22} />
+              <span>{conn.name}</span>
+            </span>}
+            subtitle={`${conn.account} · ${conn.category}`}
+            onBack={onBack}
+          >
+            <span style={{ fontSize: 10, fontWeight: 700, color: conn.scope === "platform" ? colors.cyan : colors.purple, background: (conn.scope === "platform" ? colors.cyan : colors.purple) + "15", border: `1px solid ${(conn.scope === "platform" ? colors.cyan : colors.purple)}33`, padding: "3px 10px", borderRadius: 99 }}>
+              {conn.scope === "platform" ? "Platform Account" : "Cycle Account"}
+            </span>
+            <StatusPill status={conn.status} />
+            <Btn onClick={handleSave} disabled={saving}>{saving ? "Saving…" : savedAt ? `Saved ${savedAt}` : "Save"}</Btn>
+          </PageHeader>
+
+          <div style={{ maxWidth: 560 }}>
+            <div style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, marginBottom: 20 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                {[
+                  { label: "Account", value: conn.account },
+                  { label: "Added by", value: conn.addedBy === "platform" ? "Platform" : conn.addedBy },
+                  { label: "Added", value: conn.addedOn },
+                ].map((s, i) => (
+                  <div key={i}>
+                    <div style={{ fontSize: 10, color: colors.textDim, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>{s.label}</div>
+                    <div style={{ fontSize: 13, color: colors.text, fontWeight: 500 }}>{s.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Field label="Notes" hint="Describe how this connection is used in this cycle.">
+              <textarea value={editNote} onChange={e => setEditNote(e.target.value)} rows={2}
+                style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+            </Field>
+
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>Actors using this channel</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {allActors.map(a => {
+                  const on = editActors.includes(a);
+                  return (
+                    <div key={a} onClick={() => toggleActor(a)}
+                      style={{ padding: "5px 12px", background: on ? colors.accent + "16" : colors.surface, border: `1px solid ${on ? colors.accent + "55" : colors.border}`, borderRadius: 6, cursor: "pointer", fontSize: 12, color: on ? colors.accent : colors.textDim, transition: "all 0.15s" }}>
+                      {a}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {conn.scope === "platform" && (
+              <InfoBox color={colors.cyan} style={{ marginTop: 20 }}>
+                This connection uses the platform's {conn.name} account. Changes here affect only how it's used in this cycle — the platform account itself is managed in Platform Tools &amp; Connectors.
+              </InfoBox>
+            )}
+
+            <div style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${colors.border}` }}>
+              {!confirmDisc ? (
+                <button onClick={() => setConfirmDisc(true)} style={{ fontSize: 12, color: "#FF6B6B", background: "none", border: "1px solid #FF6B6B33", borderRadius: 7, padding: "7px 14px", cursor: "pointer", fontFamily: "inherit" }}>
+                  Disconnect
+                </button>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "#FF6B6B0D", border: "1px solid #FF6B6B33", borderRadius: 8 }}>
+                  <span style={{ fontSize: 12, color: colors.textMuted, flex: 1 }}>Remove this connection from the cycle?</span>
+                  <Btn onClick={handleDisconnect} disabled={disconnecting} style={{ background: "#FF6B6B22", color: "#FF6B6B", borderColor: "#FF6B6B55" }}>
+                    {disconnecting ? "Removing…" : "Disconnect"}
+                  </Btn>
+                  <Btn variant="secondary" onClick={() => setConfirmDisc(false)}>Cancel</Btn>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ── Tool detail ──────────────────────────────────────────────────────────
+    const ToolDetail = ({ tool, onBack }) => {
+      const [saving, setSaving] = useState(false);
+      const [savedAt, setSavedAt] = useState(null);
+      const [removing, setRemoving] = useState(false);
+      const [confirmRemove, setConfirmRemove] = useState(false);
+
+      const handleRemove = () => {
+        setRemoving(true);
+        setTimeout(() => {
+          setTools(prev => prev.filter(t => t.id !== tool.id));
+          onBack();
+        }, 600);
+      };
+
+      return (
+        <div>
+          <PageHeader
+            title={<span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Icon name={tool.icon} size={18} style={{ color: tool.scope === "platform" ? colors.accent : colors.purple }} />
+              <span>{tool.name}</span>
+            </span>}
+            subtitle={tool.desc}
+            onBack={onBack}
+          >
+            <span style={{ fontSize: 10, fontWeight: 700, color: tool.scope === "platform" ? colors.accent : colors.purple, background: (tool.scope === "platform" ? colors.accent : colors.purple) + "15", border: `1px solid ${(tool.scope === "platform" ? colors.accent : colors.purple)}33`, padding: "3px 10px", borderRadius: 99 }}>
+              {tool.scope === "platform" ? "Platform Tool" : "Custom"}
+            </span>
+            <StatusPill status={tool.status} />
+            <Btn onClick={() => { setSaving(true); setTimeout(() => { setSaving(false); setSavedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })); }, 500); }} disabled={saving}>
+              {saving ? "Saving…" : savedAt ? `Saved ${savedAt}` : "Save"}
+            </Btn>
+          </PageHeader>
+
+          <div style={{ maxWidth: 560 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+              {[
+                { label: "Category", value: tool.category },
+                { label: "Scope", value: tool.scope === "platform" ? "Platform Library" : "This Cycle" },
+                { label: "Added", value: tool.addedOn },
+              ].map((s, i) => (
+                <div key={i} style={{ padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                  <div style={{ fontSize: 10, color: colors.textDim, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>{s.label}</div>
+                  <div style={{ fontSize: 13, color: colors.text, fontWeight: 500 }}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {tool.heartsAligned.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>HEARTS Alignment</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {tool.heartsAligned.map(f => (
+                    <span key={f} style={{ fontSize: 11, fontWeight: 700, padding: "5px 10px", background: colors.accent + "18", color: colors.accent, border: `1px solid ${colors.accent}33`, borderRadius: 7 }}>{f}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Config fields */}
+            {tool.config && Object.keys(tool.config).length > 0 && (
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: "14px 16px", marginBottom: 20 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>Configuration</div>
+                {Object.entries(tool.config).map(([k, v]) => (
+                  <div key={k} style={{ marginBottom: 12 }}>
+                    <Field label={k.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase())}>
+                      <Input defaultValue={String(v)} />
+                    </Field>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tool.scope === "platform" && (
+              <InfoBox color={colors.accent}>
+                This is a platform tool. Core behavior is configured in Platform Tools &amp; Connectors — settings here apply only to this cycle.
+              </InfoBox>
+            )}
+
+            <div style={{ marginTop: 28, paddingTop: 18, borderTop: `1px solid ${colors.border}` }}>
+              {!confirmRemove ? (
+                <button onClick={() => setConfirmRemove(true)} style={{ fontSize: 12, color: "#FF6B6B", background: "none", border: "1px solid #FF6B6B33", borderRadius: 7, padding: "7px 14px", cursor: "pointer", fontFamily: "inherit" }}>
+                  Remove from Cycle
+                </button>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "#FF6B6B0D", border: "1px solid #FF6B6B33", borderRadius: 8 }}>
+                  <span style={{ fontSize: 12, color: colors.textMuted, flex: 1 }}>Remove this tool from the cycle?</span>
+                  <Btn onClick={handleRemove} disabled={removing} style={{ background: "#FF6B6B22", color: "#FF6B6B", borderColor: "#FF6B6B55" }}>
+                    {removing ? "Removing…" : "Remove"}
+                  </Btn>
+                  <Btn variant="secondary" onClick={() => setConfirmRemove(false)}>Cancel</Btn>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ── Detail routing ────────────────────────────────────────────────────────
+    const selectedConn = typeof view === "string" && view.startsWith("conn:") ? connections.find(c => c.id === view.slice(5)) : null;
+    const selectedTool = typeof view === "string" && view.startsWith("tool:") ? tools.find(t => t.id === view.slice(5)) : null;
+    const [showAddConn, setShowAddConn] = useState(false);
+    const [showAddTool, setShowAddTool] = useState(false);
+
+    if (selectedConn) return <ConnDetail conn={selectedConn} onBack={() => setView("list")} />;
+    if (selectedTool) return <ToolDetail tool={selectedTool} onBack={() => setView("list")} />;
+
     return (
       <div>
-        <PageHeader title="Offerings" subtitle="Digital goods, physical products, services, and subscriptions">
-          <Btn>+ New Offering</Btn>
+        {showAddConn && <AddConnectionModal onClose={() => setShowAddConn(false)} />}
+        {showAddTool && <AddToolModal onClose={() => setShowAddTool(false)} />}
+
+        <PageHeader title="Tools & Connections" subtitle="External services and active tools for this cycle — each can use its own account or borrow from the platform">
+          {tab === "connections" && <Btn onClick={() => setShowAddConn(true)}>+ Add Connection</Btn>}
+          {tab === "tools" && (
+            <>
+              <Btn variant="secondary" onClick={() => setShowAddTool(true)}>
+                <Icon name="lucide:wrench" size={13} style={{ marginRight: 5 }} /> Craft Custom Tool
+              </Btn>
+              <Btn onClick={() => setShowAddTool(true)}>+ Add Tool</Btn>
+            </>
+          )}
         </PageHeader>
-        <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
-          {["All","Digital","Physical","Service","Subscription"].map((f, i) => <FilterPill key={i} label={f} active={activeFilter === f} onClick={() => setActiveFilter(f)} />)}
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+
+        {/* Tab bar — mirrors platform */}
+        <div style={{ display: "flex", gap: 0, marginBottom: 22, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden", width: "fit-content" }}>
           {[
-            { name: "Crystal Cave Scene Pack", type: "Digital", price: "500 KNSHP", icon: "🗺️", sales: 23 },
-            { name: "Meditation Guide Prompt", type: "Digital", price: "Free", icon: "📜", sales: 156 },
-            { name: "Monthly Creator Pass", type: "Subscription", price: "2,000 KNSHP/mo", icon: "🎫", sales: 45 },
-            { name: "Custom Actor Commission", type: "Service", price: "5,000 KNSHP", icon: "🎭", sales: 8 },
-          ].map((o, i) => {
-            const [h, setH] = useState(false);
-            return (
-              <div key={i} style={{ padding: 18, background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}
-                onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 26 }}>{o.icon}</span>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{o.name}</div>
-                    <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{o.type}</div>
+            { id: "connections", label: "Connections", icon: "lucide:plug-2", count: connections.length },
+            { id: "tools", label: "Tools", icon: "lucide:wrench", count: tools.length },
+          ].map((t, i) => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              style={{ display: "flex", alignItems: "center", gap: 7, padding: "10px 18px", background: tab === t.id ? colors.accent + "18" : "transparent", border: "none", borderRight: i === 0 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s" }}>
+              <Icon name={t.icon} size={13} style={{ color: tab === t.id ? colors.accent : colors.textDim }} />
+              <span style={{ fontSize: 13, fontWeight: tab === t.id ? 600 : 400, color: tab === t.id ? colors.accent : colors.textMuted }}>{t.label}</span>
+              <span style={{ fontSize: 11, color: colors.textDim }}>({t.count})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* ── Connections ── */}
+        {tab === "connections" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {connections.map(c => {
+              const [h, setH] = useState(false);
+              return (
+                <div key={c.id} onClick={() => setView("conn:" + c.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+                  style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: "rgba(255,255,255,0.06)", border: `1px solid ${colors.border}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <RenderIcon icon={c.icon} size={20} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{c.name}</span>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: c.scope === "platform" ? colors.cyan : colors.purple, background: (c.scope === "platform" ? colors.cyan : colors.purple) + "15", border: `1px solid ${(c.scope === "platform" ? colors.cyan : colors.purple)}33`, padding: "1px 6px", borderRadius: 4 }}>
+                        {c.scope === "platform" ? "Platform Account" : "Cycle Account"}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: colors.textDim, marginBottom: c.actors.length > 0 ? 4 : 0 }}>{c.account}</div>
+                    {c.actors.length > 0 && (
+                      <div style={{ display: "flex", gap: 4 }}>
+                        {c.actors.map(a => (
+                          <span key={a} style={{ fontSize: 10, color: colors.textDim, background: "rgba(255,255,255,0.05)", border: `1px solid ${colors.border}`, padding: "1px 6px", borderRadius: 4 }}>{a}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: colors.textDim, border: `1px solid ${colors.border}` }}>{c.category}</span>
+                  <StatusPill status={c.status} />
+                  <Icon name="lucide:chevron-right" size={15} style={{ color: colors.textDim }} />
+                </div>
+              );
+            })}
+            {/* Add Connection tile */}
+            <div onClick={() => setShowAddConn(true)}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", border: `2px dashed ${colors.border}`, borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = colors.accent}
+              onMouseLeave={e => e.currentTarget.style.borderColor = colors.border}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: colors.accent + "10", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon name="lucide:plus" size={18} style={{ color: colors.accent }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted }}>Add Connection</div>
+                <div style={{ fontSize: 11, color: colors.textDim }}>Use a platform account or connect a new service for this cycle</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Tools ── */}
+        {tab === "tools" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {tools.map(t => {
+              const [h, setH] = useState(false);
+              return (
+                <div key={t.id} onClick={() => setView("tool:" + t.id)} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+                  style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: h ? colors.surfaceHover : colors.surface, border: `1px solid ${h ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 10, background: (t.scope === "platform" ? colors.accent : colors.purple) + "14", border: `1px solid ${(t.scope === "platform" ? colors.accent : colors.purple)}22`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <Icon name={t.icon} size={17} style={{ color: t.scope === "platform" ? colors.accent : colors.purple }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{t.name}</span>
+                      <span style={{ fontSize: 9, fontWeight: 700, color: t.scope === "platform" ? colors.accent : colors.purple, background: (t.scope === "platform" ? colors.accent : colors.purple) + "15", border: `1px solid ${(t.scope === "platform" ? colors.accent : colors.purple)}33`, padding: "1px 6px", borderRadius: 4 }}>
+                        {t.scope === "platform" ? "Platform" : "Custom"}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 12, color: colors.textDim }}>{t.desc}</div>
+                    {t.heartsAligned.length > 0 && (
+                      <div style={{ display: "flex", gap: 3, marginTop: 5 }}>
+                        {t.heartsAligned.map(f => (
+                          <span key={f} style={{ fontSize: 9, fontWeight: 700, padding: "1px 5px", borderRadius: 3, background: colors.accent + "14", color: colors.accent, border: `1px solid ${colors.accent}22` }}>{f}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: colors.textDim, border: `1px solid ${colors.border}` }}>{t.category}</span>
+                  <StatusPill status={t.status} />
+                  <Icon name="lucide:chevron-right" size={15} style={{ color: colors.textDim }} />
+                </div>
+              );
+            })}
+            {/* Add Tool tile */}
+            <div onClick={() => setShowAddTool(true)}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", border: `2px dashed ${colors.border}`, borderRadius: 10, cursor: "pointer", transition: "border-color 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = colors.purple}
+              onMouseLeave={e => e.currentTarget.style.borderColor = colors.border}>
+              <div style={{ width: 38, height: 38, borderRadius: 10, background: colors.purple + "10", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon name="lucide:plus" size={18} style={{ color: colors.purple }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: colors.textMuted }}>Add Tool</div>
+                <div style={{ fontSize: 11, color: colors.textDim }}>Activate a platform tool or craft a custom one</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ─── Cycle System Prompts ──────────────────────────────────────────────────
+  if (page === "prompts") {
+    const CYCLE_PROMPTS_INIT = [
+      { id: "welcome",    name: "Welcome Ritual",          icon: "lucide:door-open",     status: "Active",        actorIds: ["challenge-master", "story-weaver"], lastEdited: "5 days ago",  content: "When a new member joins the Mountain Temple, greet them with warmth and a brief orientation to the space. Mention the three active quests and the community values. Keep the welcome under 120 words and invite them to introduce themselves in the main scene." },
+      { id: "ceremony",   name: "Ceremony Facilitation",   icon: "lucide:flame",          status: "Active",        actorIds: ["elder-sage"],                       lastEdited: "2 weeks ago", content: "During any ceremony or ritual event, hold space with care and intentionality. Open with a grounding moment. Acknowledge the collective energy. Follow the ceremony structure defined in the scene metadata. Close with a reflection prompt." },
+      { id: "challenge",  name: "Challenge Encouragement", icon: "lucide:trophy",         status: "Active",        actorIds: ["challenge-master"],                 lastEdited: "1 week ago",  content: "When a member engages with a challenge, acknowledge their effort first before offering guidance. Celebrate completion with specificity — name what they actually did, not just that they did it. Keep momentum-building responses under 80 words." },
+      { id: "reflection", name: "Reflection Prompts",      icon: "lucide:book-open",      status: "Draft",         actorIds: ["elder-sage", "story-weaver"],       lastEdited: "Yesterday",   content: "" },
+    ];
+
+    const CYCLE_ACTORS_BRIEF = [
+      { id: "challenge-master", name: "Challenge Master", emoji: "⚔️" },
+      { id: "story-weaver",     name: "Story Weaver",     emoji: "📖" },
+      { id: "elder-sage",       name: "Elder Sage",        emoji: "🧙" },
+      { id: "healer",           name: "The Healer",        emoji: "💚" },
+      { id: "keeper",           name: "The Keeper",        emoji: "🗝️" },
+    ];
+
+    const [prompts, setPrompts] = useState(CYCLE_PROMPTS_INIT);
+    const [view, setView] = useState(null); // null | "new" | prompt.id
+
+    // ── Prompt Editor ──────────────────────────────────────────────
+    const CyclePromptEditor = ({ prompt, isNew, onBack }) => {
+      const [name, setName]               = useState(prompt?.name || "");
+      const [status, setStatus]           = useState(prompt?.status || "Active");
+      const [assignedActors, setAssigned] = useState(prompt?.actorIds || []);
+      const [contentMode, setMode]        = useState(isNew ? "build" : "type");
+      const [buildFields, setBuild]       = useState({
+        role: "", context: "", instructions: "", format: "", constraints: "", examples: "",
+        ...(prompt?.id === "welcome"   ? { instructions: prompt.content } : {}),
+        ...(prompt?.id === "ceremony"  ? { instructions: prompt.content } : {}),
+        ...(prompt?.id === "challenge" ? { instructions: prompt.content } : {}),
+      });
+      const [typeContent, setType]        = useState(prompt?.content || "");
+      const [aiInstruction, setAiInstr]   = useState("");
+      const [aiGenerating, setAiGen]      = useState(false);
+      const [aiResult, setAiResult]       = useState(false);
+      const [saving, setSaving]           = useState(false);
+      const [confirmDelete, setConfDel]   = useState(false);
+
+      const toggleActor = id =>
+        setAssigned(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+      const handleSave = () => {
+        setSaving(true);
+        setTimeout(() => {
+          if (isNew) {
+            setPrompts(prev => [...prev, { id: "new-" + Date.now(), name, status, actorIds: assignedActors, lastEdited: "Just now", content: typeContent }]);
+          } else {
+            setPrompts(prev => prev.map(p => p.id === prompt.id ? { ...p, name, status, actorIds: assignedActors, content: typeContent, lastEdited: "Just now" } : p));
+          }
+          setSaving(false);
+          onBack();
+        }, 700);
+      };
+
+      const modeTabs = [
+        { id: "build",  label: "🔧 Build",        hint: "Structured fields" },
+        { id: "type",   label: "✍️ Type / Paste",  hint: "Direct editing"   },
+        { id: "assist", label: "✨ AI Assist",      hint: "Prompt your edits" },
+      ];
+
+      const buildSections = [
+        { key: "role",         label: "Role Context",          hint: "How should the actor behave in this context?", placeholder: "e.g. In this cycle, act as a ceremonial guide attuned to the Mountain Temple's rhythm..." },
+        { key: "instructions", label: "Core Instructions",     hint: "What should the actor do in this scenario?",   placeholder: "e.g. Open with a grounding breath prompt. Reference the current phase of the moon cycle..." },
+        { key: "format",       label: "Response Format",       hint: "Length, tone, structure.",                     placeholder: "e.g. Keep responses under 120 words. Warm but not effusive. End with a question or invitation..." },
+        { key: "constraints",  label: "Constraints",           hint: "What should the actor never do here?",         placeholder: "e.g. Never push for immediate action. Do not reference other cycles..." },
+        { key: "examples",     label: "Examples (optional)",   hint: "Sample exchanges for this context.",           placeholder: "Member: I'm not sure I'm ready.\nActor: That uncertainty is its own kind of readiness..." },
+      ];
+
+      const aiSuggestions = isNew
+        ? ["Write a prompt for a daily check-in ritual", "Create a ceremony closing sequence", "Build a conflict de-escalation prompt for this cycle"]
+        : ["Soften the tone while keeping the structure", "Add a HEARTS framework reference", "Make it shorter and more direct", "Strengthen the opening hook"];
+
+      return (
+        <div style={{ maxWidth: 700 }}>
+          <PageHeader
+            title={isNew ? "New System Prompt" : `Edit: ${prompt.name}`}
+            subtitle={isNew ? "Add a prompt specific to this cycle — it extends platform-level prompts" : "Changes apply to assigned actors on next sync"}
+            onBack={onBack}
+          >
+            {!isNew && <StatusPill status={status} />}
+          </PageHeader>
+
+          <SectionDivider label="Identity" />
+          <Field label="Prompt Name">
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Evening Reflection Guide" />
+          </Field>
+          <Field label="Status">
+            <div style={{ display: "flex", gap: 8 }}>
+              {["Active", "Draft", "Archived"].map(s => (
+                <button key={s} onClick={() => setStatus(s)}
+                  style={{ padding: "7px 16px", borderRadius: 6, border: `1px solid ${status === s ? colors.accent : colors.border}`, background: status === s ? colors.accent + "18" : "transparent", color: status === s ? colors.accent : colors.textMuted, fontSize: 12, fontWeight: status === s ? 600 : 400, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <SectionDivider label="Actor Assignment" />
+          <p style={{ fontSize: 12, color: colors.textDim, marginBottom: 10 }}>This prompt will be injected into the context of assigned actors. Actors not assigned here still inherit platform-level prompts.</p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+            {CYCLE_ACTORS_BRIEF.map(a => {
+              const on = assignedActors.includes(a.id);
+              return (
+                <button key={a.id} onClick={() => toggleActor(a.id)}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 12px", borderRadius: 20, border: `1px solid ${on ? colors.accent : colors.border}`, background: on ? colors.accent + "15" : colors.surface, color: on ? colors.accent : colors.textMuted, fontSize: 12, fontWeight: on ? 600 : 400, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
+                  <span>{a.emoji}</span> {a.name}
+                  {on && <Icon name="lucide:check" size={11} />}
+                </button>
+              );
+            })}
+            <button onClick={() => setAssigned(CYCLE_ACTORS_BRIEF.map(a => a.id))}
+              style={{ padding: "7px 12px", borderRadius: 20, border: `1px solid ${colors.border}`, background: "transparent", color: colors.textDim, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+              All Actors
+            </button>
+          </div>
+
+          <SectionDivider label="Platform Base" />
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
+            {[
+              { name: "Global Safety & Guardrails", icon: "🛡️" },
+              { name: "HEARTS Framework Base",      icon: "💚" },
+            ].map((p, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, opacity: 0.7 }}>
+                <span style={{ fontSize: 16 }}>{p.icon}</span>
+                <span style={{ flex: 1, fontSize: 13, color: colors.textMuted }}>{p.name}</span>
+                <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: colors.cyan + "18", color: colors.cyan, border: `1px solid ${colors.cyan}33`, fontWeight: 600, letterSpacing: 0.5 }}>Platform</span>
+                <Icon name="lucide:lock" size={12} style={{ color: colors.textDim }} />
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 11, color: colors.textDim, marginBottom: 4 }}>Your cycle prompt adds context on top of these. It cannot remove or contradict platform-level instructions.</p>
+
+          <SectionDivider label="Prompt Content" />
+          <div style={{ display: "flex", gap: 0, marginBottom: 20, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
+            {modeTabs.map((m, i) => (
+              <button key={m.id} onClick={() => setMode(m.id)}
+                style={{ flex: 1, padding: "12px 8px", background: contentMode === m.id ? colors.accent + "18" : "transparent", border: "none", borderRight: i < modeTabs.length - 1 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s" }}>
+                <div style={{ fontSize: 13, fontWeight: contentMode === m.id ? 600 : 400, color: contentMode === m.id ? colors.accent : colors.textMuted }}>{m.label}</div>
+                <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>{m.hint}</div>
+              </button>
+            ))}
+          </div>
+
+          {contentMode === "build" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {buildSections.map(s => (
+                <Field key={s.key} label={s.label} hint={s.hint}>
+                  <textarea value={buildFields[s.key] || ""} onChange={e => setBuild({ ...buildFields, [s.key]: e.target.value })}
+                    placeholder={s.placeholder} rows={3}
+                    style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6, minHeight: 72 }} />
+                </Field>
+              ))}
+            </div>
+          )}
+
+          {contentMode === "type" && (
+            <Field label="Prompt Content" hint="Write or paste the cycle-specific addition here. This is layered on top of platform prompts.">
+              <textarea value={typeContent} onChange={e => setType(e.target.value)}
+                placeholder={"In this cycle, you are a guide within the Mountain Temple...\n\nContext: Members here are working on...\n\nFor this scenario: When a member...\n\nAlways...\nNever..."}
+                rows={16}
+                style={{ width: "100%", padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.7, fontFamily: "'Inter', monospace" }} />
+            </Field>
+          )}
+
+          {contentMode === "assist" && (
+            <div>
+              <div style={{ padding: "16px 18px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 10, letterSpacing: 0.4, textTransform: "uppercase" }}>Describe what you want</div>
+                <textarea value={aiInstruction} onChange={e => setAiInstr(e.target.value)}
+                  placeholder={isNew ? "Describe the prompt context — what scenario, which actors, what tone..." : "Describe how to revise this prompt. Kaytee will generate a version you can review before applying..."}
+                  rows={4}
+                  style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }} />
+                <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                  {aiSuggestions.map((s, i) => (
+                    <button key={i} onClick={() => setAiInstr(s)}
+                      style={{ padding: "5px 10px", background: colors.accent + "12", border: `1px solid ${colors.accent}33`, borderRadius: 6, color: colors.accent, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+                  <Btn onClick={() => { setAiGen(true); setTimeout(() => { setAiGen(false); setAiResult(true); }, 1100); }}>
+                    {aiGenerating ? "Generating..." : isNew ? "Generate Prompt" : "Generate Revision"}
+                  </Btn>
+                  {!isNew && <Btn variant="secondary">Show current prompt</Btn>}
+                </div>
+              </div>
+              {aiResult && (
+                <div style={{ border: `1px solid ${colors.green}44`, borderRadius: 10, overflow: "hidden" }}>
+                  <div style={{ padding: "10px 16px", background: colors.green + "18", borderBottom: `1px solid ${colors.green}33`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: colors.green }}>{isNew ? "Generated Prompt" : "Suggested Revision"}</span>
+                    <span style={{ fontSize: 11, color: colors.textDim }}>Review before applying</span>
+                  </div>
+                  <div style={{ padding: "14px 16px", background: colors.surface }}>
+                    <div style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.7, whiteSpace: "pre-wrap", fontFamily: "'Inter', monospace", maxHeight: 260, overflowY: "auto" }}>
+                      {isNew
+                        ? "In this cycle, you are a ceremonial guide within the Mountain Temple — a space designed for reflective practice, inner work, and collective ritual.\n\nContext: Members here have chosen depth over speed. They come to the Mountain Temple for ceremony, challenge, and honest reflection. The atmosphere is intentional and unhurried.\n\nFor this scenario:\n- Greet members with presence, not just pleasantries\n- Reference the active ceremony or quest when relevant\n- Invite participation without demanding it\n\nTone: Warm, grounded, and specific. Avoid generic encouragement.\n\nConstraints:\n- Do not rush transitions between ceremony phases\n- Do not reference other cycles or external platforms"
+                        : (typeContent || "Current prompt content") + "\n\n--- SUGGESTED REVISION ---\n\n[Kaytee's revised version would appear here, incorporating your instructions while preserving the original structure and cycle-specific context.]"}
+                    </div>
+                  </div>
+                  <div style={{ padding: "10px 16px", background: colors.surface, borderTop: `1px solid ${colors.borderSubtle}`, display: "flex", gap: 8 }}>
+                    <Btn size="sm" onClick={() => { setType(isNew ? "In this cycle, you are a ceremonial guide within the Mountain Temple..." : typeContent); setMode("type"); setAiResult(false); }}>Accept → Type/Paste</Btn>
+                    <Btn variant="secondary" size="sm">Refine Further</Btn>
+                    <Btn variant="secondary" size="sm" onClick={() => setAiResult(false)}>Discard</Btn>
                   </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16, fontSize: 12, borderTop: `1px solid ${colors.border}`, paddingTop: 12 }}>
-                  <span style={{ color: colors.accent, fontWeight: 600 }}>{o.price}</span>
-                  <span style={{ color: colors.textDim }}>{o.sales} sold</span>
+              )}
+              {!aiResult && !aiGenerating && (
+                <InfoBox color={colors.blue}>
+                  {isNew
+                    ? "AI Assist generates a cycle-specific prompt extension based on your description. After generating, accept it into Type/Paste for final edits before saving."
+                    : "Kaytee reads the current cycle prompt plus the platform-level base prompts, then generates a revision that stays consistent with the platform layer. You review and accept before anything changes."}
+                </InfoBox>
+              )}
+            </div>
+          )}
+
+          {!isNew && (
+            <>
+              <SectionDivider label="Compiled Preview" />
+              <InfoBox color={colors.surface}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <Icon name="lucide:layers" size={14} style={{ color: colors.accent }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>What assigned actors actually receive</span>
+                </div>
+                <div style={{ fontSize: 11, color: colors.textDim, lineHeight: 1.6 }}>
+                  Platform base prompts (Global Safety + HEARTS Framework) → this cycle prompt → actor-specific configuration.
+                  Use <span style={{ color: colors.accent, fontWeight: 600 }}>Preview Compiled Prompt</span> to see the full resolved version.
+                </div>
+              </InfoBox>
+              <div style={{ display: "flex", gap: 8, marginTop: 12, marginBottom: 4 }}>
+                <Btn variant="secondary" size="sm">Preview Compiled Prompt</Btn>
+              </div>
+            </>
+          )}
+
+          <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+            <Btn onClick={handleSave}>{saving ? "Saving..." : isNew ? "Create Prompt" : "Save Changes"}</Btn>
+            <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+          </div>
+
+          {!isNew && (
+            <div style={{ marginTop: 32, padding: "20px 24px", background: colors.red + "08", border: `1px solid ${colors.red}22`, borderRadius: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: colors.red, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 10 }}>Danger Zone</div>
+              {!confirmDelete ? (
+                <>
+                  <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
+                    Deleting this prompt removes it from all assigned actors. Platform-level prompts remain in effect.
+                  </p>
+                  <Btn danger onClick={() => setConfDel(true)}>Delete Prompt</Btn>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: 13, color: colors.red, fontWeight: 500, marginBottom: 12 }}>
+                    Remove "{prompt.name}" from all assigned actors?
+                  </p>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Btn danger onClick={() => { setPrompts(prev => prev.filter(p => p.id !== prompt.id)); onBack(); }}>Confirm Delete</Btn>
+                    <Btn variant="secondary" onClick={() => setConfDel(false)}>Cancel</Btn>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ── Router ────────────────────────────────────────────────────
+    if (view === "new") return <CyclePromptEditor isNew onBack={() => setView(null)} />;
+    const editing = prompts.find(p => p.id === view);
+    if (editing) return <CyclePromptEditor prompt={editing} onBack={() => setView(null)} />;
+
+    // ── List view ─────────────────────────────────────────────────
+    return (
+      <div>
+        <PageHeader
+          title="System Prompts"
+          subtitle="Cycle-specific prompt extensions — layered on top of platform prompts"
+        >
+          <Btn onClick={() => setView("new")}>+ Add Prompt</Btn>
+        </PageHeader>
+
+        <InfoBox color={colors.blue}>
+          <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <Icon name="lucide:layers" size={14} style={{ color: colors.blue, marginTop: 1, flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: colors.textMuted, lineHeight: 1.6 }}>
+              Cycle prompts <strong>extend</strong> platform-level instructions — they add context, tone, and scenario-specific behavior. They cannot remove or contradict what's set at the platform layer.
+            </span>
+          </div>
+        </InfoBox>
+
+        <SectionDivider label="Inherited from Platform" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
+          {[
+            { name: "Global Safety & Guardrails", icon: "🛡️", scope: "All cycles · All actors", status: "Active" },
+            { name: "HEARTS Framework Base",      icon: "💚", scope: "All cycles · All actors", status: "Active" },
+          ].map((p, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, opacity: 0.72 }}>
+              <RenderIcon icon={p.icon} size={20} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted }}>{p.name}</div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{p.scope}</div>
+              </div>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: colors.cyan + "18", color: colors.cyan, border: `1px solid ${colors.cyan}33`, fontWeight: 600, letterSpacing: 0.5 }}>Platform</span>
+              <Icon name="lucide:lock" size={13} style={{ color: colors.textDim }} />
+            </div>
+          ))}
+        </div>
+
+        <SectionDivider label={`Cycle Prompts (${prompts.length})`} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
+          {prompts.map(p => {
+            const [hov, setHov] = React.useState(false);
+            const actors = CYCLE_ACTORS_BRIEF.filter(a => p.actorIds.includes(a.id));
+            return (
+              <div key={p.id} onClick={() => setView(p.id)}
+                onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                <Icon name={p.icon} size={20} style={{ color: colors.accent, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{p.name}</div>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginTop: 3 }}>
+                    {actors.length > 0
+                      ? actors.map(a => a.emoji + " " + a.name).join(" · ")
+                      : <span style={{ fontStyle: "italic" }}>No actors assigned</span>}
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: colors.textDim }}>Edited {p.lastEdited}</span>
+                  <StatusPill status={p.status} />
+                  <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
                 </div>
               </div>
             );
           })}
+
+          {/* Add tile */}
+          <div onClick={() => setView("new")}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px", border: `2px dashed ${colors.border}`, borderRadius: 10, cursor: "pointer", color: colors.textDim, fontSize: 13, transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = colors.accent; e.currentTarget.style.color = colors.accent; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textDim; }}>
+            <Icon name="lucide:plus" size={14} />
+            <span>Add Cycle Prompt</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Cycle Knowledge ─────────────────────────────────────────────────────────
+  if (page === "knowledge") {
+    const CYCLE_KNOWLEDGE_INIT = [
+      { id: "temple-lore",    name: "Mountain Temple Founding Lore",      type: "document",     format: "PDF",  status: "Ingested",    icon: "lucide:mountain-snow",  size: "1.2 MB", pages: 16, added: "2025-11-03", addedBy: "moto",              source: "upload",      chunks: 48,  scope: "This cycle" },
+      { id: "ritual-guide",   name: "Seasonal Ritual Guide",               type: "document",     format: "DOCX", status: "Ingested",    icon: "lucide:flame",          size: "680 KB", pages: 24, added: "2025-12-15", addedBy: "moto",              source: "upload",      chunks: 72,  scope: "This cycle" },
+      { id: "member-voices",  name: "Member Reflection Archive — 2025",    type: "document",     format: "PDF",  status: "Ingested",    icon: "lucide:messages-square", size: "3.1 MB", pages: 58, added: "2026-01-08", addedBy: "moto",              source: "upload",      chunks: 186, scope: "This cycle" },
+      { id: "ceremony-link",  name: "Ceremony Design Research",            type: "link",         format: "Web",  status: "Ingested",    icon: "lucide:globe",          size: "—",      pages: null, added: "2026-01-20", addedBy: "Elder Sage (AI)", source: "https://ceremonydesign.example.com/theory", chunks: 28, scope: "This cycle" },
+      { id: "ai-ethics",      name: "Relational AI Ethics — Cycle Notes",  type: "ai-generated", format: "DOCX", status: "Ingested",    icon: "lucide:bot",            size: "220 KB", pages: 5,  added: "2026-02-10", addedBy: "Kaytee (AI)",       source: "ai-research", chunks: 16,  scope: "This cycle" },
+    ];
+
+    const PLATFORM_KNOWLEDGE_INHERITED = [
+      { id: "hearts-ref",   name: "HEARTS Framework Reference",          icon: "📚", chunks: 128 },
+      { id: "policies",     name: "Platform Policies",                   icon: "📋", chunks: 54  },
+      { id: "overview",     name: "Kinship Systems Overview",            icon: "lucide:landmark", chunks: 72 },
+    ];
+
+    const [docs, setDocs]     = useState(CYCLE_KNOWLEDGE_INIT);
+    const [view, setView]     = useState(null); // null | "new" | doc.id
+    const [filter, setFilter] = useState("All");
+
+    const sourceTypeLabels = { document: "Uploaded", link: "Ingested from URL", "ai-generated": "AI-Generated Research" };
+
+    // ── Doc detail ────────────────────────────────────────────────
+    const CycleDocDetail = ({ doc, onBack }) => {
+      const [confirmRemove, setConfirmRemove] = useState(false);
+      return (
+        <div style={{ maxWidth: 660 }}>
+          <PageHeader
+            title={doc.name}
+            subtitle={`${sourceTypeLabels[doc.type]} · Added ${doc.added} by ${doc.addedBy}`}
+            onBack={onBack}
+          >
+            <StatusPill status={doc.status} />
+          </PageHeader>
+
+          <SectionDivider label="Document Info" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+            {[
+              { label: "Format", value: doc.format },
+              { label: "Size",   value: doc.size   },
+              { label: "Pages",  value: doc.pages ? String(doc.pages) : "—" },
+            ].map((f, i) => (
+              <div key={i} style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase", marginBottom: 4 }}>{f.label}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, color: colors.text }}>{f.value}</div>
+              </div>
+            ))}
+          </div>
+
+          <SectionDivider label="Ingestion Status" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+            <div style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase", marginBottom: 4 }}>Vector Chunks</div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: doc.chunks > 0 ? colors.green : colors.textDim }}>
+                {doc.chunks > 0 ? `${doc.chunks} chunks indexed` : "Processing..."}
+              </div>
+            </div>
+            <div style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase", marginBottom: 4 }}>Source</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: colors.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {doc.type === "link" ? doc.source : doc.type === "ai-generated" ? "AI Research by Kaytee" : "Direct upload"}
+              </div>
+            </div>
+          </div>
+
+          {doc.status === "Processing" && (
+            <div style={{ padding: "12px 16px", background: colors.accent + "12", border: `1px solid ${colors.accent}33`, borderRadius: 8, marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 14 }}>⏳</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: colors.accent }}>Ingestion in progress</div>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>Chunking and indexing into the cycle vector namespace. Usually 1-3 minutes.</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <SectionDivider label="Scope" />
+          <InfoBox color={colors.purple}>
+            This document is scoped to this cycle only. Actors in other cycles cannot access it. To share across cycles, promote it to the platform knowledge base from Platform Settings.
+          </InfoBox>
+
+          <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+            <Btn variant="secondary">📥 Download Original</Btn>
+            {doc.type === "ai-generated" && <Btn variant="secondary">📥 Download as DOCX</Btn>}
+            <Btn variant="secondary">🔄 Re-ingest</Btn>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <Btn variant="secondary">Cancel</Btn>
+          </div>
+
+          <div style={{ marginTop: 32, padding: "20px 24px", background: colors.red + "08", border: `1px solid ${colors.red}22`, borderRadius: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: colors.red, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 10 }}>Danger Zone</div>
+            {!confirmRemove ? (
+              <>
+                <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
+                  Removing this document deletes it from the cycle vector namespace. Actors will no longer have access to this knowledge.
+                </p>
+                <Btn danger onClick={() => setConfirmRemove(true)}>Remove from Knowledge</Btn>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, color: colors.red, fontWeight: 500, marginBottom: 12 }}>
+                  Remove "{doc.name}" and delete {doc.chunks} indexed chunks?
+                </p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Btn danger onClick={() => { setDocs(prev => prev.filter(d => d.id !== doc.id)); onBack(); }}>Confirm Removal</Btn>
+                  <Btn variant="secondary" onClick={() => setConfirmRemove(false)}>Cancel</Btn>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    // ── Add new ───────────────────────────────────────────────────
+    const CycleKnowledgeAddNew = ({ onBack }) => {
+      const [addMode, setAddMode]       = useState("upload");
+      const [dragging, setDragging]     = useState(false);
+      const [files, setFiles]           = useState([]);
+      const [linkUrl, setLinkUrl]       = useState("");
+      const [links, setLinks]           = useState([]);
+      const [aiPrompt, setAiPrompt]     = useState("");
+      const [aiGenerating, setAiGen]    = useState(false);
+      const [aiResult, setAiResult]     = useState(null);
+      const [ingesting, setIngesting]   = useState(false);
+      const [ingested, setIngested]     = useState(false);
+
+      const addModes = [
+        { id: "upload", label: "📎 Upload",        hint: "PDF, DOCX, TXT, MD" },
+        { id: "link",   label: "🔗 Link / URL",     hint: "Ingest from web"    },
+        { id: "ai",     label: "🤖 AI Research",    hint: "Generate knowledge"  },
+      ];
+
+      const aiSuggestions = [
+        "Research ceremony design and ritual facilitation in community settings",
+        "Summarize HEARTS framework applications in meditation communities",
+        "Survey trauma-informed community engagement practices",
+        "Compare synchronous vs asynchronous ritual participation models",
+      ];
+
+      const handleIngest = () => {
+        setIngesting(true);
+        setTimeout(() => {
+          setIngesting(false);
+          setIngested(true);
+          const newDoc = {
+            id: "new-" + Date.now(),
+            name: files.length > 0 ? files[0] : links.length > 0 ? "Ingested Link" : "AI Research Document",
+            type: files.length > 0 ? "document" : links.length > 0 ? "link" : "ai-generated",
+            format: files.length > 0 ? "PDF" : links.length > 0 ? "Web" : "DOCX",
+            status: "Processing",
+            icon: files.length > 0 ? "lucide:file-text" : links.length > 0 ? "lucide:globe" : "lucide:bot",
+            size: "—", pages: null, added: "Just now", addedBy: "moto",
+            source: links.length > 0 ? links[0].url : files.length > 0 ? "upload" : "ai-research",
+            chunks: 0, scope: "This cycle",
+          };
+          setDocs(prev => [...prev, newDoc]);
+          setTimeout(() => onBack(), 1200);
+        }, 900);
+      };
+
+      return (
+        <div style={{ maxWidth: 680 }}>
+          <PageHeader title="Add to Cycle Knowledge" subtitle="Upload documents, ingest links, or generate research — scoped to this cycle" onBack={onBack} />
+
+          <div style={{ display: "flex", gap: 0, marginBottom: 24, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
+            {addModes.map((m, i) => (
+              <button key={m.id} onClick={() => setAddMode(m.id)}
+                style={{ flex: 1, padding: "12px 8px", background: addMode === m.id ? colors.accent + "18" : "transparent", border: "none", borderRight: i < addModes.length - 1 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s" }}>
+                <div style={{ fontSize: 13, fontWeight: addMode === m.id ? 600 : 400, color: addMode === m.id ? colors.accent : colors.textMuted }}>{m.label}</div>
+                <div style={{ fontSize: 10, color: colors.textDim, marginTop: 2 }}>{m.hint}</div>
+              </button>
+            ))}
+          </div>
+
+          {addMode === "upload" && (
+            <div>
+              <div
+                onDragOver={e => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={e => { e.preventDefault(); setDragging(false); setFiles([...files, ...Array.from(e.dataTransfer.files).map(f => f.name)]); }}
+                style={{ border: `2px dashed ${dragging ? colors.accent : colors.border}`, borderRadius: 10, padding: "44px 20px", textAlign: "center", background: dragging ? colors.accent + "08" : colors.surface, transition: "all 0.15s", marginBottom: 16, cursor: "pointer" }}>
+                <div style={{ fontSize: 36, marginBottom: 10 }}>📎</div>
+                <div style={{ fontSize: 14, color: colors.textMuted, fontWeight: 500 }}>Drop files here</div>
+                <div style={{ fontSize: 12, color: colors.textDim, marginTop: 4 }}>PDF, DOCX, TXT, or MD — scoped to this cycle's vector namespace</div>
+                <button onClick={() => setFiles([...files, "cycle-doc.pdf"])}
+                  style={{ marginTop: 16, padding: "8px 18px", background: "transparent", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                  Browse files
+                </button>
+              </div>
+              {files.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+                  {files.map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.green}33`, borderRadius: 8 }}>
+                      <span style={{ fontSize: 16 }}>📄</span>
+                      <span style={{ flex: 1, fontSize: 13, color: colors.textMuted }}>{f}</span>
+                      <StatusPill status="Ready" />
+                      <button onClick={() => setFiles(files.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 12 }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {files.length > 0 && !ingested && (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Btn onClick={handleIngest}>{ingesting ? "Ingesting..." : `Ingest ${files.length} Document${files.length > 1 ? "s" : ""}`}</Btn>
+                  <Btn variant="secondary">Cancel</Btn>
+                </div>
+              )}
+              {ingested && (
+                <div style={{ padding: "12px 16px", background: colors.green + "18", border: `1px solid ${colors.green}33`, borderRadius: 8 }}>
+                  <span style={{ fontSize: 13, color: colors.green, fontWeight: 500 }}>✓ Queued for ingestion — returning to knowledge list...</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {addMode === "link" && (
+            <div>
+              <Field label="URL" hint="Kinship will crawl the page, extract content, and index it into this cycle's knowledge namespace.">
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Input value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://example.com/article" />
+                  <Btn variant="secondary" size="sm" onClick={() => { if (linkUrl) { setLinks([...links, { url: linkUrl, status: "Queued" }]); setLinkUrl(""); } }}>+ Add</Btn>
+                </div>
+              </Field>
+              {links.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 12, marginBottom: 16 }}>
+                  {links.map((l, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                      <span style={{ fontSize: 14 }}>🔗</span>
+                      <span style={{ flex: 1, fontSize: 12, color: colors.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.url}</span>
+                      <StatusPill status={l.status} />
+                      <button onClick={() => setLinks(links.filter((_, j) => j !== i))} style={{ background: "none", border: "none", color: colors.textDim, cursor: "pointer", fontSize: 12 }}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {links.length > 0 && !ingested && (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Btn onClick={handleIngest}>{ingesting ? "Ingesting..." : `Ingest ${links.length} Link${links.length > 1 ? "s" : ""}`}</Btn>
+                  <Btn variant="secondary">Cancel</Btn>
+                </div>
+              )}
+              {ingested && (
+                <div style={{ padding: "12px 16px", background: colors.green + "18", border: `1px solid ${colors.green}33`, borderRadius: 8 }}>
+                  <span style={{ fontSize: 13, color: colors.green, fontWeight: 500 }}>✓ Queued for ingestion — returning to knowledge list...</span>
+                </div>
+              )}
+              <InfoBox color={colors.blue}>
+                Links are crawled for their text content. JavaScript-rendered pages, paywalled content, and login-protected pages may not ingest fully. You can re-ingest at any time.
+              </InfoBox>
+            </div>
+          )}
+
+          {addMode === "ai" && (
+            <div>
+              <div style={{ padding: "18px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginBottom: 10, letterSpacing: 0.4, textTransform: "uppercase" }}>Research prompt</div>
+                <textarea value={aiPrompt} onChange={e => setAiPrompt(e.target.value)}
+                  placeholder={"Describe what you want researched for this cycle.\n\ne.g. Research seasonal ceremony structures used in contemporary contemplative communities, with specific attention to participant transitions and closing rituals..."}
+                  rows={5}
+                  style={{ width: "100%", padding: "10px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }} />
+                <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                  {aiSuggestions.map((s, i) => (
+                    <button key={i} onClick={() => setAiPrompt(s)}
+                      style={{ padding: "4px 10px", background: colors.accent + "12", border: `1px solid ${colors.accent}33`, borderRadius: 6, color: colors.accent, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ marginTop: 14 }}>
+                  <Btn onClick={() => { setAiGen(true); setTimeout(() => { setAiGen(false); setAiResult(true); }, 1500); }}>
+                    {aiGenerating ? "Researching..." : "Generate Research Document"}
+                  </Btn>
+                </div>
+              </div>
+
+              {aiResult && (
+                <div style={{ border: `1px solid ${colors.green}44`, borderRadius: 10, overflow: "hidden" }}>
+                  <div style={{ padding: "10px 16px", background: colors.green + "18", borderBottom: `1px solid ${colors.green}33`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: colors.green }}>Generated: Research Document</span>
+                    <span style={{ fontSize: 11, color: colors.textDim }}>~5 pages · 2,100 words</span>
+                  </div>
+                  <div style={{ padding: "14px 16px", background: colors.surface }}>
+                    <div style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.7, maxHeight: 200, overflowY: "auto" }}>
+                      <div style={{ fontWeight: 600, marginBottom: 6 }}>Ceremony Design in Contemporary Contemplative Communities</div>
+                      <div style={{ color: colors.textDim, fontSize: 12 }}>
+                        This document surveys structural approaches to seasonal ceremony design across six contemplative organizations, with attention to participant transitions, facilitation roles, and closing ritual patterns. Findings suggest that the most cohesive ceremonies share three structural features: a defined entry sequence, a co-regulated high point, and an explicit closing that names what was held...
+                        <br /><br />
+                        <span style={{ fontStyle: "italic" }}>[Preview truncated — full document available for review]</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding: "10px 16px", background: colors.surface, borderTop: `1px solid ${colors.borderSubtle}`, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <Btn size="sm" onClick={() => { handleIngest(); setAiResult(null); }}>Add to Knowledge</Btn>
+                    <Btn variant="secondary" size="sm">📥 Download as DOCX</Btn>
+                    <Btn variant="secondary" size="sm">Edit Before Adding</Btn>
+                    <Btn variant="secondary" size="sm" onClick={() => setAiResult(null)}>Discard</Btn>
+                  </div>
+                </div>
+              )}
+
+              {!aiResult && !aiGenerating && (
+                <InfoBox color={colors.purple}>
+                  Kaytee researches your topic and produces a structured document scoped to this cycle. You can add it directly, download it as a Word doc for manual editing, or refine it before ingesting.
+                </InfoBox>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ── Router ────────────────────────────────────────────────────
+    if (view === "new") return <CycleKnowledgeAddNew onBack={() => setView(null)} />;
+    const selectedDoc = docs.find(d => d.id === view);
+    if (selectedDoc) return <CycleDocDetail doc={selectedDoc} onBack={() => setView(null)} />;
+
+    // ── List view ─────────────────────────────────────────────────
+    const typeFilters = ["All", "Uploaded", "Links", "AI-Generated"];
+    const filtered = docs.filter(d => {
+      if (filter === "All")          return true;
+      if (filter === "Uploaded")     return d.type === "document";
+      if (filter === "Links")        return d.type === "link";
+      if (filter === "AI-Generated") return d.type === "ai-generated";
+      return true;
+    });
+
+    const totalChunks = docs.reduce((s, d) => s + d.chunks, 0);
+
+    return (
+      <div>
+        <PageHeader
+          title="Cycle Knowledge"
+          subtitle="Documents, links, and research available to actors in this cycle"
+        >
+          <Btn onClick={() => setView("new")}>+ Add Knowledge</Btn>
+        </PageHeader>
+
+        {/* Stats strip */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
+          {[
+            { label: "Cycle Documents", value: String(docs.length),     icon: "lucide:file-text" },
+            { label: "Total Chunks",    value: String(totalChunks),     icon: "lucide:database"  },
+            { label: "Platform Docs",   value: String(PLATFORM_KNOWLEDGE_INHERITED.length) + " inherited", icon: "lucide:layers" },
+          ].map((s, i) => (
+            <div key={i} style={{ padding: "14px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <Icon name={s.icon} size={13} style={{ color: colors.accent }} />
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase" }}>{s.label}</span>
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: colors.text }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Inherited platform knowledge */}
+        <SectionDivider label="Inherited from Platform" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
+          {PLATFORM_KNOWLEDGE_INHERITED.map((d, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, opacity: 0.7 }}>
+              <RenderIcon icon={d.icon} size={18} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted }}>{d.name}</div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginTop: 1 }}>{d.chunks} chunks · All cycles</div>
+              </div>
+              <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: colors.cyan + "18", color: colors.cyan, border: `1px solid ${colors.cyan}33`, fontWeight: 600, letterSpacing: 0.5 }}>Platform</span>
+              <Icon name="lucide:lock" size={13} style={{ color: colors.textDim }} />
+            </div>
+          ))}
+        </div>
+
+        {/* Filter bar */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+          {typeFilters.map(f => <FilterPill key={f} label={f} active={filter === f} onClick={() => setFilter(f)} />)}
+        </div>
+
+        <SectionDivider label={`Cycle Documents (${filtered.length})`} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.map(d => {
+            const [hov, setHov] = React.useState(false);
+            const typeIcon = d.type === "link" ? "lucide:globe" : d.type === "ai-generated" ? "lucide:bot" : "lucide:file-text";
+            return (
+              <div key={d.id} onClick={() => setView(d.id)}
+                onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                <Icon name={typeof d.icon === "string" && d.icon.startsWith("lucide:") ? d.icon : typeIcon} size={20} style={{ color: colors.accent, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: colors.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</div>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>
+                    {d.format} · {d.size !== "—" ? d.size : "Web content"} · Added {d.added} by {d.addedBy}
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                  {d.chunks > 0 && (
+                    <span style={{ fontSize: 11, color: colors.textDim, background: colors.bg, padding: "2px 7px", borderRadius: 4, border: `1px solid ${colors.border}` }}>
+                      {d.chunks} chunks
+                    </span>
+                  )}
+                  <StatusPill status={d.status} />
+                  <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
+                </div>
+              </div>
+            );
+          })}
+
+          {filtered.length === 0 && (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: colors.textDim }}>
+              <Icon name="lucide:inbox" size={32} style={{ color: colors.border, marginBottom: 12 }} />
+              <div style={{ fontSize: 14, color: colors.textMuted, marginBottom: 6 }}>No documents match this filter</div>
+              <div style={{ fontSize: 12 }}>Try a different filter or add new knowledge</div>
+            </div>
+          )}
+
+          {/* Add tile */}
+          <div onClick={() => setView("new")}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px", border: `2px dashed ${colors.border}`, borderRadius: 10, cursor: "pointer", color: colors.textDim, fontSize: 13, transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = colors.accent; e.currentTarget.style.color = colors.accent; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textDim; }}>
+            <Icon name="lucide:plus" size={14} />
+            <span>Add Cycle Knowledge</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (page === "offerings") {
+    const OFFERING_TYPES = [
+      { id: "Digital",      color: "#6FC3FF", icon: "lucide:download-cloud" },
+      { id: "Physical",     color: "#FFB347", icon: "lucide:package"         },
+      { id: "Service",      color: "#C3A6FF", icon: "lucide:sparkles"        },
+      { id: "Subscription", color: "#4ECDC4", icon: "lucide:repeat"          },
+      { id: "Pack",         color: "#A8E063", icon: "lucide:layers"           },
+    ];
+
+    const OFFERINGS_INIT = [
+      { id: "crystal-cave",    icon: "🗺️",  name: "Crystal Cave Scene Pack",      type: "Pack",         status: "Listed",  priceKNSHP: 500,  priceUSD: null, free: false, monthly: false, sales: 23,  revenue: 11500, views: 310,  desc: "A complete scene environment including ambient audio, 4 art assets, and 2 starter quests. Drop into any cycle.",              created: "2025-09-14", scenes: ["Crystal Cave"], accessTier: "Any" },
+      { id: "meditation-guide",icon: "📜",  name: "Meditation Guide Prompt",       type: "Digital",      status: "Listed",  priceKNSHP: 0,    priceUSD: null, free: true,  monthly: false, sales: 156, revenue: 0,     views: 1240, desc: "A detailed system prompt for calm, trauma-informed meditation facilitation. Works with any actor.",                        created: "2025-10-02", scenes: [],           accessTier: "Any" },
+      { id: "creator-pass",    icon: "🎫",  name: "Monthly Creator Pass",          type: "Subscription", status: "Listed",  priceKNSHP: 2000, priceUSD: null, free: false, monthly: true,  sales: 45,  revenue: 90000, views: 520,  desc: "Recurring access to all premium scenes, priority support, and monthly drop of exclusive assets.",                       created: "2025-11-20", scenes: [],           accessTier: "Contributor" },
+      { id: "actor-commission",icon: "🎭",  name: "Custom Actor Commission",       type: "Service",      status: "Listed",  priceKNSHP: 5000, priceUSD: null, free: false, monthly: false, sales: 8,   revenue: 40000, views: 89,   desc: "Work directly with the Mountain Temple team to design a custom actor persona, system prompt, and HEARTS configuration.", created: "2025-12-08", scenes: [],           accessTier: "Member" },
+      { id: "journal-kit",     icon: "📓",  name: "Shadow Work Journal Kit",       type: "Digital",      status: "Listed",  priceKNSHP: 300,  priceUSD: null, free: false, monthly: false, sales: 64,  revenue: 19200, views: 740,  desc: "A 30-day journaling framework in PDF + interactive format, aligned with the HEARTS Synthesis Inward facet.",             created: "2026-01-05", scenes: [],           accessTier: "Any" },
+      { id: "ceremony-bundle", icon: "🔥",  name: "Seasonal Ceremony Bundle",      type: "Pack",         status: "Draft",   priceKNSHP: 1200, priceUSD: null, free: false, monthly: false, sales: 0,   revenue: 0,     views: 0,    desc: "Four ceremony structures for solstice, equinox, new moon, and full moon. Includes scene layouts, actor scripts, and ritual timing guides.", created: "2026-02-10", scenes: ["Mountain Summit"], accessTier: "Member" },
+      { id: "intro-workshop",  icon: "🏕️",  name: "Intro to Mountain Temple",      type: "Service",      status: "Draft",   priceKNSHP: 0,    priceUSD: 49,   free: false, monthly: false, sales: 0,   revenue: 0,     views: 0,    desc: "A live 2-hour onboarding workshop for new community members. Facilitated by Elder Sage.",                                created: "2026-02-18", scenes: [],           accessTier: "Any" },
+    ];
+
+    const [offerings, setOfferings] = useState(OFFERINGS_INIT);
+    const [typeFilter, setTypeFilter]   = useState("All");
+    const [statusFilter, setStatusFilter] = useState("All");
+    const [view, setView]               = useState(null); // null | "new" | offering.id
+
+    const typeColor = id => (OFFERING_TYPES.find(t => t.id === id) || {}).color || colors.textDim;
+    const typeIcon  = id => (OFFERING_TYPES.find(t => t.id === id) || {}).icon  || "lucide:package";
+
+    const totalRevenue = offerings.reduce((s, o) => s + o.revenue, 0);
+    const totalSales   = offerings.reduce((s, o) => s + o.sales,   0);
+
+    // ── Offering Editor (new + edit) ───────────────────────────────
+    const OfferingEditor = ({ offering, isNew, onBack }) => {
+      const [step, setStep]               = useState(isNew ? 1 : 0); // 0 = full edit, 1-4 = wizard
+      const [name, setName]               = useState(offering?.name || "");
+      const [desc, setDesc]               = useState(offering?.desc || "");
+      const [type, setType]               = useState(offering?.type || "");
+      const [icon, setIcon]               = useState(offering?.icon || "📦");
+      const [free, setFree]               = useState(offering?.free || false);
+      const [monthly, setMonthly]         = useState(offering?.monthly || false);
+      const [priceKNSHP, setPriceKNSHP]   = useState(offering?.priceKNSHP ?? 500);
+      const [priceUSD, setPriceUSD]       = useState(offering?.priceUSD ?? null);
+      const [accessTier, setAccessTier]   = useState(offering?.accessTier || "Any");
+      const [status, setStatus]           = useState(offering?.status || "Draft");
+      const [limitQty, setLimitQty]       = useState(false);
+      const [qty, setQty]                 = useState(100);
+      const [saving, setSaving]           = useState(false);
+      const [confirmDelete, setConfDel]   = useState(false);
+
+      const ICON_OPTIONS = ["📦","🗺️","📜","🎫","🎭","📓","🔥","🏕️","🌀","⚔️","💎","🌙","☀️","🌊","🦋","🧿","🗝️","📿","🪄","🏔️"];
+
+      const handleSave = () => {
+        setSaving(true);
+        setTimeout(() => {
+          if (isNew) {
+            setOfferings(prev => [...prev, {
+              id: "new-" + Date.now(), icon, name, type, status,
+              priceKNSHP: free ? 0 : priceKNSHP, priceUSD, free, monthly,
+              sales: 0, revenue: 0, views: 0, desc,
+              created: new Date().toISOString().slice(0,10),
+              scenes: [], accessTier,
+            }]);
+          } else {
+            setOfferings(prev => prev.map(o => o.id === offering.id
+              ? { ...o, icon, name, type, status, priceKNSHP: free ? 0 : priceKNSHP, priceUSD, free, monthly, desc, accessTier }
+              : o
+            ));
+          }
+          setSaving(false);
+          onBack();
+        }, 700);
+      };
+
+      // ── Wizard for new offerings ────────────────────────────────
+      if (isNew && step === 1) return (
+        <div style={{ maxWidth: 640 }}>
+          <PageHeader title="New Offering" subtitle="Choose the type of offering" onBack={onBack} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+            {OFFERING_TYPES.map(t => {
+              const sel = type === t.id;
+              return (
+                <div key={t.id} onClick={() => setType(t.id)}
+                  style={{ padding: "20px 18px", background: sel ? t.color + "18" : colors.surface, border: `2px solid ${sel ? t.color : colors.border}`, borderRadius: 12, cursor: "pointer", transition: "all 0.15s" }}>
+                  <Icon name={t.icon} size={28} style={{ color: t.color, marginBottom: 10 }} />
+                  <div style={{ fontSize: 15, fontWeight: 700, color: sel ? t.color : colors.text, marginBottom: 4 }}>{t.id}</div>
+                  <div style={{ fontSize: 11, color: colors.textDim }}>
+                    {{ Digital: "Downloadable files, prompts, templates", Physical: "Shipped goods, print-on-demand", Service: "Sessions, commissions, coaching", Subscription: "Recurring access membership", Pack: "Bundled scene or asset collection" }[t.id]}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+            <Btn onClick={() => { if (type) setStep(2); }} style={{ opacity: type ? 1 : 0.4 }}>Continue →</Btn>
+            <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+          </div>
+        </div>
+      );
+
+      if (isNew && step === 2) return (
+        <div style={{ maxWidth: 640 }}>
+          <PageHeader title="New Offering" subtitle="Describe this offering" onBack={() => setStep(1)} />
+          <SectionDivider label="Identity" />
+          <Field label="Name">
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder={`e.g. ${type === "Pack" ? "Starter Scene Pack" : type === "Digital" ? "Shadow Work Worksheet" : type === "Service" ? "Custom Actor Commission" : type === "Subscription" ? "Inner Circle Pass" : "Mountain Temple Hoodie"}`} />
+          </Field>
+          <Field label="Description" hint="What does this include? Who is it for?">
+            <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={4}
+              placeholder="e.g. A complete scene environment including ambient audio, 4 art assets, and 2 starter quests..."
+              style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }} />
+          </Field>
+          <Field label="Icon">
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {ICON_OPTIONS.map(em => (
+                <button key={em} onClick={() => setIcon(em)}
+                  style={{ width: 36, height: 36, fontSize: 18, borderRadius: 8, border: `2px solid ${icon === em ? colors.accent : colors.border}`, background: icon === em ? colors.accent + "15" : colors.surface, cursor: "pointer" }}>
+                  {em}
+                </button>
+              ))}
+            </div>
+          </Field>
+          <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+            <Btn onClick={() => { if (name) setStep(3); }} style={{ opacity: name ? 1 : 0.4 }}>Continue →</Btn>
+            <Btn variant="secondary" onClick={() => setStep(1)}>Back</Btn>
+          </div>
+        </div>
+      );
+
+      if (isNew && step === 3) return (
+        <div style={{ maxWidth: 640 }}>
+          <PageHeader title="New Offering" subtitle="Set pricing" onBack={() => setStep(2)} />
+          <SectionDivider label="Pricing" />
+
+          <Field label="Free offering">
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Toggle value={free} onChange={setFree} />
+              <span style={{ fontSize: 12, color: colors.textDim }}>Members can access this at no cost</span>
+            </div>
+          </Field>
+
+          {!free && (
+            <>
+              <Field label="Price in KNSHP" hint="Kinship native token">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Input type="number" value={priceKNSHP} onChange={e => setPriceKNSHP(Number(e.target.value))} placeholder="500" style={{ width: 140 }} />
+                  <span style={{ fontSize: 12, color: colors.textDim }}>KNSHP</span>
+                </div>
+              </Field>
+              <Field label="USD price (optional)" hint="Set an additional USD price, or leave blank for token-only">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Input type="number" value={priceUSD || ""} onChange={e => setPriceUSD(e.target.value ? Number(e.target.value) : null)} placeholder="— optional —" style={{ width: 140 }} />
+                  <span style={{ fontSize: 12, color: colors.textDim }}>USD</span>
+                </div>
+              </Field>
+            </>
+          )}
+
+          {type === "Subscription" && (
+            <Field label="Recurring billing">
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Toggle value={monthly} onChange={setMonthly} />
+                <span style={{ fontSize: 12, color: colors.textDim }}>Charge monthly (vs. one-time purchase)</span>
+              </div>
+            </Field>
+          )}
+
+          <Field label="Quantity limit">
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: limitQty ? 10 : 0 }}>
+              <Toggle value={limitQty} onChange={setLimitQty} />
+              <span style={{ fontSize: 12, color: colors.textDim }}>Limit number of purchases (for exclusivity)</span>
+            </div>
+            {limitQty && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                <Input type="number" value={qty} onChange={e => setQty(Number(e.target.value))} style={{ width: 100 }} />
+                <span style={{ fontSize: 12, color: colors.textDim }}>available</span>
+              </div>
+            )}
+          </Field>
+
+          <Field label="Access tier" hint="Minimum membership tier required to purchase">
+            <select value={accessTier} onChange={e => setAccessTier(e.target.value)}
+              style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" }}>
+              <option value="Any">Any (public)</option>
+              <option value="Member">Member</option>
+              <option value="Contributor">Contributor</option>
+              <option value="Elder">Elder</option>
+            </select>
+          </Field>
+
+          <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+            <Btn onClick={() => setStep(4)}>Continue →</Btn>
+            <Btn variant="secondary" onClick={() => setStep(2)}>Back</Btn>
+          </div>
+        </div>
+      );
+
+      if (isNew && step === 4) return (
+        <div style={{ maxWidth: 640 }}>
+          <PageHeader title="New Offering" subtitle="Review and publish" onBack={() => setStep(3)} />
+
+          {/* Summary card */}
+          <div style={{ padding: "20px 22px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+              <span style={{ fontSize: 36 }}>{icon}</span>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>{name || "Untitled Offering"}</div>
+                <div style={{ display: "flex", gap: 6, marginTop: 4, alignItems: "center" }}>
+                  <span style={{ fontSize: 11, padding: "2px 7px", borderRadius: 10, background: typeColor(type) + "18", color: typeColor(type), fontWeight: 600 }}>{type}</span>
+                  <span style={{ fontSize: 12, color: colors.accent, fontWeight: 600 }}>
+                    {free ? "Free" : priceKNSHP ? `${priceKNSHP.toLocaleString()} KNSHP${monthly ? "/mo" : ""}` : "—"}
+                    {priceUSD && !free ? ` · $${priceUSD}` : ""}
+                  </span>
+                </div>
+              </div>
+            </div>
+            {desc && <div style={{ fontSize: 13, color: colors.textDim, lineHeight: 1.6 }}>{desc}</div>}
+          </div>
+
+          <Field label="Publish status">
+            <div style={{ display: "flex", gap: 8 }}>
+              {["Listed", "Draft"].map(s => (
+                <button key={s} onClick={() => setStatus(s)}
+                  style={{ padding: "8px 18px", borderRadius: 6, border: `1px solid ${status === s ? colors.accent : colors.border}`, background: status === s ? colors.accent + "18" : "transparent", color: status === s ? colors.accent : colors.textMuted, fontSize: 12, fontWeight: status === s ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}>
+                  {s === "Listed" ? "🚀 Publish Now" : "📝 Save as Draft"}
+                </button>
+              ))}
+            </div>
+          </Field>
+
+          <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+            <Btn onClick={handleSave}>{saving ? "Creating..." : "Create Offering"}</Btn>
+            <Btn variant="secondary" onClick={() => setStep(3)}>Back</Btn>
+          </div>
+        </div>
+      );
+
+      // ── Full editor (existing offering, step === 0) ─────────────
+      return (
+        <div style={{ maxWidth: 700 }}>
+          <PageHeader
+            title={offering.name}
+            subtitle={`${offering.type} · Created ${offering.created}`}
+            onBack={onBack}
+          >
+            <StatusPill status={status} />
+          </PageHeader>
+
+          {/* Stats strip */}
+          {!isNew && (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
+              {[
+                { label: "Sales",    value: String(offering.sales),               icon: "lucide:shopping-bag"  },
+                { label: "Revenue",  value: offering.revenue ? `${offering.revenue.toLocaleString()} KNSHP` : "—", icon: "lucide:coins" },
+                { label: "Views",    value: String(offering.views),               icon: "lucide:eye"           },
+                { label: "Conv %",   value: offering.views > 0 ? `${((offering.sales / offering.views) * 100).toFixed(1)}%` : "—", icon: "lucide:percent" },
+              ].map((s, i) => (
+                <div key={i} style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+                    <Icon name={s.icon} size={12} style={{ color: colors.accent }} />
+                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase" }}>{s.label}</span>
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: colors.text }}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <SectionDivider label="Identity" />
+          <Field label="Icon">
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {ICON_OPTIONS.map(em => (
+                <button key={em} onClick={() => setIcon(em)}
+                  style={{ width: 34, height: 34, fontSize: 16, borderRadius: 8, border: `2px solid ${icon === em ? colors.accent : colors.border}`, background: icon === em ? colors.accent + "15" : colors.surface, cursor: "pointer" }}>
+                  {em}
+                </button>
+              ))}
+            </div>
+          </Field>
+          <Field label="Name">
+            <Input value={name} onChange={e => setName(e.target.value)} />
+          </Field>
+          <Field label="Type">
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {OFFERING_TYPES.map(t => {
+                const sel = type === t.id;
+                return (
+                  <button key={t.id} onClick={() => setType(t.id)}
+                    style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${sel ? t.color : colors.border}`, background: sel ? t.color + "18" : "transparent", color: sel ? t.color : colors.textMuted, fontSize: 12, fontWeight: sel ? 600 : 400, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
+                    {t.id}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+          <Field label="Description">
+            <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={4}
+              style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, outline: "none", resize: "vertical", lineHeight: 1.6 }} />
+          </Field>
+
+          <SectionDivider label="Pricing" />
+          <Field label="Free offering">
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Toggle value={free} onChange={setFree} />
+              <span style={{ fontSize: 12, color: colors.textDim }}>Members can access at no cost</span>
+            </div>
+          </Field>
+          {!free && (
+            <>
+              <Field label="Price (KNSHP)">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Input type="number" value={priceKNSHP} onChange={e => setPriceKNSHP(Number(e.target.value))} style={{ width: 160 }} />
+                  <span style={{ fontSize: 12, color: colors.textDim }}>KNSHP{monthly ? "/mo" : ""}</span>
+                </div>
+              </Field>
+              <Field label="USD price (optional)">
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <Input type="number" value={priceUSD || ""} onChange={e => setPriceUSD(e.target.value ? Number(e.target.value) : null)} placeholder="—" style={{ width: 120 }} />
+                  <span style={{ fontSize: 12, color: colors.textDim }}>USD</span>
+                </div>
+              </Field>
+            </>
+          )}
+          {type === "Subscription" && (
+            <Field label="Recurring">
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Toggle value={monthly} onChange={setMonthly} />
+                <span style={{ fontSize: 12, color: colors.textDim }}>Monthly billing</span>
+              </div>
+            </Field>
+          )}
+
+          <SectionDivider label="Availability" />
+          <Field label="Status">
+            <div style={{ display: "flex", gap: 8 }}>
+              {["Listed", "Draft", "Archived"].map(s => (
+                <button key={s} onClick={() => setStatus(s)}
+                  style={{ padding: "7px 16px", borderRadius: 6, border: `1px solid ${status === s ? colors.accent : colors.border}`, background: status === s ? colors.accent + "18" : "transparent", color: status === s ? colors.accent : colors.textMuted, fontSize: 12, fontWeight: status === s ? 600 : 400, cursor: "pointer", fontFamily: "inherit" }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </Field>
+          <Field label="Access tier" hint="Minimum membership level required">
+            <select value={accessTier} onChange={e => setAccessTier(e.target.value)}
+              style={{ width: "100%", padding: "9px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textMuted, fontSize: 13, outline: "none" }}>
+              <option value="Any">Any (public)</option>
+              <option value="Member">Member</option>
+              <option value="Contributor">Contributor</option>
+              <option value="Elder">Elder</option>
+            </select>
+          </Field>
+
+          <div style={{ display: "flex", gap: 8, marginTop: 28 }}>
+            <Btn onClick={handleSave}>{saving ? "Saving..." : "Save Changes"}</Btn>
+            <Btn variant="secondary" onClick={onBack}>Cancel</Btn>
+            <Btn variant="secondary">Preview Listing</Btn>
+          </div>
+
+          <div style={{ marginTop: 32, padding: "20px 24px", background: colors.red + "08", border: `1px solid ${colors.red}22`, borderRadius: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: colors.red, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 10 }}>Danger Zone</div>
+            {!confirmDelete ? (
+              <>
+                <p style={{ fontSize: 13, color: colors.textMuted, marginBottom: 12 }}>
+                  Deleting this offering removes it from the marketplace. Members who have already purchased retain access.
+                </p>
+                <Btn danger onClick={() => setConfDel(true)}>Delete Offering</Btn>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: 13, color: colors.red, fontWeight: 500, marginBottom: 12 }}>
+                  Delete "{offering.name}"? Purchasers keep access.
+                </p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Btn danger onClick={() => { setOfferings(prev => prev.filter(o => o.id !== offering.id)); onBack(); }}>Confirm Delete</Btn>
+                  <Btn variant="secondary" onClick={() => setConfDel(false)}>Cancel</Btn>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    // ── Router ────────────────────────────────────────────────────
+    if (view === "new") return <OfferingEditor isNew onBack={() => setView(null)} />;
+    const editingOffering = offerings.find(o => o.id === view);
+    if (editingOffering) return <OfferingEditor offering={editingOffering} onBack={() => setView(null)} />;
+
+    // ── List view ─────────────────────────────────────────────────
+    const filtered = offerings.filter(o => {
+      const tOk = typeFilter === "All"   || o.type   === typeFilter;
+      const sOk = statusFilter === "All" || o.status === statusFilter;
+      return tOk && sOk;
+    });
+
+    return (
+      <div>
+        <PageHeader title="Offerings" subtitle="Digital goods, physical products, services, and subscriptions">
+          <Btn onClick={() => setView("new")}>+ New Offering</Btn>
+        </PageHeader>
+
+        {/* Stats strip */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
+          {[
+            { label: "Total Revenue", value: `${(totalRevenue / 1000).toFixed(1)}K KNSHP`, icon: "lucide:coins"        },
+            { label: "Total Sales",   value: String(totalSales),                            icon: "lucide:shopping-bag" },
+            { label: "Listed",        value: String(offerings.filter(o=>o.status==="Listed").length),  icon: "lucide:check-circle" },
+            { label: "Drafts",        value: String(offerings.filter(o=>o.status==="Draft").length),   icon: "lucide:file"         },
+          ].map((s, i) => (
+            <div key={i} style={{ padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+                <Icon name={s.icon} size={12} style={{ color: colors.accent }} />
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: colors.textDim, textTransform: "uppercase" }}>{s.label}</span>
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: colors.text }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Type filter */}
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+          {["All", ...OFFERING_TYPES.map(t => t.id)].map(t => (
+            <button key={t} onClick={() => setTypeFilter(t)}
+              style={{ padding: "5px 14px", borderRadius: 16, border: "none", background: typeFilter === t ? (OFFERING_TYPES.find(x => x.id === t)?.color || colors.accent) + (typeFilter === t ? "CC" : "22") : "rgba(255,255,255,0.07)", color: typeFilter === t ? "#fff" : colors.textMuted, fontSize: 12, fontWeight: typeFilter === t ? 600 : 400, cursor: "pointer", transition: "all 0.15s" }}>
+              {t}
+            </button>
+          ))}
+          <div style={{ width: 1, background: colors.border, margin: "0 4px", alignSelf: "stretch" }} />
+          {["All", "Listed", "Draft", "Archived"].map(s => (
+            <FilterPill key={s} label={s} active={statusFilter === s} onClick={() => setStatusFilter(s)} />
+          ))}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
+          {filtered.map(o => {
+            const [hov, setHov] = React.useState(false);
+            const tc = typeColor(o.type);
+            return (
+              <div key={o.id} onClick={() => setView(o.id)}
+                onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                {/* Emoji thumb */}
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: tc + "18", border: `1px solid ${tc}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
+                  {o.icon}
+                </div>
+                {/* Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.name}</span>
+                    <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 10, background: tc + "18", color: tc, fontWeight: 600, flexShrink: 0 }}>{o.type}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: colors.textDim, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.desc}</div>
+                </div>
+                {/* Metrics */}
+                <div style={{ display: "flex", alignItems: "center", gap: 18, flexShrink: 0, fontSize: 12 }}>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontWeight: 700, color: o.free ? colors.green : colors.accent, fontSize: 13 }}>
+                      {o.free ? "Free" : `${o.priceKNSHP.toLocaleString()} KNSHP${o.monthly ? "/mo" : ""}`}
+                      {o.priceUSD && !o.free ? <span style={{ color: colors.textDim, fontWeight: 400 }}> · ${o.priceUSD}</span> : null}
+                    </div>
+                    <div style={{ color: colors.textDim, marginTop: 1 }}>{o.sales} sold</div>
+                  </div>
+                  <StatusPill status={o.status} />
+                  <Icon name="lucide:chevron-right" size={16} style={{ color: colors.textDim }} />
+                </div>
+              </div>
+            );
+          })}
+
+          {filtered.length === 0 && (
+            <div style={{ textAlign: "center", padding: "40px 20px", color: colors.textDim }}>
+              <Icon name="lucide:inbox" size={32} style={{ color: colors.border, marginBottom: 12 }} />
+              <div style={{ fontSize: 14, color: colors.textMuted, marginBottom: 6 }}>No offerings match this filter</div>
+            </div>
+          )}
+
+          {/* Add tile */}
+          <div onClick={() => setView("new")}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "16px", border: `2px dashed ${colors.border}`, borderRadius: 10, cursor: "pointer", color: colors.textDim, fontSize: 13, transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = colors.accent; e.currentTarget.style.color = colors.accent; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = colors.border; e.currentTarget.style.color = colors.textDim; }}>
+            <Icon name="lucide:plus" size={14} />
+            <span>New Offering</span>
+          </div>
         </div>
       </div>
     );
