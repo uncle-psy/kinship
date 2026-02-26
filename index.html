@@ -901,6 +901,371 @@ const MeetingFacilitatorDetail = ({ onBack }) => {
   );
 };
 
+
+// ─── Pattern Tracker detail ───────────────────────────────────────────────────
+
+const PatternTrackerDetail = ({ onBack }) => {
+  const tool = PLATFORM_TOOLS_DATA.find(t => t.id === "pattern-tracker");
+  const [window_, setWindow] = useState("60d");
+  const [patterns, setPatterns] = useState({ comms: true, hearts: true, engagement: false, themes: true });
+  const [sensitivity, setSensitivity] = useState("medium");
+  const [surfaceTo, setSurfaceTo] = useState("facilitator");
+  const [memberVisible, setMemberVisible] = useState(false);
+  const [freq, setFreq] = useState("after-session");
+  const [saveState, setSaveState] = useState(null);
+
+  const patternTypes = [
+    { key: "comms", label: "Communication Style Shifts", hint: "Changes in a member's typical expression patterns — brevity, directness, tone" },
+    { key: "hearts", label: "HEARTS Facet Drift", hint: "Movement in how a member's engagement maps to each HEARTS dimension over time" },
+    { key: "engagement", label: "Engagement Volume", hint: "Rises and drops in participation rate across sessions" },
+    { key: "themes", label: "Recurring Themes", hint: "Topics or emotional territory that appear repeatedly across sessions" },
+  ];
+
+  const sensLabels = {
+    low:    { label: "Low", desc: "Only flags significant, sustained changes (3+ sessions)" },
+    medium: { label: "Medium", desc: "Balanced — catches meaningful drift without over-reporting" },
+    high:   { label: "High", desc: "Flags early signals — more alerts, more detail" },
+  };
+
+  const surfaceOpts = [
+    { val: "member",     label: "Member Profile Dashboard", desc: "Each member sees their own pattern data" },
+    { val: "facilitator", label: "Facilitator Digest", desc: "Weekly summary sent to cycle facilitators" },
+    { val: "actor",      label: "Actor Context", desc: "Insights injected silently into actor system prompts" },
+    { val: "all",        label: "All of the Above", desc: "Broadest coverage" },
+  ];
+
+  const freqOpts = [
+    { val: "after-session", label: "After Each Session", desc: "Analysis runs at end of every session" },
+    { val: "daily",         label: "Daily",              desc: "Nightly batch across all sessions from the day" },
+    { val: "weekly",        label: "Weekly",             desc: "Sunday digest — lower noise, broader patterns only" },
+  ];
+
+  return (
+    <div style={{ maxWidth: 680 }}>
+      <PageHeader title={tool.name} iconEl={<RenderIcon icon={tool.icon} size={24} />} subtitle={tool.desc} onBack={onBack}>
+        <StatusPill status={tool.status} />
+      </PageHeader>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 24 }}>
+        {[
+          { label: "Category",     value: tool.category },
+          { label: "Version",      value: tool.version },
+          { label: "Cycles Using", value: `${tool.cyclesUsing} active` },
+          { label: "Can Add To",   value: tool.canAddTo.join(", ") },
+          { label: "Added By",     value: tool.addedBy },
+          { label: "Added On",     value: tool.addedOn },
+        ].map((f, i) => (
+          <div key={i} style={{ padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+            <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>{f.label}</div>
+            <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>{f.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>HEARTS Alignment</div>
+        <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Facets this tool actively tracks and surfaces insights about</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {["H","E","A","R","T","Si","So"].map(f => {
+            const active = tool.heartsAligned.includes(f);
+            return (
+              <span key={f} style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, background: active ? colors.accent + "20" : "rgba(255,255,255,0.04)", border: `1px solid ${active ? colors.accent + "60" : colors.border}`, color: active ? colors.accent : colors.textDim }}>
+                {f}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4 }}>How it Works</div>
+        <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.7, marginBottom: 16 }}>
+          Pattern Tracker runs after sessions end, scanning interaction data for recurring structures in how members participate, communicate, and engage. It does not monitor in real-time — it looks across sessions over time, building a longitudinal picture of each member's patterns. Insights are surfaced to the designated audience on the configured schedule.
+        </div>
+
+        <div style={{ fontSize: 11, fontWeight: 600, color: colors.textDim, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.4 }}>Observation Window</div>
+        <div style={{ display: "flex", gap: 8, marginBottom: 0 }}>
+          {[["30d","30 days"],["60d","60 days"],["90d","90 days"],["all","All time"]].map(([val, label]) => (
+            <div key={val} onClick={() => setWindow_(val)}
+              style={{ flex: 1, padding: "10px 8px", textAlign: "center", background: window_ === val ? colors.accent + "14" : colors.bg, border: `1px solid ${window_ === val ? colors.accent + "60" : colors.border}`, borderRadius: 8, cursor: "pointer" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: window_ === val ? colors.accent : colors.textMuted }}>{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Pattern Types</div>
+        {patternTypes.map(pt => (
+          <div key={pt.key} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 12 }}>
+            <div onClick={() => setPatterns(p => ({ ...p, [pt.key]: !p[pt.key] }))}
+              style={{ width: 36, height: 20, borderRadius: 10, background: patterns[pt.key] ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s", flexShrink: 0, marginTop: 2 }}>
+              <div style={{ position: "absolute", top: 3, left: patterns[pt.key] ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>{pt.label}</div>
+              <div style={{ fontSize: 11, color: colors.textDim }}>{pt.hint}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Sensitivity</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {Object.entries(sensLabels).map(([val, { label, desc }]) => (
+            <div key={val} onClick={() => setSensitivity(val)}
+              style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: sensitivity === val ? colors.accent + "10" : colors.bg, border: `1px solid ${sensitivity === val ? colors.accent + "50" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+              <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${sensitivity === val ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                {sensitivity === val && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: sensitivity === val ? colors.text : colors.textMuted, fontWeight: 500 }}>{label}</div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Surface Insights To</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+          {surfaceOpts.map(({ val, label, desc }) => (
+            <div key={val} onClick={() => setSurfaceTo(val)}
+              style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: surfaceTo === val ? colors.accent + "10" : colors.bg, border: `1px solid ${surfaceTo === val ? colors.accent + "50" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+              <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${surfaceTo === val ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                {surfaceTo === val && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: surfaceTo === val ? colors.text : colors.textMuted, fontWeight: 500 }}>{label}</div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div onClick={() => setMemberVisible(!memberVisible)}
+            style={{ width: 36, height: 20, borderRadius: 10, background: memberVisible ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s" }}>
+            <div style={{ position: "absolute", top: 3, left: memberVisible ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>Members can view their own pattern data</div>
+            <div style={{ fontSize: 11, color: colors.textDim }}>If off, pattern insights are facilitator-only</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Analysis Frequency</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {freqOpts.map(({ val, label, desc }) => (
+            <div key={val} onClick={() => setFreq(val)}
+              style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: freq === val ? colors.accent + "10" : colors.bg, border: `1px solid ${freq === val ? colors.accent + "50" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+              <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${freq === val ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                {freq === val && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: freq === val ? colors.text : colors.textMuted, fontWeight: 500 }}>{label}</div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4 }}>Platform Availability</div>
+        <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 14 }}>Pattern Tracker is available for cycle creators to enable. Each cycle's facilitator can fine-tune sensitivity and visibility within their own context.</div>
+        <div style={{ padding: "10px 14px", background: colors.blue + "08", border: `1px solid ${colors.blue}33`, borderRadius: 8 }}>
+          <div style={{ fontSize: 12, color: colors.blue }}>ℹ️ Currently active in <strong>5 cycles</strong>. Member-visible patterns are off by default — facilitators must opt in per cycle.</div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+        <Btn onClick={() => setSaveState("saved")}>{saveState === "saved" ? "✓ Saved" : "Save Settings"}</Btn>
+        <Btn variant="secondary">View Insights Dashboard</Btn>
+      </div>
+    </div>
+  );
+};
+
+// ─── Ritual Timer detail ──────────────────────────────────────────────────────
+
+const RitualTimerDetail = ({ onBack }) => {
+  const tool = PLATFORM_TOOLS_DATA.find(t => t.id === "ritual-timer");
+  const [cueType, setCueType] = useState("chat");
+  const [timingMode, setTimingMode] = useState("strict");
+  const [facilitatorControl, setFacilitatorControl] = useState(true);
+  const [memberVisible, setMemberVisible] = useState(true);
+  const [preAlert, setPreAlert] = useState("30s");
+  const [saveState, setSaveState] = useState(null);
+
+  const defaultStructures = [
+    { id: "opening-round", label: "Opening Round", desc: "Each member takes 60–90 seconds to share their current state before the main session begins", icon: "🌅", duration: "8–12 min" },
+    { id: "closing-circle", label: "Closing Circle", desc: "Structured closing — one word, one insight, or one appreciation each — before the session ends", icon: "🌙", duration: "5–10 min" },
+    { id: "silence", label: "Silence Period", desc: "A timed pause for reflection, meditation, or journaling", icon: "🤫", duration: "3–15 min" },
+    { id: "popcorn", label: "Popcorn Round", desc: "Anyone speaks when moved to — no order, no pressure — with a shared timer visible to all", icon: "🍿", duration: "Custom" },
+  ];
+
+  const cueOpts = [
+    { val: "chat",   label: "Chat Message", desc: "Actor posts a transition message in the session channel" },
+    { val: "sound",  label: "Sound Cue", desc: "A soft chime plays for all participants (requires audio)" },
+    { val: "sidebar", label: "Sidebar Notification", desc: "A quiet sidebar update visible without interrupting flow" },
+    { val: "actor",  label: "Actor Announcement", desc: "The cycle's primary actor formally announces the transition" },
+  ];
+
+  return (
+    <div style={{ maxWidth: 680 }}>
+      <PageHeader title={tool.name} iconEl={<RenderIcon icon={tool.icon} size={24} />} subtitle={tool.desc} onBack={onBack}>
+        <StatusPill status={tool.status} />
+      </PageHeader>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 24 }}>
+        {[
+          { label: "Category",     value: tool.category },
+          { label: "Version",      value: tool.version },
+          { label: "Cycles Using", value: `${tool.cyclesUsing} active` },
+          { label: "Can Add To",   value: tool.canAddTo.join(", ") },
+          { label: "Added By",     value: tool.addedBy },
+          { label: "Added On",     value: tool.addedOn },
+        ].map((f, i) => (
+          <div key={i} style={{ padding: "10px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+            <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>{f.label}</div>
+            <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>{f.value}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>HEARTS Alignment</div>
+        <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Facets this tool supports through pacing, structure, and intentional transitions</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {["H","E","A","R","T","Si","So"].map(f => {
+            const active = tool.heartsAligned.includes(f);
+            return (
+              <span key={f} style={{ width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, background: active ? colors.accent + "20" : "rgba(255,255,255,0.04)", border: `1px solid ${active ? colors.accent + "60" : colors.border}`, color: active ? colors.accent : colors.textDim }}>
+                {f}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4 }}>How it Works</div>
+        <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.7 }}>
+          Ritual Timer gives creators a library of timed ritual structures they can embed into cycles and scenes. When a ritual begins, the timer runs in the background — cuing transitions, alerting participants, and keeping the facilitator informed without requiring manual timekeeping. Platform defaults set here can be overridden by creators within their own cycle settings.
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4 }}>Default Ritual Library</div>
+        <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 16 }}>These structures are available to all cycles using this tool. Creators can configure timing within each structure per-cycle.</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {defaultStructures.map(s => (
+            <div key={s.id} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 16px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 9 }}>
+              <div style={{ fontSize: 28, flexShrink: 0 }}>{s.icon}</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{s.label}</div>
+                  <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: "rgba(255,255,255,0.06)", color: colors.textDim, border: `1px solid ${colors.border}` }}>{s.duration}</span>
+                </div>
+                <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.6 }}>{s.desc}</div>
+              </div>
+              <StatusPill status="Active" />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Transition Cues</div>
+        <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Default method used to signal the end of a timer segment</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {cueOpts.map(({ val, label, desc }) => (
+            <div key={val} onClick={() => setCueType(val)}
+              style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: cueType === val ? colors.accent + "10" : colors.bg, border: `1px solid ${cueType === val ? colors.accent + "50" : colors.border}`, borderRadius: 7, cursor: "pointer" }}>
+              <div style={{ width: 14, height: 14, borderRadius: 7, border: `2px solid ${cueType === val ? colors.accent : colors.textDim}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                {cueType === val && <div style={{ width: 6, height: 6, borderRadius: 3, background: colors.accent }} />}
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: cueType === val ? colors.text : colors.textMuted, fontWeight: 500 }}>{label}</div>
+                <div style={{ fontSize: 11, color: colors.textDim, marginTop: 2 }}>{desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Timing & Control</div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>Timing Mode</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[["strict","Strict","Timer runs unpaused — facilitator can only extend after it completes"],["flexible","Flexible","Facilitator can pause, extend, or skip at any point"]].map(([val, label, hint]) => (
+              <div key={val} onClick={() => setTimingMode(val)}
+                style={{ flex: 1, padding: "12px 14px", background: timingMode === val ? colors.accent + "12" : colors.bg, border: `1px solid ${timingMode === val ? colors.accent + "60" : colors.border}`, borderRadius: 8, cursor: "pointer" }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: timingMode === val ? colors.accent : colors.textMuted, marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: 11, color: colors.textDim }}>{hint}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.4 }}>Pre-Transition Alert</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[["none","None"],["30s","30 sec"],["60s","60 sec"]].map(([val, label]) => (
+              <div key={val} onClick={() => setPreAlert(val)}
+                style={{ flex: 1, padding: "10px 8px", textAlign: "center", background: preAlert === val ? colors.accent + "14" : colors.bg, border: `1px solid ${preAlert === val ? colors.accent + "60" : colors.border}`, borderRadius: 8, cursor: "pointer" }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: preAlert === val ? colors.accent : colors.textMuted }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div onClick={() => setFacilitatorControl(!facilitatorControl)}
+              style={{ width: 36, height: 20, borderRadius: 10, background: facilitatorControl ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s" }}>
+              <div style={{ position: "absolute", top: 3, left: facilitatorControl ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>Facilitator can adjust timer in real-time</div>
+              <div style={{ fontSize: 11, color: colors.textDim }}>If off, timers run exactly as configured — no in-session changes</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div onClick={() => setMemberVisible(!memberVisible)}
+              style={{ width: 36, height: 20, borderRadius: 10, background: memberVisible ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s" }}>
+              <div style={{ position: "absolute", top: 3, left: memberVisible ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>Countdown visible to all participants</div>
+              <div style={{ fontSize: 11, color: colors.textDim }}>If off, only the facilitator sees the running timer</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 20, marginBottom: 20 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4 }}>Platform Availability</div>
+        <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 14 }}>Ritual Timer is the most-used tool on the platform. Creators can override any of these defaults within their own cycle or scene settings.</div>
+        <div style={{ padding: "10px 14px", background: colors.blue + "08", border: `1px solid ${colors.blue}33`, borderRadius: 8 }}>
+          <div style={{ fontSize: 12, color: colors.blue }}>ℹ️ Currently active in <strong>7 cycles</strong>. The Opening Round and Closing Circle structures are used in every active cycle.</div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+        <Btn onClick={() => setSaveState("saved")}>{saveState === "saved" ? "✓ Saved" : "Save Settings"}</Btn>
+        <Btn variant="secondary">Manage Ritual Library</Btn>
+      </div>
+    </div>
+  );
+};
+
 // ─── Add Connector flow ───────────────────────────────────────────────────────
 
 const AVAILABLE_CONNECTORS = [
@@ -1315,6 +1680,8 @@ const PlatformToolsContent = () => {
   if (view === "add-connector") return <AddConnectorFlow onBack={() => setView("list")} />;
   if (view === "add-tool") return <AddToolFlow onBack={() => setView("list")} />;
   if (selectedPlatformTool === "meeting-facilitator") return <MeetingFacilitatorDetail onBack={() => { setSelectedPlatformTool(null); setView("list"); }} />;
+  if (selectedPlatformTool === "pattern-tracker") return <PatternTrackerDetail onBack={() => { setSelectedPlatformTool(null); setView("list"); }} />;
+  if (selectedPlatformTool === "ritual-timer") return <RitualTimerDetail onBack={() => { setSelectedPlatformTool(null); setView("list"); }} />;
   if (selectedTool === "bluesky") return <BlueSkyDetail onBack={() => setSelectedTool(null)} />;
   if (selectedTool === "telegram") return <TelegramDetail onBack={() => setSelectedTool(null)} />;
   if (selectedTool === "google") return <GoogleDetail onBack={() => setSelectedTool(null)} />;
