@@ -8535,6 +8535,11 @@ const CycleContent = ({ page, context }) => {
     const blogUrl     = `https://kinship.today/${cycleSlug}`;
 
     const [mediaTab,      setMediaTab]      = useState("publishing");
+    const [assetsTab,     setAssetsTab]     = useState("uploaded");
+    const [genPrompt,     setGenPrompt]     = useState("");
+    const [genType,       setGenType]       = useState("image");
+    const [genResults,    setGenResults]    = useState([]);
+    const [generating,    setGenerating]    = useState(false);
 
     // Publishing state
     const [blogTab,       setBlogTab]       = useState("posts");
@@ -8603,7 +8608,7 @@ const CycleContent = ({ page, context }) => {
     const chip = (label, active, onClick) => (
       <div onClick={onClick} style={{
         padding:"4px 10px", borderRadius:20, fontSize:11, cursor:"pointer", userSelect:"none",
-        background: active ? colors.accent + "22" : colors.surfaceHigh,
+        background: active ? colors.accent + "22" : colors.surfaceActive,
         color:       active ? colors.accent         : colors.textMuted,
         border:`1px solid ${active ? colors.accent + "55" : colors.border}`,
       }}>{label}</div>
@@ -8641,7 +8646,7 @@ const CycleContent = ({ page, context }) => {
           {["posts","settings","editor"].map(t => (
             <button key={t} onClick={() => setBlogTab(t)} style={{
               padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer",
-              background: blogTab===t ? colors.accent+"22" : colors.surfaceHigh,
+              background: blogTab===t ? colors.accent+"22" : colors.surfaceActive,
               color:       blogTab===t ? colors.accent        : colors.textMuted,
               border:`1px solid ${blogTab===t ? colors.accent+"55" : colors.border}`,
               fontWeight:  blogTab===t ? 600 : 400,
@@ -8669,7 +8674,7 @@ const CycleContent = ({ page, context }) => {
             </div>
 
             {showNewPost && (
-              <div style={{ background:colors.surfaceHigh, border:`1px solid ${colors.border}`, borderRadius:8, padding:16, marginBottom:16 }}>
+              <div style={{ background:colors.surfaceActive, border:`1px solid ${colors.border}`, borderRadius:8, padding:16, marginBottom:16 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:colors.text, marginBottom:10 }}>New Post</div>
                 <input
                   value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)}
@@ -8684,14 +8689,14 @@ const CycleContent = ({ page, context }) => {
                 />
                 <div style={{ display:"flex", gap:8, marginTop:8 }}>
                   <button onClick={handlePublishPost} style={{ padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer", background:colors.accent, color:"#fff", border:"none" }}>Publish Now</button>
-                  <button onClick={() => setShowNewPost(false)} style={{ padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer", background:colors.surfaceHigh, color:colors.textMuted, border:`1px solid ${colors.border}` }}>Cancel</button>
+                  <button onClick={() => setShowNewPost(false)} style={{ padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer", background:colors.surfaceActive, color:colors.textMuted, border:`1px solid ${colors.border}` }}>Cancel</button>
                 </div>
               </div>
             )}
 
             <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
               {blogPosts.map(post => (
-                <div key={post.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", background:colors.surfaceHigh, borderRadius:8, border:`1px solid ${colors.border}` }}>
+                <div key={post.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", background:colors.surfaceActive, borderRadius:8, border:`1px solid ${colors.border}` }}>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:13, color:colors.text, fontWeight:500 }}>{post.title}</div>
                     <div style={{ fontSize:11, color:colors.textMuted, marginTop:2 }}>{post.date} · {post.auto ? "Auto-generated" : "Manual"}</div>
@@ -8714,7 +8719,7 @@ const CycleContent = ({ page, context }) => {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
 
             {/* Auto-publish */}
-            <div style={{ background:colors.surfaceHigh, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
+            <div style={{ background:colors.surfaceActive, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
               <div style={{ fontSize:13, fontWeight:600, color:colors.text, marginBottom:12 }}>Auto-Publish</div>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
                 <span style={{ fontSize:12, color:colors.textMuted }}>Auto-publish enabled</span>
@@ -8735,7 +8740,7 @@ const CycleContent = ({ page, context }) => {
             </div>
 
             {/* Tone */}
-            <div style={{ background:colors.surfaceHigh, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
+            <div style={{ background:colors.surfaceActive, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
               <div style={{ fontSize:13, fontWeight:600, color:colors.text, marginBottom:12 }}>Tone</div>
               <div style={{ fontSize:12, color:colors.textMuted, marginBottom:8 }}>Writing tone for auto-generated posts</div>
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -8744,7 +8749,7 @@ const CycleContent = ({ page, context }) => {
             </div>
 
             {/* Focus */}
-            <div style={{ background:colors.surfaceHigh, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
+            <div style={{ background:colors.surfaceActive, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
               <div style={{ fontSize:13, fontWeight:600, color:colors.text, marginBottom:12 }}>Primary Focus</div>
               <div style={{ fontSize:12, color:colors.textMuted, marginBottom:8 }}>What the post leads with</div>
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -8753,7 +8758,7 @@ const CycleContent = ({ page, context }) => {
             </div>
 
             {/* Content */}
-            <div style={{ background:colors.surfaceHigh, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
+            <div style={{ background:colors.surfaceActive, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
               <div style={{ fontSize:13, fontWeight:600, color:colors.text, marginBottom:12 }}>Content Sources</div>
               <div style={{ fontSize:12, color:colors.textMuted, marginBottom:8 }}>What gets pulled into each post</div>
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -8766,7 +8771,7 @@ const CycleContent = ({ page, context }) => {
         {/* ── Vibe Editor tab ── */}
         {blogTab === "editor" && (
           <div>
-            <div style={{ background:colors.surfaceHigh, borderRadius:8, padding:16, border:`1px solid ${colors.border}`, marginBottom:16 }}>
+            <div style={{ background:colors.surfaceActive, borderRadius:8, padding:16, border:`1px solid ${colors.border}`, marginBottom:16 }}>
               <div style={{ fontSize:13, fontWeight:600, color:colors.text, marginBottom:4 }}>Vibe Coding — Blog Editor</div>
               <div style={{ fontSize:12, color:colors.textMuted, marginBottom:12 }}>
                 Describe what you want to change about the blog — tone, layout, content sections, post structure. Changes apply to future auto-generated posts.
@@ -8785,7 +8790,7 @@ const CycleContent = ({ page, context }) => {
               <div>
                 <div style={{ fontSize:12, color:colors.textMuted, marginBottom:8 }}>Recent edits</div>
                 {vibeHistory.map((h,i) => (
-                  <div key={i} style={{ padding:"8px 12px", background:colors.surfaceHigh, borderRadius:6, border:`1px solid ${colors.border}`, marginBottom:6 }}>
+                  <div key={i} style={{ padding:"8px 12px", background:colors.surfaceActive, borderRadius:6, border:`1px solid ${colors.border}`, marginBottom:6 }}>
                     <div style={{ fontSize:12, color:colors.text }}>{h.prompt}</div>
                     <div style={{ fontSize:10, color:colors.textMuted, marginTop:3 }}>{h.ts}</div>
                   </div>
@@ -8806,7 +8811,7 @@ const CycleContent = ({ page, context }) => {
           {["accounts","audiences"].map(t => (
             <button key={t} onClick={() => setSocialTab(t)} style={{
               padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer",
-              background: socialTab===t ? colors.accent+"22" : colors.surfaceHigh,
+              background: socialTab===t ? colors.accent+"22" : colors.surfaceActive,
               color:       socialTab===t ? colors.accent        : colors.textMuted,
               border:`1px solid ${socialTab===t ? colors.accent+"55" : colors.border}`,
               fontWeight:  socialTab===t ? 600 : 400,
@@ -8820,7 +8825,7 @@ const CycleContent = ({ page, context }) => {
         {socialTab === "accounts" && (
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
             {socialAccounts.map(acct => (
-              <div key={acct.id} style={{ background:colors.surfaceHigh, borderRadius:8, border:`1px solid ${colors.border}`, overflow:"hidden" }}>
+              <div key={acct.id} style={{ background:colors.surfaceActive, borderRadius:8, border:`1px solid ${colors.border}`, overflow:"hidden" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px" }}>
                   <div style={{ fontSize:20 }}>
                     { acct.platform==="Instagram"  ? "📸"
@@ -8904,7 +8909,7 @@ const CycleContent = ({ page, context }) => {
               Configure how the system responds to different audience types across all connected channels. Kinship identifies Members, Guests, Visitors, and Quest Participants automatically.
             </div>
             {audienceTiers.map(tier => (
-              <div key={tier.id} style={{ background:colors.surfaceHigh, borderRadius:8, border:`1px solid ${colors.border}`, padding:"14px 16px" }}>
+              <div key={tier.id} style={{ background:colors.surfaceActive, borderRadius:8, border:`1px solid ${colors.border}`, padding:"14px 16px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
                   <span style={{ fontSize:18 }}>{tier.icon}</span>
                   <div>
@@ -8941,10 +8946,263 @@ const CycleContent = ({ page, context }) => {
       </div>
     );
 
+    // ── Media Assets Panel ───────────────────────────────────────────────────
+    const PROV_BLOCK = ({ wallet, date, geo, chain, txHash }) => (
+      <div style={{ marginTop:8, padding:"8px 10px", background:"rgba(235,128,0,0.06)", borderRadius:6, border:"1px solid rgba(235,128,0,0.2)" }}>
+        <div style={{ fontSize:10, fontWeight:700, color:colors.accent, letterSpacing:1.1, textTransform:"uppercase", marginBottom:4 }}>On-Chain Provenance</div>
+        <div style={{ display:"grid", gridTemplateColumns:"auto 1fr", gap:"2px 10px", fontSize:11 }}>
+          <span style={{ color:colors.textDim }}>Wallet</span>   <span style={{ color:colors.text, fontFamily:"monospace" }}>{wallet}</span>
+          <span style={{ color:colors.textDim }}>Timestamp</span><span style={{ color:colors.text }}>{date}</span>
+          <span style={{ color:colors.textDim }}>Location</span> <span style={{ color:colors.text }}>{geo}</span>
+          <span style={{ color:colors.textDim }}>Network</span>  <span style={{ color:colors.text }}>{chain}</span>
+          <span style={{ color:colors.textDim }}>Tx</span>       <span style={{ color:colors.accent, fontFamily:"monospace", fontSize:10 }}>{txHash}</span>
+        </div>
+      </div>
+    );
+
+    const UPLOADED_ITEMS = [
+      { id:"u1", name:"Opening Ceremony.mp4",       type:"video",    size:"128 MB", thumb:"🎬", uploader:"moto",   date:"Feb 24  14:32", geo:"San Francisco, CA", wallet:"0x3f2A...8b1c", chain:"Polygon", txHash:"0xab3f...9d12" },
+      { id:"u2", name:"Temple Bells Loop.wav",      type:"audio",    size:"8.2 MB", thumb:"🎵", uploader:"sara_k", date:"Feb 23  09:15", geo:"Portland, OR",      wallet:"0x7e1D...4a2f", chain:"Polygon", txHash:"0xcd4e...2e77" },
+      { id:"u3", name:"Mountain Dawn Photo.jpg",    type:"image",    size:"4.1 MB", thumb:"🏔️", uploader:"moto",   date:"Feb 22  07:44", geo:"Marin County, CA",  wallet:"0x3f2A...8b1c", chain:"Polygon", txHash:"0xef5a...b831" },
+      { id:"u4", name:"Cycle Guidebook Draft.pdf",  type:"document", size:"2.3 MB", thumb:"📄", uploader:"asha_j", date:"Feb 21  16:20", geo:"Brooklyn, NY",       wallet:"0x9c3E...7d55", chain:"Polygon", txHash:"0x12ab...cc40" },
+      { id:"u5", name:"Ambient Wind Field.mp3",     type:"audio",    size:"6.8 MB", thumb:"🌬️", uploader:"marcus", date:"Feb 20  11:05", geo:"Denver, CO",         wallet:"0x2b8F...1e93", chain:"Polygon", txHash:"0x34cd...fa89" },
+      { id:"u6", name:"Group Ceremony Still.png",   type:"image",    size:"5.7 MB", thumb:"🧎", uploader:"sara_k", date:"Feb 19  18:30", geo:"Portland, OR",       wallet:"0x7e1D...4a2f", chain:"Polygon", txHash:"0x56ef...3b11" },
+    ];
+
+    const CAPTURED_ITEMS = [
+      { id:"c1", name:"Arena Voice Note — Marcus", type:"audio", size:"1.1 MB", thumb:"🎙️", capturedBy:"marcus", date:"Feb 24  20:15", geo:"Denver, CO",        wallet:"0x2b8F...1e93", chain:"Polygon", txHash:"0x78ab...dc55" },
+      { id:"c2", name:"Quest Completion — Asha",   type:"video", size:"22 MB",  thumb:"🎥", capturedBy:"asha_j", date:"Feb 23  15:40", geo:"Brooklyn, NY",      wallet:"0x9c3E...7d55", chain:"Polygon", txHash:"0x9bcd...e821" },
+      { id:"c3", name:"Temple Entry Selfie",        type:"image", size:"3.2 MB", thumb:"🤳", capturedBy:"moto",   date:"Feb 22  08:10", geo:"San Francisco, CA", wallet:"0x3f2A...8b1c", chain:"Polygon", txHash:"0xabde...4499" },
+    ];
+
+    const ARTIFACT_ITEMS = [
+      { id:"ar1", activity:"Inner Mirror Quest — Stage 3", type:"quest",     participants:["moto","asha_j"], date:"Feb 24", notes:"Completed the reflection journal. Breakthrough moment around identity and belonging. Strong emotional resonance.", tags:["reflection","identity","breakthrough"] },
+      { id:"ar2", activity:"Arena Challenge — Round 2",    type:"challenge", participants:["marcus","sara_k","moto"], date:"Feb 22", notes:"High-energy debate challenge. All three participants completed. Marcus held the strongest position.", tags:["debate","challenge","group"] },
+      { id:"ar3", activity:"Closing Rite — Cohort 1",      type:"ceremony",  participants:["all"],          date:"Feb 20", notes:"Full cohort ceremony. Significant collective milestone. Seven members completed first full cycle arc.", tags:["ceremony","milestone","cohort"] },
+      { id:"ar4", activity:"Forest Path Scene Encounter",  type:"scene",     participants:["sara_k"],       date:"Feb 19", notes:"Sara encountered the Story Weaver actor. Unexpected depth of conversation about transformation.", tags:["story","actor","deep"] },
+    ];
+
+    const TYPE_ICON = { video:"🎬", audio:"🎵", image:"🖼️", document:"📄" };
+    const TYPE_COLOR = { video:"#FF6FAE", audio:"#A8E063", image:"#6FC3FF", document:"#FFB347" };
+    const ACTIVITY_ICON = { quest:"🧭", challenge:"⚡", ceremony:"🕯️", scene:"🎭" };
+
+    const handleGenerate = () => {
+      if (!genPrompt.trim()) return;
+      setGenerating(true);
+      setTimeout(() => {
+        const result = {
+          id: `g${Date.now()}`,
+          prompt: genPrompt,
+          type: genType,
+          thumb: genType==="image" ? "🖼️" : genType==="audio" ? "🎵" : genType==="video" ? "🎬" : "✨",
+          date: new Date().toLocaleString(),
+          status: "Ready",
+          model: genType==="image" ? "DALL·E 3" : genType==="audio" ? "AudioCraft" : genType==="video" ? "Sora" : "GPT-4o",
+        };
+        setGenResults(prev => [result, ...prev]);
+        setGenPrompt("");
+        setGenerating(false);
+      }, 1800);
+    };
+
+    const MediaAssetsPanel = () => (
+      <div style={{ padding:"24px" }}>
+
+        {/* Sub-tabs */}
+        <div style={{ display:"flex", gap:8, marginBottom:24, flexWrap:"wrap" }}>
+          {[
+            { id:"uploaded",  label:"Uploaded",  icon:"📤" },
+            { id:"captured",  label:"Captured",  icon:"📡" },
+            { id:"generated", label:"Generated", icon:"✨" },
+            { id:"artifacts", label:"Artifacts", icon:"🏺" },
+          ].map(t => (
+            <button key={t.id} onClick={() => setAssetsTab(t.id)} style={{
+              padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer",
+              background: assetsTab===t.id ? colors.accent+"22" : colors.surfaceActive,
+              color:       assetsTab===t.id ? colors.accent        : colors.textDim,
+              border:`1px solid ${assetsTab===t.id ? colors.accent+"55" : colors.border}`,
+              fontWeight:  assetsTab===t.id ? 600 : 400,
+            }}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+          <div style={{ flex:1 }} />
+          <div style={{ fontSize:11, color:colors.textDim, alignSelf:"center", textAlign:"right" }}>
+            All assets timestamped, geolocated, and anchored to wallet on Polygon
+          </div>
+        </div>
+
+        {/* ── Uploaded ── */}
+        {assetsTab === "uploaded" && (
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <div style={{ fontSize:13, color:colors.textMuted }}>{UPLOADED_ITEMS.length} assets · {["video","audio","image","document"].map(t => UPLOADED_ITEMS.filter(i=>i.type===t).length + " " + t + "s").join(" · ")}</div>
+              <button style={{ padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer", background:colors.accent+"22", color:colors.accent, border:`1px solid ${colors.accent}44` }}>+ Upload</button>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {UPLOADED_ITEMS.map(item => (
+                <div key={item.id} style={{ background:colors.surfaceActive, borderRadius:8, border:`1px solid ${colors.border}`, padding:"12px 14px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                    <div style={{ fontSize:24, width:36, textAlign:"center" }}>{item.thumb}</div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:colors.text }}>{item.name}</div>
+                      <div style={{ display:"flex", gap:12, marginTop:3 }}>
+                        <span style={{ fontSize:11, padding:"1px 7px", borderRadius:10, background: (TYPE_COLOR[item.type]||"#aaa")+"22", color: TYPE_COLOR[item.type]||"#aaa", border:`1px solid ${(TYPE_COLOR[item.type]||"#aaa")}44` }}>{item.type}</span>
+                        <span style={{ fontSize:11, color:colors.textDim }}>{item.size}</span>
+                        <span style={{ fontSize:11, color:colors.textDim }}>by {item.uploader}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <PROV_BLOCK wallet={item.wallet} date={item.date} geo={item.geo} chain={item.chain} txHash={item.txHash} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Captured ── */}
+        {assetsTab === "captured" && (
+          <div>
+            <div style={{ background:"rgba(6,182,212,0.06)", border:"1px solid rgba(6,182,212,0.25)", borderRadius:8, padding:"12px 16px", marginBottom:20 }}>
+              <div style={{ fontSize:13, fontWeight:600, color:"#06B6D4", marginBottom:4 }}>In-App Capture — Coming Soon</div>
+              <div style={{ fontSize:12, color:colors.textDim, lineHeight:1.6 }}>
+                Capture video, audio, photos, and documents directly inside the app. Every capture is instantly timestamped, geolocated, and anchored to your wallet address on-chain — establishing immutable provenance before the file ever leaves your device.
+              </div>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {CAPTURED_ITEMS.map(item => (
+                <div key={item.id} style={{ background:colors.surfaceActive, borderRadius:8, border:`1px solid ${colors.border}`, padding:"12px 14px" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                    <div style={{ fontSize:24, width:36, textAlign:"center" }}>{item.thumb}</div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:colors.text }}>{item.name}</div>
+                      <div style={{ display:"flex", gap:12, marginTop:3 }}>
+                        <span style={{ fontSize:11, padding:"1px 7px", borderRadius:10, background:(TYPE_COLOR[item.type]||"#aaa")+"22", color:TYPE_COLOR[item.type]||"#aaa", border:`1px solid ${(TYPE_COLOR[item.type]||"#aaa")}44` }}>{item.type}</span>
+                        <span style={{ fontSize:11, color:colors.textDim }}>{item.size}</span>
+                        <span style={{ fontSize:11, color:colors.textDim }}>by {item.capturedBy}</span>
+                        <span style={{ fontSize:10, padding:"1px 7px", borderRadius:10, background:"rgba(6,182,212,0.12)", color:"#06B6D4", border:"1px solid rgba(6,182,212,0.3)" }}>Captured in-app</span>
+                      </div>
+                    </div>
+                  </div>
+                  <PROV_BLOCK wallet={item.wallet} date={item.date} geo={item.geo} chain={item.chain} txHash={item.txHash} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Generated ── */}
+        {assetsTab === "generated" && (
+          <div>
+            <div style={{ background:colors.surfaceActive, borderRadius:8, border:`1px solid ${colors.border}`, padding:16, marginBottom:20 }}>
+              <div style={{ fontSize:13, fontWeight:600, color:colors.text, marginBottom:12 }}>Generate Media with AI</div>
+              <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+                {[
+                  { id:"image", label:"🖼️ Image", model:"DALL·E 3" },
+                  { id:"audio", label:"🎵 Sound", model:"AudioCraft" },
+                  { id:"video", label:"🎬 Video Clip", model:"Sora" },
+                ].map(t => (
+                  <button key={t.id} onClick={() => setGenType(t.id)} style={{
+                    padding:"5px 12px", borderRadius:6, fontSize:11, cursor:"pointer",
+                    background: genType===t.id ? colors.accent+"22" : colors.surface,
+                    color:       genType===t.id ? colors.accent        : colors.textDim,
+                    border:`1px solid ${genType===t.id ? colors.accent+"55" : colors.border}`,
+                    fontWeight:  genType===t.id ? 600 : 400,
+                  }}>{t.label}</button>
+                ))}
+              </div>
+              <textarea
+                value={genPrompt} onChange={e => setGenPrompt(e.target.value)}
+                placeholder={
+                  genType==="image" ? "Describe the image — e.g. 'Misty mountain temple at dawn, soft golden light, cinematic, wide angle'" :
+                  genType==="audio" ? "Describe the sound — e.g. 'Slow resonant singing bowl, meditative, 60 seconds, fade in and out'" :
+                  "Describe the clip — e.g. 'Members gathered around a fire in a forest, slow motion, dusk light, 15 seconds'"
+                }
+                rows={3}
+                style={{ width:"100%", padding:"9px 12px", borderRadius:6, border:`1px solid ${colors.border}`, background:colors.surface, color:colors.text, fontSize:12, resize:"vertical", boxSizing:"border-box" }}
+              />
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:10 }}>
+                <button onClick={handleGenerate} disabled={generating} style={{
+                  padding:"7px 16px", borderRadius:6, fontSize:12, cursor: generating ? "default" : "pointer",
+                  background: generating ? colors.border : colors.accent, color:"#fff", border:"none", opacity: generating ? 0.7 : 1,
+                }}>{generating ? "Generating…" : "Generate"}</button>
+                <span style={{ fontSize:11, color:colors.textDim }}>
+                  { genType==="image" ? "via DALL·E 3" : genType==="audio" ? "via AudioCraft" : "via Sora" }
+                </span>
+              </div>
+            </div>
+            {genResults.length > 0 && (
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {genResults.map(r => (
+                  <div key={r.id} style={{ background:colors.surfaceActive, borderRadius:8, border:`1px solid ${colors.border}`, padding:"12px 14px" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                      <span style={{ fontSize:22 }}>{r.thumb}</span>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:13, color:colors.text, fontWeight:500 }}>{r.prompt}</div>
+                        <div style={{ fontSize:11, color:colors.textDim, marginTop:2 }}>{r.model} · {r.type} · {r.date}</div>
+                      </div>
+                      <span style={{ fontSize:10, padding:"2px 8px", borderRadius:10, background:colors.success+"22", color:colors.success, border:`1px solid ${colors.success}44` }}>{r.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {genResults.length === 0 && !generating && (
+              <div style={{ textAlign:"center", padding:"32px 0", color:colors.textDim, fontSize:13 }}>
+                Generated assets will appear here
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Artifacts ── */}
+        {assetsTab === "artifacts" && (
+          <div>
+            <div style={{ fontSize:12, color:colors.textDim, marginBottom:16, lineHeight:1.6 }}>
+              Artifacts are media records created by activities inside the cycle — quests, challenges, ceremonies, and scene encounters. Each captures enough context to generate AI media: video recaps, images, stories, and songs that tell what happened.
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              {ARTIFACT_ITEMS.map(item => (
+                <div key={item.id} style={{ background:colors.surfaceActive, borderRadius:8, border:`1px solid ${colors.border}`, padding:"14px 16px" }}>
+                  <div style={{ display:"flex", alignItems:"flex-start", gap:10, marginBottom:8 }}>
+                    <span style={{ fontSize:20 }}>{ACTIVITY_ICON[item.type]||"📌"}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:600, color:colors.text }}>{item.activity}</div>
+                      <div style={{ fontSize:11, color:colors.textDim, marginTop:2 }}>
+                        {item.date} · {item.participants.join(", ")}
+                      </div>
+                    </div>
+                    <span style={{ fontSize:10, padding:"2px 8px", borderRadius:10, background:"rgba(139,92,246,0.15)", color:"#8B5CF6", border:"1px solid rgba(139,92,246,0.3)" }}>{item.type}</span>
+                  </div>
+                  <div style={{ fontSize:12, color:colors.textMuted, marginBottom:10, lineHeight:1.5 }}>{item.notes}</div>
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:10 }}>
+                    {item.tags.map(tag => (
+                      <span key={tag} style={{ fontSize:10, padding:"2px 8px", borderRadius:10, background:`rgba(255,255,255,0.06)`, color:colors.textDim, border:`1px solid ${colors.border}` }}>#{tag}</span>
+                    ))}
+                  </div>
+                  <div style={{ borderTop:`1px solid ${colors.border}`, paddingTop:10 }}>
+                    <div style={{ fontSize:11, color:colors.textDim, marginBottom:6 }}>Generate media from this artifact:</div>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {["🎬 Video recap","🖼️ Scene image","📖 Story","🎵 Song","📋 Summary"].map(label => (
+                        <button key={label} style={{ padding:"4px 10px", borderRadius:20, fontSize:11, cursor:"pointer", background:colors.surface, color:colors.textDim, border:`1px solid ${colors.border}` }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+
     // ── Media page render ─────────────────────────────────────────────────────
     const MEDIA_TABS = [
-      { id:"publishing", label:"Publishing", icon:"📝" },
-      { id:"social",     label:"Social & Messaging", icon:"📡" },
+      { id:"publishing", label:"Publishing",        icon:"📝" },
+      { id:"social",     label:"Social & Messaging",icon:"📡" },
+      { id:"assets",     label:"Media Assets",      icon:"🎞️" },
     ];
 
     return (
@@ -8971,6 +9229,7 @@ const CycleContent = ({ page, context }) => {
 
         {mediaTab === "publishing" && <PublishingPanel />}
         {mediaTab === "social"     && <SocialPanel />}
+        {mediaTab === "assets"     && <MediaAssetsPanel />}
       </div>
     );
   }
