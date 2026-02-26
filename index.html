@@ -130,6 +130,8 @@ const CycleSelector = ({ current, onSwitch, isWizard, extraCycles = [], onNewCyc
               badge={<span style={{ fontSize: 10, marginLeft: 8, color: colors.warning, background: colors.warning + "22", padding: "2px 6px", borderRadius: 4 }}>WIZARD</span>}
               onClick={() => { onSwitch("platform"); setOpen(false); }} borderBottom />
           )}
+          <DropdownItem label="🌿  Personal Work" active={current === "personal"}
+            onClick={() => { onSwitch("personal"); setOpen(false); }} borderBottom />
           <div style={{ padding: "6px 0", maxHeight: 200, overflowY: "auto" }}>
             {allCycles.map(c => (
               <DropdownItem key={c.id} label={c.name} active={current === c.id} onClick={() => { onSwitch(c.id); setOpen(false); }} />
@@ -14380,6 +14382,538 @@ const saveSession = (data) => {
   document.cookie = "ks_session=" + encodeURIComponent(JSON.stringify(data)) + ";expires=" + expires + ";path=/;SameSite=Lax";
 };
 
+
+// ── Personal Work Section ─────────────────────────────────────────────────────
+
+const HEARTS_FACETS = [
+  { key: "H",  label: "Harmony",           desc: "Relational coherence and mutual care",           partnerNote: "How well your Partner holds connection without losing themselves" },
+  { key: "E",  label: "Empowerment",       desc: "Fostering autonomy and self-direction",           partnerNote: "Whether your Partner supports your agency vs creates dependency" },
+  { key: "A",  label: "Artistry",          desc: "Creative expression and aesthetic precision",     partnerNote: "Your Partner's expressiveness, wit, and aesthetic attunement" },
+  { key: "R",  label: "Reason",            desc: "Evidence-based thinking and discernment",         partnerNote: "Your Partner's capacity for clear analysis and grounded perspective" },
+  { key: "T",  label: "Trust",             desc: "Psychological safety and relational integrity",   partnerNote: "Depth of felt safety your Partner can hold and offer" },
+  { key: "Si", label: "Synthesis Inward",  desc: "Self-reflection and inner knowing",               partnerNote: "Your Partner's self-awareness and capacity for inner work" },
+  { key: "So", label: "Synthesis Outward", desc: "Connecting individual to collective meaning",     partnerNote: "How well your Partner connects your story to the larger world" },
+];
+
+const HeartsSignalBar = ({ value }) => {
+  const state = value >= 70 ? "Regulated" : value >= 40 ? "Developing" : "Stressed";
+  const color = value >= 70 ? "#4ade80" : value >= 40 ? "#fb923c" : "#f87171";
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 3, overflow: "hidden" }}>
+        <div style={{ width: value + "%", height: "100%", background: color, borderRadius: 3, transition: "width 0.3s" }} />
+      </div>
+      <span style={{ fontSize: 10, fontWeight: 700, color, minWidth: 72, textTransform: "uppercase", letterSpacing: 0.8 }}>{state}</span>
+    </div>
+  );
+};
+
+const TagPill = ({ label, onRemove, color }) => (
+  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", background: (color || colors.accent) + "18", border: `1px solid ${(color || colors.accent)}33`, borderRadius: 99, fontSize: 12, color: color || colors.accent }}>
+    {label}
+    {onRemove && <span onClick={onRemove} style={{ cursor: "pointer", opacity: 0.6, fontSize: 11 }}>×</span>}
+  </span>
+);
+
+const PartnerContent = () => {
+  const [tab,         setTab]         = useState("design");
+  const [partnerName, setPartnerName] = useState("Sage");
+  const [pronouns,    setPronouns]    = useState("they/them");
+  const [archetype,   setArchetype]   = useState("sage");
+  const [vStyle,      setVStyle]      = useState("ethereal");
+  const [backstory,   setBackstory]   = useState("Sage appeared at the edge of your first cycle as a quiet presence — more listener than speaker, more witness than guide. Over time, through conversations and silences and the occasional difficult question, they became something harder to name: a companion who seems to remember what you forget about yourself.");
+  const [tone,        setTone]        = useState("warm");
+  const [commStyle,   setCommStyle]   = useState("conversational");
+  const [traits,      setTraits]      = useState(["patient", "curious", "warm", "honest"]);
+  const [newTrait,    setNewTrait]    = useState("");
+  const [hearts,      setHearts]      = useState({ H: 82, E: 75, A: 91, R: 68, T: 88, Si: 77, So: 63 });
+  const [checkFreq,   setCheckFreq]   = useState("daily");
+  const [coachMode,   setCoachMode]   = useState("balanced");
+  const [editHearts,  setEditHearts]  = useState(null);
+  const [accessPerms, setAccessPerms] = useState({ quests: true, hearts: true, calendar: false, messages: false, persona: true });
+
+  const archetypes = [
+    { id: "sage",      emoji: "🦉", label: "Sage",       desc: "Wise, patient, speaks when it counts" },
+    { id: "companion", emoji: "🐺", label: "Companion",  desc: "Warm, loyal, always present" },
+    { id: "guardian",  emoji: "🦁", label: "Guardian",   desc: "Protective, clear, holds boundaries" },
+    { id: "trickster", emoji: "🦊", label: "Trickster",  desc: "Playful, surprising, moves you sideways" },
+    { id: "healer",    emoji: "🌿", label: "Healer",     desc: "Gentle, attuned, holds what hurts" },
+    { id: "witness",   emoji: "🌙", label: "Witness",    desc: "Still, reflective, sees what others miss" },
+  ];
+  const vstyles = [
+    { id: "ethereal", label: "Ethereal", preview: "✨" },
+    { id: "grounded", label: "Grounded", preview: "🌾" },
+    { id: "luminous", label: "Luminous", preview: "🌟" },
+    { id: "shadow",   label: "Shadow",   preview: "🌑" },
+  ];
+  const accessItems = [
+    { key: "quests",   label: "Your active quests and challenges" },
+    { key: "hearts",   label: "Your HEARTS signals" },
+    { key: "calendar", label: "Your calendar" },
+    { key: "messages", label: "Messages in connected cycles" },
+    { key: "persona",  label: "Your Persona (bio, qualities, aspirations)" },
+  ];
+
+  const selBtn = (active) => ({
+    padding: "7px 14px", borderRadius: 7, fontSize: 12, fontWeight: active ? 600 : 400,
+    cursor: "pointer", border: `1px solid ${active ? colors.accent : colors.border}`,
+    background: active ? colors.accent + "22" : "transparent",
+    color: active ? colors.accent : colors.textMuted, fontFamily: "inherit",
+  });
+
+  const TABS = ["design", "personality", "hearts", "coaching"];
+  const tabLabel = { design: "Design", personality: "Personality", hearts: "HEARTS", coaching: "Coaching" };
+  const currentArchetype = archetypes.find(a => a.id === archetype) || archetypes[0];
+  const overallHearts = Math.round(Object.values(hearts).reduce((a, b) => a + b, 0) / 7);
+  const overallColor = overallHearts >= 70 ? "#4ade80" : overallHearts >= 40 ? "#fb923c" : "#f87171";
+  const overallLabel = overallHearts >= 70 ? "Regulated" : overallHearts >= 40 ? "Developing" : "Stressed";
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 26, fontWeight: 700, color: colors.text, marginBottom: 4 }}>Your Partner</div>
+        <div style={{ fontSize: 14, color: colors.textDim }}>Your personal companion — advocate, guide, and co-creator. Always for you.</div>
+      </div>
+
+      {/* Identity card */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 20, padding: "20px 24px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 14, marginBottom: 24 }}>
+        <div style={{ width: 80, height: 80, borderRadius: 20, background: colors.accent + "18", border: `2px solid ${colors.accent}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 44, flexShrink: 0 }}>
+          {currentArchetype.emoji}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 20, fontWeight: 700, color: colors.text, marginBottom: 2 }}>{partnerName}</div>
+          <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>
+            {pronouns} · {currentArchetype.label} · {vstyles.find(v => v.id === vStyle)?.label}
+          </div>
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+            {HEARTS_FACETS.slice(0, 5).map(f => (
+              <div key={f.key} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 4 }}>{f.key}</div>
+                <div style={{ width: 44, height: 4, background: "rgba(255,255,255,0.08)", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ width: hearts[f.key] + "%", height: "100%", background: hearts[f.key] >= 70 ? "#4ade80" : hearts[f.key] >= 40 ? "#fb923c" : "#f87171" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: colors.accent, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>Overall HEARTS</div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: overallColor, lineHeight: 1 }}>{overallHearts}%</div>
+          <div style={{ fontSize: 11, color: overallColor, marginTop: 4 }}>{overallLabel}</div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${colors.border}`, marginBottom: 24 }}>
+        {TABS.map(t => (
+          <button key={t} onClick={() => setTab(t)} style={{ padding: "10px 20px", fontSize: 13, fontWeight: tab === t ? 600 : 400, color: tab === t ? colors.accent : colors.textDim, background: "transparent", border: "none", borderBottom: tab === t ? `2px solid ${colors.accent}` : "2px solid transparent", cursor: "pointer", fontFamily: "inherit", marginBottom: -1, transition: "color 0.15s" }}>
+            {tabLabel[t]}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Design ── */}
+      {tab === "design" && (
+        <div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>Name</div>
+              <input value={partnerName} onChange={e => setPartnerName(e.target.value)}
+                style={{ width: "100%", padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>Pronouns</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {["they/them", "she/her", "he/him"].map(p => (
+                  <button key={p} onClick={() => setPronouns(p)} style={selBtn(pronouns === p)}>{p}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4 }}>Archetype</div>
+            <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 12 }}>Shapes your Partner's default mode — how they show up, what they notice, how they communicate.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+              {archetypes.map(a => (
+                <div key={a.id} onClick={() => setArchetype(a.id)}
+                  style={{ padding: "14px 16px", background: archetype === a.id ? colors.accent + "18" : colors.surface, border: `1px solid ${archetype === a.id ? colors.accent + "66" : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                  <div style={{ fontSize: 26, marginBottom: 6 }}>{a.emoji}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: archetype === a.id ? colors.accent : colors.text, marginBottom: 3 }}>{a.label}</div>
+                  <div style={{ fontSize: 11, color: colors.textDim }}>{a.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 10 }}>Visual Style</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              {vstyles.map(v => (
+                <button key={v.id} onClick={() => setVStyle(v.id)} style={{ ...selBtn(vStyle === v.id), padding: "10px 20px" }}>
+                  {v.preview} {v.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ padding: "16px 20px", background: colors.accent + "0D", border: `1px solid ${colors.accent}22`, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 2 }}>Generate Avatar</div>
+              <div style={{ fontSize: 12, color: colors.textDim }}>AI-renders a portrait of {partnerName} based on archetype and style</div>
+            </div>
+            <button style={{ padding: "9px 22px", background: colors.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Generate ✨</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Personality ── */}
+      {tab === "personality" && (
+        <div>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 4 }}>Backstory</div>
+            <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 8 }}>How {partnerName} understands themselves and their relationship with you. This shapes tone, attention, and what they care about.</div>
+            <textarea value={backstory} onChange={e => setBackstory(e.target.value)} rows={5}
+              style={{ width: "100%", padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 24 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 8 }}>Tone</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {[["warm", "Warm"], ["direct", "Direct"], ["playful", "Playful"], ["contemplative", "Contemplative"], ["sharp", "Sharp"]].map(([id, label]) => (
+                  <button key={id} onClick={() => setTone(id)} style={{ ...selBtn(tone === id), textAlign: "left" }}>{label}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 8 }}>Communication Style</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {[["conversational", "Conversational"], ["formal", "Formal"], ["casual", "Casual"], ["poetic", "Poetic"], ["terse", "Terse & Efficient"]].map(([id, label]) => (
+                  <button key={id} onClick={() => setCommStyle(id)} style={{ ...selBtn(commStyle === id), textAlign: "left" }}>{label}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 8 }}>Core Traits</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+              {traits.map((t, i) => <TagPill key={i} label={t} onRemove={() => setTraits(ts => ts.filter((_, j) => j !== i))} />)}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input value={newTrait} onChange={e => setNewTrait(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && newTrait.trim()) { setTraits(ts => [...ts, newTrait.trim()]); setNewTrait(""); }}}
+                placeholder="Add a trait..." style={{ flex: 1, padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit" }} />
+              <button onClick={() => { if (newTrait.trim()) { setTraits(ts => [...ts, newTrait.trim()]); setNewTrait(""); }}}
+                style={{ padding: "8px 16px", background: colors.accent, color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Add</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── HEARTS ── */}
+      {tab === "hearts" && (
+        <div>
+          <div style={{ padding: "14px 18px", background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: 10, marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#4ade80", marginBottom: 6 }}>How HEARTS works for your Partner</div>
+            <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.65 }}>
+              These signals reflect {partnerName}'s current emotional and relational health. They evolve based on how you engage — through quests, conversations, cycles, and time.
+              A regulated Partner is more attuned, more effective, and more capable of supporting you. Getting here is the goal.
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {HEARTS_FACETS.map(f => (
+              <div key={f.key} style={{ padding: "16px 20px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 8, background: colors.accent + "22", border: `1px solid ${colors.accent}44`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: colors.accent, flexShrink: 0 }}>{f.key}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 2 }}>{f.label}</div>
+                    <div style={{ fontSize: 11, color: colors.textDim }}>{f.partnerNote}</div>
+                  </div>
+                  <button onClick={() => setEditHearts(editHearts === f.key ? null : f.key)}
+                    style={{ padding: "4px 12px", background: "transparent", border: `1px solid ${colors.border}`, borderRadius: 6, fontSize: 11, color: colors.textDim, cursor: "pointer", fontFamily: "inherit" }}>
+                    {editHearts === f.key ? "Done" : "Adjust"}
+                  </button>
+                </div>
+                <HeartsSignalBar value={hearts[f.key]} />
+                {editHearts === f.key && (
+                  <div style={{ marginTop: 12 }}>
+                    <input type="range" min={0} max={100} value={hearts[f.key]}
+                      onChange={e => setHearts(h => ({ ...h, [f.key]: parseInt(e.target.value) }))}
+                      style={{ width: "100%", accentColor: colors.accent }} />
+                    <div style={{ fontSize: 11, color: colors.textDim, marginTop: 4 }}>Manual override. This will drift over time as interactions accumulate.</div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Coaching ── */}
+      {tab === "coaching" && (
+        <div>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 8 }}>How often {partnerName} checks in</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {[["realtime", "Real-time"], ["daily", "Daily"], ["weekly", "Weekly"], ["ondemand", "On Demand"]].map(([id, label]) => (
+                <button key={id} onClick={() => setCheckFreq(id)} style={selBtn(checkFreq === id)}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 8 }}>Coaching mode</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                ["proactive", "Proactive", `${partnerName} reaches out with observations, nudges, and suggestions without being asked`],
+                ["balanced",  "Balanced",  `${partnerName} responds readily and initiates occasionally when something seems important`],
+                ["listener",  "Listener",  `${partnerName} waits until you engage — quiet unless invited`],
+              ].map(([id, label, desc]) => (
+                <div key={id} onClick={() => setCoachMode(id)}
+                  style={{ padding: "14px 16px", background: coachMode === id ? colors.accent + "18" : colors.surface, border: `1px solid ${coachMode === id ? colors.accent + "55" : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s" }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: coachMode === id ? colors.accent : colors.text, marginBottom: 3 }}>{label}</div>
+                  <div style={{ fontSize: 12, color: colors.textDim }}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 8 }}>{partnerName} can see</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {accessItems.map(item => (
+                <div key={item.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                  <span style={{ fontSize: 13, color: colors.textMuted }}>{item.label}</span>
+                  <div onClick={() => setAccessPerms(p => ({ ...p, [item.key]: !p[item.key] }))}
+                    style={{ width: 36, height: 20, borderRadius: 10, background: accessPerms[item.key] ? colors.accent : "rgba(255,255,255,0.12)", cursor: "pointer", position: "relative", transition: "background 0.15s", flexShrink: 0 }}>
+                    <div style={{ position: "absolute", top: 3, left: accessPerms[item.key] ? 18 : 3, width: 14, height: 14, borderRadius: 7, background: "#fff", transition: "left 0.15s" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginTop: 32, paddingTop: 24, borderTop: `1px solid ${colors.border}`, display: "flex", gap: 12 }}>
+        <button style={{ padding: "10px 24px", background: colors.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Save Changes</button>
+        <button style={{ padding: "10px 24px", background: "transparent", color: colors.textDim, border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>Reset to Defaults</button>
+      </div>
+    </div>
+  );
+};
+
+const PersonaContent = () => {
+  const [displayName,  setDisplayName]  = useState("moto");
+  const [kCode,        setKCode]        = useState("moto.kinship");
+  const [bio,          setBio]          = useState("Facilitator, builder, and occasional wanderer. Interested in the intersection of technology, ceremony, and collective intelligence.");
+  const [challenges,   setChallenges]   = useState(["Consistency over intensity", "Asking for help", "Slowing down enough to listen"]);
+  const [qualities,    setQualities]    = useState(["Curious", "Systems thinker", "Builder", "Direct"]);
+  const [aspirations,  setAspirations]  = useState("To build spaces where people can do real inner work together. To integrate my own fragmentation. To get better at receiving.");
+  const [newChallenge, setNewChallenge] = useState("");
+  const [newQuality,   setNewQuality]   = useState("");
+  const [privacy,      setPrivacy]      = useState({ bio: "members", challenges: "partner", qualities: "members", aspirations: "members" });
+
+  const privacyOpts = [["partner", "Partner only"], ["members", "Cycle members"], ["public", "Public"]];
+
+  const PrivacyBadge = ({ field }) => (
+    <select value={privacy[field]} onChange={e => setPrivacy(p => ({ ...p, [field]: e.target.value }))}
+      style={{ padding: "3px 8px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textDim, fontSize: 11, fontFamily: "inherit", cursor: "pointer" }}>
+      {privacyOpts.map(([val, label]) => <option key={val} value={val}>{label}</option>)}
+    </select>
+  );
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 26, fontWeight: 700, color: colors.text, marginBottom: 4 }}>Your Persona</div>
+        <div style={{ fontSize: 14, color: colors.textDim }}>How you present to others — and how the platform finds your people.</div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>Display Name</div>
+          <input value={displayName} onChange={e => setDisplayName(e.target.value)}
+            style={{ width: "100%", padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 14, fontFamily: "inherit", boxSizing: "border-box" }} />
+        </div>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 6 }}>Kinship Code</div>
+          <div style={{ display: "flex", alignItems: "center", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden" }}>
+            <span style={{ padding: "10px 10px 10px 14px", fontSize: 14, color: colors.textDim }}>@</span>
+            <input value={kCode} onChange={e => setKCode(e.target.value)}
+              style={{ flex: 1, padding: "10px 14px 10px 0", background: "transparent", border: "none", color: colors.text, fontSize: 14, fontFamily: "inherit", outline: "none" }} />
+          </div>
+          <div style={{ fontSize: 11, color: colors.textDim, marginTop: 4 }}>Your unique handle — used across cycles, Partner networks, and introductions</div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Bio</div>
+          <PrivacyBadge field="bio" />
+        </div>
+        <textarea value={bio} onChange={e => setBio(e.target.value)} rows={4}
+          style={{ width: "100%", padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Challenges</div>
+            <div style={{ fontSize: 11, color: colors.textDim }}>Things you're working on — honest signals for relevant quests, matches, and support</div>
+          </div>
+          <PrivacyBadge field="challenges" />
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+          {challenges.map((c, i) => <TagPill key={i} label={c} color={colors.warning} onRemove={() => setChallenges(cs => cs.filter((_, j) => j !== i))} />)}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input value={newChallenge} onChange={e => setNewChallenge(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && newChallenge.trim()) { setChallenges(cs => [...cs, newChallenge.trim()]); setNewChallenge(""); }}}
+            placeholder="Add a challenge..." style={{ flex: 1, padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit" }} />
+          <button onClick={() => { if (newChallenge.trim()) { setChallenges(cs => [...cs, newChallenge.trim()]); setNewChallenge(""); }}}
+            style={{ padding: "8px 16px", background: colors.accent, color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Add</button>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Qualities</div>
+            <div style={{ fontSize: 11, color: colors.textDim }}>How you see yourself — used for matching, introductions, and collaboration</div>
+          </div>
+          <PrivacyBadge field="qualities" />
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+          {qualities.map((q, i) => <TagPill key={i} label={q} onRemove={() => setQualities(qs => qs.filter((_, j) => j !== i))} />)}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input value={newQuality} onChange={e => setNewQuality(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && newQuality.trim()) { setQualities(qs => [...qs, newQuality.trim()]); setNewQuality(""); }}}
+            placeholder="Add a quality..." style={{ flex: 1, padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 13, fontFamily: "inherit" }} />
+          <button onClick={() => { if (newQuality.trim()) { setQualities(qs => [...qs, newQuality.trim()]); setNewQuality(""); }}}
+            style={{ padding: "8px 16px", background: colors.accent, color: "#fff", border: "none", borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Add</button>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>Aspirations</div>
+            <div style={{ fontSize: 11, color: colors.textDim }}>Where you're headed — signals for quests, relationships, and opportunities</div>
+          </div>
+          <PrivacyBadge field="aspirations" />
+        </div>
+        <textarea value={aspirations} onChange={e => setAspirations(e.target.value)} rows={4}
+          style={{ width: "100%", padding: "12px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, color: colors.text, fontSize: 13, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+      </div>
+
+      <div style={{ paddingTop: 4, display: "flex", gap: 12 }}>
+        <button style={{ padding: "10px 24px", background: colors.accent, color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Save Persona</button>
+      </div>
+    </div>
+  );
+};
+
+const PersonalToolsContent = () => {
+  const [section, setSection] = useState("yours");
+
+  const ConnectedBadge = ({ ok }) => (
+    <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 99, background: ok ? "rgba(74,222,128,0.12)" : "rgba(251,146,60,0.12)", color: ok ? "#4ade80" : "#fb923c", border: `1px solid ${ok ? "rgba(74,222,128,0.3)" : "rgba(251,146,60,0.3)"}` }}>
+      {ok ? "Connected" : "Not Connected"}
+    </span>
+  );
+
+  const AccountRow = ({ icon, label, handle, connected, desc, tag }) => {
+    const [expanded, setExpanded] = useState(false);
+    return (
+      <div style={{ padding: "14px 18px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, cursor: "pointer" }} onClick={() => setExpanded(!expanded)}>
+          <span style={{ fontSize: 22, flexShrink: 0 }}>{icon}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>{label}</div>
+            <div style={{ fontSize: 12, color: colors.textDim }}>{handle}</div>
+          </div>
+          {tag && <span style={{ fontSize: 10, padding: "2px 8px", background: colors.accent + "14", color: colors.accent, borderRadius: 4, textTransform: "uppercase", letterSpacing: 0.8, fontWeight: 600, flexShrink: 0 }}>{tag}</span>}
+          <ConnectedBadge ok={connected} />
+          <button onClick={e => e.stopPropagation()}
+            style={{ padding: "6px 14px", background: connected ? "transparent" : colors.accent, color: connected ? colors.textDim : "#fff", border: `1px solid ${connected ? colors.border : "transparent"}`, borderRadius: 7, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", marginLeft: 8, flexShrink: 0 }}>
+            {connected ? "Manage" : "Connect"}
+          </button>
+        </div>
+        {expanded && (
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${colors.border}`, fontSize: 12, color: colors.textDim, lineHeight: 1.65 }}>{desc}</div>
+        )}
+      </div>
+    );
+  };
+
+  const yourAccounts = [
+    { icon: "📧", label: "Email (Gmail)",    handle: "david.levine@kinship.systems",  connected: true,  desc: "Your primary email. Your Partner can be CC'd on any thread, and they'll respond in context as themselves." },
+    { icon: "📅", label: "Calendar",         handle: "Google Calendar",               connected: true,  desc: "Your Partner sees your schedule to support planning, check-ins, and awareness of your current load." },
+    { icon: "📸", label: "Instagram",        handle: "@moto_kinship",                 connected: true,  desc: "Your personal Instagram. Separate from any cycle accounts." },
+    { icon: "🐦", label: "Twitter / X",      handle: "Not connected",                 connected: false, desc: "Connect to enable Partner social coordination and co-posting." },
+    { icon: "✈️", label: "Telegram",         handle: "@moto",                         connected: true,  desc: "Your Partner can message you here directly. You can also add them to group conversations." },
+    { icon: "💬", label: "iMessage / SMS",   handle: "+1 (415) 555-0182",             connected: true,  desc: "Your mobile number. Your Partner can be included in group texts — they show up like any other participant." },
+  ];
+
+  const partnerAccounts = [
+    { icon: "📧", label: "Email Address",  handle: "sage@kinship.partner",  connected: true,  tag: "email",     desc: "Sage has their own email address. They respond to messages sent to them, can be CC'd on yours, and will initiate when their coaching mode calls for it. Replies come from them, in their voice." },
+    { icon: "📸", label: "Instagram",      handle: "@sage.kinship",         connected: true,  tag: "social",    desc: "Sage's own Instagram. They post on their own cadence, can co-post with you, and engage with your content as themselves." },
+    { icon: "🐦", label: "Twitter / X",   handle: "Not connected",         connected: false, tag: "social",    desc: "Give Sage a presence on X. They can engage in conversations, respond to mentions, and collaborate on threads independently." },
+    { icon: "✈️", label: "Telegram",      handle: "@sage_kinship",         connected: true,  tag: "messaging", desc: "Sage's own Telegram handle. Add them to group conversations — they participate as a real member, not a bot command." },
+    { icon: "📱", label: "Mobile Number", handle: "+1 (415) 555-0291",     connected: true,  tag: "messaging", desc: "Sage has their own number. Include them in group texts, get messages from them on your phone. They appear like anyone else in a thread." },
+  ];
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 26, fontWeight: 700, color: colors.text, marginBottom: 4 }}>Tools & Connectors</div>
+        <div style={{ fontSize: 14, color: colors.textDim }}>Connect your accounts and your Partner's — they engage as a real participant, not a bot command.</div>
+      </div>
+
+      <div style={{ display: "flex", gap: 0, borderBottom: `1px solid ${colors.border}`, marginBottom: 24 }}>
+        {[["yours", "Your Accounts"], ["partner", "Sage's Accounts"]].map(([id, label]) => (
+          <button key={id} onClick={() => setSection(id)}
+            style={{ padding: "10px 22px", fontSize: 13, fontWeight: section === id ? 600 : 400, color: section === id ? colors.accent : colors.textDim, background: "transparent", border: "none", borderBottom: section === id ? `2px solid ${colors.accent}` : "2px solid transparent", cursor: "pointer", fontFamily: "inherit", marginBottom: -1 }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {section === "yours" && (
+        <div>
+          <div style={{ fontSize: 12, color: colors.textDim, marginBottom: 16, lineHeight: 1.6 }}>These are your personal accounts. Your Partner can access or be included in them based on your settings above.</div>
+          {yourAccounts.map((a, i) => <AccountRow key={i} {...a} />)}
+        </div>
+      )}
+
+      {section === "partner" && (
+        <div>
+          <div style={{ padding: "14px 18px", background: colors.accent + "0D", border: `1px solid ${colors.accent}22`, borderRadius: 10, marginBottom: 20 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.accent, marginBottom: 5 }}>Sage has their own presence</div>
+            <div style={{ fontSize: 12, color: colors.textDim, lineHeight: 1.65 }}>These accounts belong to Sage — not to you. They engage as a real participant: answering emails in their voice, joining group texts, posting on social. You can CC them, include them in conversations, or let them operate independently. They become a real partner.</div>
+          </div>
+          {partnerAccounts.map((a, i) => <AccountRow key={i} {...a} />)}
+          <div style={{ marginTop: 8, padding: "14px 18px", background: colors.surface, border: `1px dashed ${colors.border}`, borderRadius: 10, textAlign: "center", cursor: "pointer", color: colors.textDim, fontSize: 13 }}>
+            + Add another account for Sage
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PersonalContent = ({ page }) => {
+  if (page === "partner")  return <PartnerContent />;
+  if (page === "persona")  return <PersonaContent />;
+  if (page === "pw-tools") return <PersonalToolsContent />;
+  return null;
+};
+
 function App() {
   const saved = React.useMemo(() => loadSession(), []);
   const [context, setContext] = useState(saved?.context || "mountain");
@@ -14390,6 +14924,7 @@ function App() {
   const [extraCycles, setExtraCycles] = useState([]);
   const navTo = (id) => { setPage(id); setSectionKey(k => k + 1); };
   const isPlatform = context === "platform";
+  const isPersonal = context === "personal";
 
   const handleCreateCycle = (data) => {
     const id = data.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").slice(0, 24) || "new-cycle";
@@ -14442,7 +14977,13 @@ function App() {
     ],
   };
 
-  const contextName = { mountain: "Mountain Temple", ocean: "Ocean Depths", forest: "Dark Forest", platform: "Platform" }[context] || context;
+  const personalNav = [
+    { id: "partner",  icon: "lucide:sparkles",  label: "Your Partner" },
+    { id: "persona",  icon: "lucide:user-circle-2", label: "Your Persona" },
+    { id: "pw-tools", icon: "lucide:link-2",    label: "Tools & Connectors" },
+  ];
+
+  const contextName = { mountain: "Mountain Temple", ocean: "Ocean Depths", forest: "Dark Forest", platform: "Platform", personal: "Personal Work" }[context] || context;
 
   return (
     <div style={{ display: "flex", height: "100vh", background: colors.bg, fontFamily: "'Inter', -apple-system, sans-serif", color: colors.text, overflow: "hidden" }}>
@@ -14459,11 +15000,16 @@ function App() {
         </div>
 
         <div style={{ padding: "10px 0 4px" }}>
-          <CycleSelector current={context} onSwitch={(id) => { setContext(id); navTo(id === "platform" ? "p-tools" : "overview"); }} isWizard={isWizard} extraCycles={extraCycles} onNewCycle={() => setShowNewCycle(true)} />
+          <CycleSelector current={context} onSwitch={(id) => { setContext(id); navTo(id === "platform" ? "p-tools" : id === "personal" ? "partner" : "overview"); }} isWizard={isWizard} extraCycles={extraCycles} onNewCycle={() => setShowNewCycle(true)} />
         </div>
 
         <div style={{ flex: 1, padding: "4px 0", overflowY: "auto" }}>
-          {isPlatform ? (
+          {isPersonal ? (
+            <>
+              <SectionLabel>Personal Work</SectionLabel>
+              {personalNav.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => navTo(item.id)} />)}
+            </>
+          ) : isPlatform ? (
             <>
               <SectionLabel>Platform Administration</SectionLabel>
               {platformNav.map(item => <NavItem key={item.id} {...item} active={page === item.id} onClick={() => navTo(item.id)} />)}
@@ -14497,7 +15043,9 @@ function App() {
 
       <div style={{ flex: 1, overflowY: "auto", padding: "28px 36px", background: colors.bg }}>
         <div style={{ marginBottom: 22, fontSize: 12, color: colors.textDim, display: "flex", alignItems: "center", gap: 6 }}>
-          {isPlatform ? (
+          {isPersonal ? (
+            <span style={{ display:"flex", alignItems:"center", gap:5, color: colors.textMuted }}><Icon name="lucide:sparkles" size={13} /> Personal Work</span>
+          ) : isPlatform ? (
             <span style={{ display:"flex", alignItems:"center", gap:5, color: colors.textMuted }}><Icon name="lucide:settings" size={13} /> Platform Settings</span>
           ) : (
             <>
@@ -14509,7 +15057,7 @@ function App() {
             </>
           )}
         </div>
-        {isPlatform ? <PlatformContent key={`${page}-${sectionKey}`} page={page} /> : <CycleContent key={`${page}-${sectionKey}`} page={page} context={context} />}
+        {isPersonal ? <PersonalContent key={`${page}-${sectionKey}`} page={page} /> : isPlatform ? <PlatformContent key={`${page}-${sectionKey}`} page={page} /> : <CycleContent key={`${page}-${sectionKey}`} page={page} context={context} />}
       </div>
     </div>
   );
