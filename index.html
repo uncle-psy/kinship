@@ -13366,6 +13366,707 @@ const CycleContent = ({ page, context }) => {
     );
   }
 
+
+  if (page === "media") {
+
+    // ── Type definitions ─────────────────────────────────────────────────────
+    const MEDIA_TYPES = [
+      { id: "image",    label: "Image",    icon: "lucide:image",        color: "#6FC3FF" },
+      { id: "audio",    label: "Audio",    icon: "lucide:music",        color: "#A8E063" },
+      { id: "video",    label: "Video",    icon: "lucide:video",        color: "#FF6FAE" },
+      { id: "document", label: "Document", icon: "lucide:file-text",    color: "#FFB347" },
+    ];
+
+    const MOOD_OPTIONS  = ["Contemplative","Triumphant","Sacred","Playful","Raw","Grief-filled","Joyful","Tense","Serene","Electric"];
+    const TONE_OPTIONS  = ["Reverent","Epic","Tender","Stark","Lyrical","Urgent","Intimate","Mythic","Grounded","Expansive"];
+    const THEME_OPTIONS = ["Transformation","Water","Fire","Earth","Shadow","Light","Community","Grief","Joy","Growth","Threshold","Memory","Silence","Breath","Belonging"];
+
+    const ProvenanceBlock = ({ item, type }) => {
+      const walletKey = type === "artifact" ? "producedBy" : type === "captured" ? "capturedBy" : "uploadedBy";
+      const timeKey   = type === "artifact" ? "producedAtLabel" : type === "captured" ? "capturedAtLabel" : "uploadedAtLabel";
+      const actor = item[walletKey];
+      return (
+        <div style={{ background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16, marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, color: colors.textDim, marginBottom: 12 }}>Provenance</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            {[
+              { label: type === "artifact" ? "Produced by" : type === "captured" ? "Captured by" : "Uploaded by",
+                value: actor.name, sub: actor.wallet },
+              { label: "Timestamp",  value: item[timeKey], sub: "UTC" },
+              { label: "Location",   value: item.location?.label || "Not recorded", sub: item.location ? `${item.location.lat.toFixed(2)}°N ${Math.abs(item.location.lng).toFixed(2)}°W` : null },
+              { label: "Chain",      value: "Solana mainnet", sub: null },
+              { label: "Tx Hash",    value: item.txHash, sub: "View on Solscan ↗" },
+            ].map((row, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                <span style={{ fontSize: 11, color: colors.textDim, minWidth: 100, paddingTop: 1 }}>{row.label}</span>
+                <div>
+                  <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: row.label === "Tx Hash" ? "monospace" : "inherit" }}>{row.value}</span>
+                  {row.sub && <span style={{ fontSize: 10, color: colors.textDim, marginLeft: 6 }}>{row.sub}</span>}
+                </div>
+              </div>
+            ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+              <div style={{ width: 7, height: 7, borderRadius: "50%", background: item.verified ? colors.green : colors.warning }} />
+              <span style={{ fontSize: 11, color: item.verified ? colors.green : colors.warning, fontWeight: 600 }}>
+                {item.verified ? "Verified on-chain" : "Pending verification"}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    // ── Uploaded data ─────────────────────────────────────────────────────────
+    const UPLOADED_INIT = [
+      { id: "u01", name: "Opening Ceremony — Full Recording", type: "video",    thumb: "🎬", size: "1.2 GB",  subtype: "mp4",  uploadedBy: { id: "moto",    name: "moto",    wallet: "8xKr...mN4q" }, uploadedAt: "2026-02-01", uploadedAtLabel: "Feb 1, 2026 · 7:44 PM", location: { label: "Ashland, OR", lat: 42.19, lng: -122.70 }, txHash: "5gRp...kL92", chain: "solana", tags: ["ceremony","opening","ritual"], description: "Full unedited recording of the Mountain Temple opening ceremony.", usedIn: ["scene:welcome-portal"], verified: true },
+      { id: "u02", name: "Elder Sage Voice — Introduction",   type: "audio",    thumb: "🎙️", size: "18.4 MB", subtype: "mp3",  uploadedBy: { id: "moto",    name: "moto",    wallet: "8xKr...mN4q" }, uploadedAt: "2026-01-28", uploadedAtLabel: "Jan 28, 2026 · 11:20 AM", location: { label: "Portland, OR", lat: 45.52, lng: -122.68 }, txHash: "2rTm...vP81", chain: "solana", tags: ["voice","elder-sage","narration"], description: "Recorded narration for Elder Sage's introduction sequence.", usedIn: ["actor:elder-sage"], verified: true },
+      { id: "u03", name: "Temple Bells Loop",                 type: "audio",    thumb: "🔔", size: "6.8 MB",  subtype: "wav",  uploadedBy: { id: "cassidy", name: "Cassidy", wallet: "2nFr...yT55" }, uploadedAt: "2026-01-25", uploadedAtLabel: "Jan 25, 2026 · 3:15 PM", location: null, txHash: "9kLm...sQ47", chain: "solana", tags: ["ambient","bells","temple","loop"], description: "Layered temple bell recording for ambient soundscapes.", usedIn: ["scene:welcome-portal","scene:milestone-ceremony"], verified: true },
+      { id: "u04", name: "Healing Waters — Scene Background", type: "image",    thumb: "🌊", size: "4.2 MB",  subtype: "jpg",  uploadedBy: { id: "cassidy", name: "Cassidy", wallet: "2nFr...yT55" }, uploadedAt: "2026-01-22", uploadedAtLabel: "Jan 22, 2026 · 9:05 AM", location: { label: "Crater Lake, OR", lat: 42.94, lng: -122.11 }, txHash: "3pWr...jN60", chain: "solana", tags: ["background","water","healing","scene"], description: "Photograph of Crater Lake at dawn. Used as healing scene background.", usedIn: ["scene:healing-waters"], verified: true },
+      { id: "u05", name: "Cycle Handbook v2",                 type: "document", thumb: "📄", size: "890 KB",  subtype: "pdf",  uploadedBy: { id: "selene",  name: "Selene",  wallet: "3pLt...vX72" }, uploadedAt: "2026-01-18", uploadedAtLabel: "Jan 18, 2026 · 1:30 PM", location: null, txHash: "7cQs...hR33", chain: "solana", tags: ["handbook","guide","members"], description: "Full cycle participant handbook. Distributed to all new members.", usedIn: [], verified: true },
+      { id: "u06", name: "Forest Spirit Portrait",            type: "image",    thumb: "🌿", size: "1.1 MB",  subtype: "png",  uploadedBy: { id: "cassidy", name: "Cassidy", wallet: "2nFr...yT55" }, uploadedAt: "2026-01-15", uploadedAtLabel: "Jan 15, 2026 · 4:50 PM", location: null, txHash: "6bXn...gP94", chain: "solana", tags: ["character","portrait","forest-spirit"], description: "AI-generated portrait for the Forest Spirit actor.", usedIn: ["actor:forest-spirit"], verified: true },
+      { id: "u07", name: "Drum Circle — Closing Ceremony",    type: "audio",    thumb: "🥁", size: "22.1 MB", subtype: "wav",  uploadedBy: { id: "moto",    name: "moto",    wallet: "8xKr...mN4q" }, uploadedAt: "2026-01-12", uploadedAtLabel: "Jan 12, 2026 · 9:11 PM", location: { label: "Ashland, OR", lat: 42.19, lng: -122.70 }, txHash: "4dVt...mK21", chain: "solana", tags: ["drums","ceremony","closing","live"], description: "Live drum circle recording from the December closing ceremony.", usedIn: ["scene:closing-rite"], verified: true },
+      { id: "u08", name: "Quest Structure Template",          type: "document", thumb: "📋", size: "44 KB",   subtype: "json", uploadedBy: { id: "arjun",   name: "Arjun",   wallet: "6cWm...hK81" }, uploadedAt: "2026-01-10", uploadedAtLabel: "Jan 10, 2026 · 10:22 AM", location: null, txHash: "1nRv...wS85", chain: "solana", tags: ["template","quest","json"], description: "Reusable quest structure template for challenge design.", usedIn: [], verified: false },
+    ];
+
+    // ── Captured data (future capability — shown with preview status) ─────────
+    const CAPTURED_INIT = [
+      { id: "c01", name: "Member Video Journal — Threshold Quest",  type: "video",    thumb: "📹", size: "284 MB",  capturedBy: { id: "m-rahel",  name: "Rahel A.",  wallet: "9mKp...fT18" }, capturedAt: "2026-02-15", capturedAtLabel: "Feb 15, 2026 · 6:44 AM", location: { label: "Medford, OR", lat: 42.33, lng: -122.87 }, txHash: "8wBn...cL55", chain: "solana", deviceInfo: { model: "iPhone 15 Pro", os: "iOS 18.2" }, captureApp: "Kinship v0.9", tags: ["journal","video","threshold","member"], description: "Member-submitted video reflection on the Threshold Quest.", usedIn: [], verified: true },
+      { id: "c02", name: "Ceremony Audio — Collective Chant",       type: "audio",    thumb: "🎤", size: "41.8 MB", capturedBy: { id: "m-tomasz", name: "Tomasz W.", wallet: "2xQr...nP30" }, capturedAt: "2026-02-10", capturedAtLabel: "Feb 10, 2026 · 8:12 PM", location: { label: "Ashland, OR", lat: 42.19, lng: -122.70 }, txHash: "5tLm...eH74", chain: "solana", deviceInfo: { model: "Samsung Galaxy S24", os: "Android 14" }, captureApp: "Kinship v0.9", tags: ["audio","ceremony","chant","collective"], description: "Collective chant captured during the February opening ceremony.", usedIn: [], verified: true },
+      { id: "c03", name: "Quest Artifact Photo — Healing Stone",    type: "image",    thumb: "🪨", size: "8.3 MB",  capturedBy: { id: "m-yuki",   name: "Yuki H.",   wallet: "6bWs...kM62" }, capturedAt: "2026-02-08", capturedAtLabel: "Feb 8, 2026 · 2:30 PM", location: { label: "Mt. Shasta, CA", lat: 41.30, lng: -122.31 }, txHash: "3cVp...rN89", chain: "solana", deviceInfo: { model: "iPhone 14", os: "iOS 17.6" }, captureApp: "Kinship v0.9", tags: ["photo","artifact","stone","healing"], description: "Photo of healing stone artifact gathered during the Healing Path quest.", usedIn: [], verified: true },
+      { id: "c04", name: "Reflection Notes — Shadow Work Module",   type: "document", thumb: "📝", size: "22 KB",   capturedBy: { id: "m-priya",  name: "Priya M.",  wallet: "7dXt...sL44" }, capturedAt: "2026-02-06", capturedAtLabel: "Feb 6, 2026 · 11:05 PM", location: null, txHash: "1aFq...tK91", chain: "solana", deviceInfo: { model: "iPad Pro", os: "iPadOS 18.1" }, captureApp: "Kinship v0.9", tags: ["journal","document","shadow-work","reflection"], description: "Handwritten reflection notes submitted via document capture.", usedIn: [], verified: false },
+    ];
+
+    // ── Artifacts data ────────────────────────────────────────────────────────
+    const ARTIFACTS_INIT = [
+      {
+        id: "ar01", name: "Threshold Crossing — Rahel's Journey", type: "video", thumb: "🎬", size: "184 MB",
+        producedBy: { id: "m-rahel", name: "Rahel A.", wallet: "9mKp...fT18" },
+        producedAt: "2026-02-15", producedAtLabel: "Feb 15, 2026 · 7:02 AM",
+        location: { label: "Medford, OR", lat: 42.33, lng: -122.87 },
+        txHash: "8wBn...cL55", chain: "solana", verified: true,
+        activityType: "quest", activityRef: { id: "threshold-quest", name: "Threshold Quest" },
+        sceneRef: { id: "healing-waters", name: "Healing Waters" },
+        mood: "Contemplative", tone: "Reverent", themes: ["Threshold","Water","Transformation","Grief"],
+        description: "Video journal submitted by Rahel at the completion of the Threshold Quest. She describes crossing from her old identity into a new sense of self, filmed at dawn at a river in Medford.",
+        aiPromptSeed: "A woman stands at a river at dawn in Medford, Oregon. She has just completed a symbolic threshold crossing. The mood is contemplative and reverent. The water is still. She speaks quietly about grief and transformation.",
+        generated: [
+          { id: "g01", type: "image", model: "Flux 1.1 Pro", prompt: "Dawn river in Medford, Oregon. A woman stands at the edge in soft morning light, contemplative, threshold moment, symbolic crossing, cinematic, fog on water", status: "ready", createdAt: "Feb 16, 2026" },
+          { id: "g02", type: "story", model: "Claude Opus 4.5", prompt: "Write a short mythic narrative about Rahel's crossing at the river, framed as a threshold rite...", status: "ready", createdAt: "Feb 16, 2026" },
+        ],
+      },
+      {
+        id: "ar02", name: "Challenge Victory — Tomasz's Warrior Trial", type: "image", thumb: "⚡", size: "9.2 MB",
+        producedBy: { id: "m-tomasz", name: "Tomasz W.", wallet: "2xQr...nP30" },
+        producedAt: "2026-02-10", producedAtLabel: "Feb 10, 2026 · 5:45 PM",
+        location: { label: "Ashland, OR", lat: 42.19, lng: -122.70 },
+        txHash: "5tLm...eH74", chain: "solana", verified: true,
+        activityType: "challenge", activityRef: { id: "warrior-trial", name: "Warrior Trial" },
+        sceneRef: { id: "the-arena", name: "The Arena" },
+        mood: "Triumphant", tone: "Epic", themes: ["Strength","Growth","Fire","Community"],
+        description: "Photo submitted by Tomasz on completion of the Warrior Trial challenge. He describes the experience as transformative — testing not physical strength but the ability to stay present under pressure.",
+        aiPromptSeed: "A man stands triumphant in an arena setting at dusk. He has just completed a warrior trial — not of physical combat but of presence and endurance. The mood is epic and grounded. Fire and community in the background.",
+        generated: [
+          { id: "g03", type: "image", model: "Flux 1.1 Pro", prompt: "Epic portrait, man triumphant at dusk, arena setting, fire and community background, warrior trial completion, cinematic", status: "ready", createdAt: "Feb 11, 2026" },
+        ],
+      },
+      {
+        id: "ar03", name: "Healing Sound — Yuki's Water Ceremony", type: "audio", thumb: "🌊", size: "31.4 MB",
+        producedBy: { id: "m-yuki", name: "Yuki H.", wallet: "6bWs...kM62" },
+        producedAt: "2026-02-08", producedAtLabel: "Feb 8, 2026 · 3:18 PM",
+        location: { label: "Mt. Shasta, CA", lat: 41.30, lng: -122.31 },
+        txHash: "3cVp...rN89", chain: "solana", verified: true,
+        activityType: "ceremony", activityRef: { id: "water-ceremony", name: "Water Ceremony" },
+        sceneRef: { id: "healing-waters", name: "Healing Waters" },
+        mood: "Serene", tone: "Tender", themes: ["Water","Healing","Silence","Breath","Belonging"],
+        description: "Audio recording of Yuki's personal water ceremony at Mt. Shasta. She sang and played a small drum beside the water, marking the completion of her healing path. The recording captures 18 minutes of the ceremony.",
+        aiPromptSeed: "A woman performing a quiet healing water ceremony at Mt. Shasta. She sings softly and drums slowly beside a stream. The sound of running water underneath. Serene, tender, sacred. 18-minute recording compressed into a narrative.",
+        generated: [],
+      },
+      {
+        id: "ar04", name: "Shadow Work Reflection — Priya's Mirror", type: "document", thumb: "🪞", size: "18 KB",
+        producedBy: { id: "m-priya", name: "Priya M.", wallet: "7dXt...sL44" },
+        producedAt: "2026-02-06", producedAtLabel: "Feb 6, 2026 · 11:28 PM",
+        location: null,
+        txHash: "1aFq...tK91", chain: "solana", verified: false,
+        activityType: "quest", activityRef: { id: "shadow-module", name: "Shadow Work Module" },
+        sceneRef: { id: "the-archive", name: "The Archive" },
+        mood: "Raw", tone: "Intimate", themes: ["Shadow","Memory","Transformation","Silence"],
+        description: "Written reflection submitted by Priya at the end of the Shadow Work Module. Three pages of handwritten notes, photographed and transcribed, describing what she found when she looked directly at what she had been avoiding.",
+        aiPromptSeed: "A written reflection on shadow work: what a person discovers when they look directly at what they have been avoiding. Raw, intimate, no resolution — only presence. A woman writing at midnight, alone.",
+        generated: [
+          { id: "g04", type: "story", model: "Claude Opus 4.5", prompt: "Write a lyric meditation based on Priya's shadow work notes — no narrative arc, only images and fragments that stay with the reader...", status: "ready", createdAt: "Feb 7, 2026" },
+          { id: "g05", type: "song", model: "Udio 2.0", prompt: "Intimate, minimal folk song. A woman reflecting at midnight. Shadow work, memory, the thing you've been avoiding. Sparse piano, soft voice, no resolution.", status: "generating", createdAt: "Feb 7, 2026" },
+        ],
+      },
+    ];
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    const [mediaTab, setMediaTab]         = useState("uploaded");
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [typeFilter, setTypeFilter]     = useState("All");
+    const [mediaSearch, setMediaSearch]   = useState("");
+    const [uploadedItems, setUploaded]    = useState(UPLOADED_INIT);
+    const [capturedItems, setCaptured]    = useState(CAPTURED_INIT);
+    const [artifactItems, setArtifacts]   = useState(ARTIFACTS_INIT);
+
+    const getTypeInfo = (id) => MEDIA_TYPES.find(t => t.id === id) || MEDIA_TYPES[0];
+
+    const activeList = mediaTab === "uploaded" ? uploadedItems : mediaTab === "captured" ? capturedItems : artifactItems;
+    const filtered = activeList.filter(item => {
+      const name = item.name.toLowerCase();
+      const q = mediaSearch.toLowerCase();
+      return (!q || name.includes(q) || (item.tags || []).some(t => t.includes(q))) &&
+             (typeFilter === "All" || item.type === typeFilter);
+    });
+
+    // ── Uploaded detail ──────────────────────────────────────────────────────
+    const UploadedDetail = ({ item }) => {
+      const typeInfo = getTypeInfo(item.type);
+      const [tab, setTab] = useState("info");
+      return (
+        <div style={{ maxWidth: 640 }}>
+          <PageHeader
+            title={<span style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 24 }}>{item.thumb}</span><span>{item.name}</span></span>}
+            subtitle={`${item.subtype.toUpperCase()} · ${item.size}`}
+            onBack={() => setSelectedItem(null)}
+          >
+            <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 6, background: typeInfo.color + "18", color: typeInfo.color, fontWeight: 700, border: `1px solid ${typeInfo.color}33` }}>
+              {typeInfo.label}
+            </span>
+          </PageHeader>
+
+          {/* Preview placeholder */}
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, height: 160, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, flexDirection: "column", gap: 8 }}>
+            <span style={{ fontSize: 48, opacity: 0.6 }}>{item.thumb}</span>
+            <span style={{ fontSize: 11, color: colors.textDim }}>Preview not available in prototype</span>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 2, borderBottom: `1px solid ${colors.border}`, marginBottom: 20 }}>
+            {[["info","Info","lucide:info"],["provenance","Provenance","lucide:shield-check"],["usage","Usage","lucide:link"]].map(([id,label,icon]) => (
+              <button key={id} onClick={() => setTab(id)}
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "9px 14px", background: "none", border: "none", borderBottom: `2px solid ${tab === id ? colors.accent : "transparent"}`, cursor: "pointer", fontFamily: "inherit", marginBottom: -1 }}>
+                <Icon name={icon} size={12} style={{ color: tab === id ? colors.accent : colors.textDim }} />
+                <span style={{ fontSize: 12, fontWeight: tab === id ? 600 : 400, color: tab === id ? colors.accent : colors.textMuted }}>{label}</span>
+              </button>
+            ))}
+          </div>
+
+          {tab === "info" && (
+            <div>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16, marginBottom: 14 }}>
+                {[
+                  { label: "File name",   value: item.name },
+                  { label: "Format",      value: item.subtype.toUpperCase() },
+                  { label: "Size",        value: item.size },
+                  { label: "Type",        value: typeInfo.label },
+                  { label: "Uploaded",    value: item.uploadedAtLabel },
+                  { label: "Uploaded by", value: item.uploadedBy.name },
+                ].map((r, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, paddingBottom: i < 5 ? 8 : 0, marginBottom: i < 5 ? 8 : 0, borderBottom: i < 5 ? `1px solid ${colors.border}` : "none" }}>
+                    <span style={{ fontSize: 11, color: colors.textDim, minWidth: 100 }}>{r.label}</span>
+                    <span style={{ fontSize: 12, color: colors.textMuted }}>{r.value}</span>
+                  </div>
+                ))}
+              </div>
+              {item.description && (
+                <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16, marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>Description</div>
+                  <p style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>{item.description}</p>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                {(item.tags || []).map(t => (
+                  <span key={t} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 5, background: colors.surface, border: `1px solid ${colors.border}`, color: colors.textDim }}>{t}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === "provenance" && <ProvenanceBlock item={item} type="uploaded" />}
+
+          {tab === "usage" && (
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>Used In</div>
+              {(item.usedIn || []).length === 0 ? (
+                <p style={{ fontSize: 13, color: colors.textDim, margin: 0 }}>Not referenced in any scene, actor, or quest yet.</p>
+              ) : (
+                item.usedIn.map((ref, i) => (
+                  <div key={i} style={{ fontSize: 12, color: colors.textMuted, padding: "8px 0", borderBottom: i < item.usedIn.length - 1 ? `1px solid ${colors.border}` : "none" }}>
+                    <Icon name="lucide:link" size={11} style={{ color: colors.textDim, marginRight: 6 }} />{ref}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ── Captured detail ──────────────────────────────────────────────────────
+    const CapturedDetail = ({ item }) => {
+      const typeInfo = getTypeInfo(item.type);
+      const [tab, setTab] = useState("info");
+      return (
+        <div style={{ maxWidth: 640 }}>
+          <PageHeader
+            title={<span style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 24 }}>{item.thumb}</span><span>{item.name}</span></span>}
+            subtitle={`Captured in-app · ${item.size}`}
+            onBack={() => setSelectedItem(null)}
+          >
+            <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 6, background: typeInfo.color + "18", color: typeInfo.color, fontWeight: 700, border: `1px solid ${typeInfo.color}33` }}>
+              {typeInfo.label}
+            </span>
+          </PageHeader>
+
+          <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, height: 160, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 20, flexDirection: "column", gap: 8 }}>
+            <span style={{ fontSize: 48, opacity: 0.6 }}>{item.thumb}</span>
+            <span style={{ fontSize: 11, color: colors.textDim }}>Preview not available in prototype</span>
+          </div>
+
+          <div style={{ display: "flex", gap: 2, borderBottom: `1px solid ${colors.border}`, marginBottom: 20 }}>
+            {[["info","Info","lucide:info"],["provenance","Provenance","lucide:shield-check"],["device","Device","lucide:smartphone"]].map(([id,label,icon]) => (
+              <button key={id} onClick={() => setTab(id)}
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "9px 14px", background: "none", border: "none", borderBottom: `2px solid ${tab === id ? colors.accent : "transparent"}`, cursor: "pointer", fontFamily: "inherit", marginBottom: -1 }}>
+                <Icon name={icon} size={12} style={{ color: tab === id ? colors.accent : colors.textDim }} />
+                <span style={{ fontSize: 12, fontWeight: tab === id ? 600 : 400, color: tab === id ? colors.accent : colors.textMuted }}>{label}</span>
+              </button>
+            ))}
+          </div>
+
+          {tab === "info" && (
+            <div>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16, marginBottom: 14 }}>
+                {[
+                  { label: "Name",         value: item.name },
+                  { label: "Type",         value: typeInfo.label },
+                  { label: "Size",         value: item.size },
+                  { label: "Captured by",  value: item.capturedBy.name },
+                  { label: "Captured at",  value: item.capturedAtLabel },
+                  { label: "Location",     value: item.location?.label || "Not recorded" },
+                ].map((r, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, paddingBottom: i < 5 ? 8 : 0, marginBottom: i < 5 ? 8 : 0, borderBottom: i < 5 ? `1px solid ${colors.border}` : "none" }}>
+                    <span style={{ fontSize: 11, color: colors.textDim, minWidth: 100 }}>{r.label}</span>
+                    <span style={{ fontSize: 12, color: colors.textMuted }}>{r.value}</span>
+                  </div>
+                ))}
+              </div>
+              {item.description && (
+                <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16 }}>
+                  <p style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.6, margin: 0 }}>{item.description}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === "provenance" && <ProvenanceBlock item={item} type="captured" />}
+
+          {tab === "device" && (
+            <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>Device & Capture Info</div>
+              {[
+                { label: "Device",        value: item.deviceInfo?.model || "Unknown" },
+                { label: "OS",            value: item.deviceInfo?.os || "Unknown" },
+                { label: "Capture app",   value: item.captureApp },
+                { label: "Wallet",        value: item.capturedBy.wallet },
+              ].map((r, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, paddingBottom: i < 3 ? 8 : 0, marginBottom: i < 3 ? 8 : 0, borderBottom: i < 3 ? `1px solid ${colors.border}` : "none" }}>
+                  <span style={{ fontSize: 11, color: colors.textDim, minWidth: 100 }}>{r.label}</span>
+                  <span style={{ fontSize: 12, color: colors.textMuted, fontFamily: r.label === "Wallet" ? "monospace" : "inherit" }}>{r.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ── Artifact detail ──────────────────────────────────────────────────────
+    const ArtifactDetail = ({ item }) => {
+      const typeInfo = getTypeInfo(item.type);
+      const [tab, setTab] = useState("context");
+      const [editMood, setEditMood]   = useState(item.mood || "");
+      const [editTone, setEditTone]   = useState(item.tone || "");
+      const [editThemes, setEditThemes] = useState(item.themes || []);
+      const [editDesc, setEditDesc]   = useState(item.description || "");
+      const [editSeed, setEditSeed]   = useState(item.aiPromptSeed || "");
+      const [generating, setGenerating] = useState(null);
+      const [localGenerated, setLocalGenerated] = useState(item.generated || []);
+      const [genType, setGenType] = useState("image");
+
+      const GEN_TYPES = [
+        { id: "image", label: "Image",  icon: "lucide:image",         model: "Flux 1.1 Pro"    },
+        { id: "video", label: "Video",  icon: "lucide:video",         model: "Runway Gen-3"    },
+        { id: "story", label: "Story",  icon: "lucide:book-open",     model: "Claude Opus 4.5" },
+        { id: "song",  label: "Song",   icon: "lucide:music",         model: "Udio 2.0"        },
+      ];
+
+      const genInfo = GEN_TYPES.find(g => g.id === genType);
+
+      const handleGenerate = () => {
+        setGenerating(genType);
+        setTimeout(() => {
+          const newItem = {
+            id: "g-" + Date.now(),
+            type: genType,
+            model: genInfo.model,
+            prompt: editSeed || editDesc,
+            status: "ready",
+            createdAt: "Just now",
+          };
+          setLocalGenerated(prev => [newItem, ...prev]);
+          setGenerating(null);
+        }, 2200);
+      };
+
+      const GEN_ICON = { image: "🖼️", video: "🎬", story: "📖", song: "🎵" };
+      const GEN_STATUS_COLOR = { ready: colors.green, generating: colors.warning, failed: colors.red };
+
+      return (
+        <div style={{ maxWidth: 680 }}>
+          <PageHeader
+            title={<span style={{ display: "flex", alignItems: "center", gap: 10 }}><span style={{ fontSize: 24 }}>{item.thumb}</span><span>{item.name}</span></span>}
+            subtitle={`${item.activityRef.name} · ${item.producedBy.name}`}
+            onBack={() => setSelectedItem(null)}
+          >
+            <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 6, background: typeInfo.color + "18", color: typeInfo.color, fontWeight: 700, border: `1px solid ${typeInfo.color}33` }}>
+              {typeInfo.label}
+            </span>
+          </PageHeader>
+
+          {/* Stats row */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+            {[
+              { label: "Activity",    value: item.activityType.charAt(0).toUpperCase() + item.activityType.slice(1) },
+              { label: "Scene",       value: item.sceneRef.name },
+              { label: "Mood",        value: item.mood || "—" },
+              { label: "AI Outputs",  value: localGenerated.length },
+            ].map((s, i) => (
+              <div key={i} style={{ padding: "9px 11px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+                <div style={{ fontSize: 9, color: colors.textDim, marginBottom: 3, textTransform: "uppercase", letterSpacing: 0.5 }}>{s.label}</div>
+                <div style={{ fontSize: 13, color: colors.text, fontWeight: 600 }}>{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 2, borderBottom: `1px solid ${colors.border}`, marginBottom: 20 }}>
+            {[
+              ["context","Context","lucide:layers"],
+              ["provenance","Provenance","lucide:shield-check"],
+              ["generate","Generate","lucide:sparkles"],
+              ["outputs","Outputs","lucide:gallery-thumbnails"],
+            ].map(([id,label,icon]) => (
+              <button key={id} onClick={() => setTab(id)}
+                style={{ display: "flex", alignItems: "center", gap: 5, padding: "9px 14px", background: "none", border: "none", borderBottom: `2px solid ${tab === id ? colors.accent : "transparent"}`, cursor: "pointer", fontFamily: "inherit", marginBottom: -1 }}>
+                <Icon name={icon} size={12} style={{ color: tab === id ? colors.accent : colors.textDim }} />
+                <span style={{ fontSize: 12, fontWeight: tab === id ? 600 : 400, color: tab === id ? colors.accent : colors.textMuted }}>{label}</span>
+                {id === "outputs" && localGenerated.length > 0 && (
+                  <span style={{ fontSize: 10, background: colors.accent + "22", color: colors.accent, padding: "1px 6px", borderRadius: 8 }}>{localGenerated.length}</span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Context tab */}
+          {tab === "context" && (
+            <div>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16, marginBottom: 14 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>Activity Context</div>
+                {[
+                  { label: "Activity type", value: item.activityType.charAt(0).toUpperCase() + item.activityType.slice(1) },
+                  { label: "Activity",      value: item.activityRef.name },
+                  { label: "Scene",         value: item.sceneRef.name },
+                  { label: "Produced by",   value: item.producedBy.name },
+                  { label: "Produced at",   value: item.producedAtLabel },
+                  { label: "Location",      value: item.location?.label || "Not recorded" },
+                ].map((r, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, paddingBottom: i < 5 ? 8 : 0, marginBottom: i < 5 ? 8 : 0, borderBottom: i < 5 ? `1px solid ${colors.border}` : "none" }}>
+                    <span style={{ fontSize: 11, color: colors.textDim, minWidth: 110 }}>{r.label}</span>
+                    <span style={{ fontSize: 12, color: colors.textMuted }}>{r.value}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16 }}>
+                <div style={{ fontSize: 11, color: colors.textDim, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>Description</div>
+                <p style={{ fontSize: 13, color: colors.textMuted, lineHeight: 1.7, margin: 0 }}>{item.description}</p>
+                <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 12 }}>
+                  {(item.themes || []).map(t => (
+                    <span key={t} style={{ fontSize: 11, padding: "3px 8px", borderRadius: 5, background: colors.accent + "12", border: `1px solid ${colors.accent}33`, color: colors.accent }}>{t}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Provenance tab */}
+          {tab === "provenance" && <ProvenanceBlock item={item} type="artifact" />}
+
+          {/* Generate tab */}
+          {tab === "generate" && (
+            <div>
+              <InfoBox color={colors.accent}>
+                ✨ Generation uses this artifact's metadata as the creative seed. Edit the fields below to refine what the AI will produce.
+              </InfoBox>
+
+              {/* Generation metadata */}
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 18, marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Generation Metadata</div>
+
+                <Field label="Mood" hint="The emotional register of the artifact.">
+                  <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                    {MOOD_OPTIONS.map(m => (
+                      <button key={m} onClick={() => setEditMood(m)}
+                        style={{ padding: "4px 10px", background: editMood === m ? colors.accent + "18" : "transparent", border: `1px solid ${editMood === m ? colors.accent + "55" : colors.border}`, borderRadius: 6, color: editMood === m ? colors.accent : colors.textDim, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{m}</button>
+                    ))}
+                  </div>
+                </Field>
+
+                <div style={{ marginTop: 14 }}>
+                  <Field label="Tone" hint="The narrative register or texture.">
+                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                      {TONE_OPTIONS.map(t => (
+                        <button key={t} onClick={() => setEditTone(t)}
+                          style={{ padding: "4px 10px", background: editTone === t ? colors.purple + "22" : "transparent", border: `1px solid ${editTone === t ? colors.purple + "55" : colors.border}`, borderRadius: 6, color: editTone === t ? colors.purple : colors.textDim, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{t}</button>
+                      ))}
+                    </div>
+                  </Field>
+                </div>
+
+                <div style={{ marginTop: 14 }}>
+                  <Field label="Themes" hint="Click to toggle. These guide what the AI emphasizes.">
+                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                      {THEME_OPTIONS.map(t => {
+                        const on = editThemes.includes(t);
+                        return (
+                          <button key={t} onClick={() => setEditThemes(p => on ? p.filter(x => x !== t) : [...p, t])}
+                            style={{ padding: "4px 10px", background: on ? "#4ECDC422" : "transparent", border: `1px solid ${on ? "#4ECDC4" : colors.border}`, borderRadius: 6, color: on ? "#4ECDC4" : colors.textDim, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>{t}</button>
+                        );
+                      })}
+                    </div>
+                  </Field>
+                </div>
+
+                <div style={{ marginTop: 14 }}>
+                  <Field label="Description" hint="What happened. What it meant. What you want the AI to capture.">
+                    <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} rows={3}
+                      style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 12, lineHeight: 1.7, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+                  </Field>
+                </div>
+
+                <div style={{ marginTop: 14 }}>
+                  <Field label="AI Prompt Seed" hint="Base prompt fed to the generation model. Edit freely.">
+                    <textarea value={editSeed} onChange={e => setEditSeed(e.target.value)} rows={3}
+                      style={{ width: "100%", padding: "9px 12px", background: colors.bg, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 12, lineHeight: 1.7, fontFamily: "inherit", resize: "vertical", boxSizing: "border-box" }} />
+                  </Field>
+                </div>
+              </div>
+
+              {/* Generate type picker + button */}
+              <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 14 }}>Generate</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
+                  {GEN_TYPES.map(g => (
+                    <div key={g.id} onClick={() => setGenType(g.id)}
+                      style={{ padding: "12px 8px", background: genType === g.id ? colors.accent + "14" : colors.bg, border: `1px solid ${genType === g.id ? colors.accent + "55" : colors.border}`, borderRadius: 8, cursor: "pointer", textAlign: "center" }}>
+                      <div style={{ fontSize: 20, marginBottom: 5 }}>{GEN_ICON[g.id]}</div>
+                      <div style={{ fontSize: 12, fontWeight: genType === g.id ? 700 : 400, color: genType === g.id ? colors.accent : colors.textMuted }}>{g.label}</div>
+                      <div style={{ fontSize: 9, color: colors.textDim, marginTop: 2 }}>{g.model}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <Btn onClick={handleGenerate} disabled={!!generating || !editSeed.trim() && !editDesc.trim()}>
+                    {generating ? `Generating ${generating}...` : `Generate ${genInfo?.label}`}
+                  </Btn>
+                  {localGenerated.length > 0 && (
+                    <button onClick={() => setTab("outputs")} style={{ padding: "9px 14px", background: "transparent", border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.textDim, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                      View {localGenerated.length} output{localGenerated.length !== 1 ? "s" : ""} →
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Outputs tab */}
+          {tab === "outputs" && (
+            <div>
+              {localGenerated.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "48px 0" }}>
+                  <div style={{ fontSize: 36, marginBottom: 12 }}>✨</div>
+                  <p style={{ fontSize: 14, color: colors.textMuted, marginBottom: 6 }}>No outputs yet</p>
+                  <p style={{ fontSize: 12, color: colors.textDim }}>Go to the Generate tab to create your first image, video, story, or song from this artifact.</p>
+                  <button onClick={() => setTab("generate")} style={{ marginTop: 12, padding: "9px 18px", background: colors.accent + "14", border: `1px solid ${colors.accent}44`, borderRadius: 7, color: colors.accent, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Go to Generate</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {localGenerated.map((g, i) => (
+                    <div key={g.id} style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16, display: "flex", gap: 14, alignItems: "flex-start" }}>
+                      <div style={{ width: 48, height: 48, borderRadius: 10, background: colors.accent + "14", border: `1px solid ${colors.accent}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{GEN_ICON[g.type]}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: colors.text, textTransform: "capitalize" }}>{g.type}</span>
+                          <span style={{ fontSize: 10, color: colors.textDim }}>{g.model}</span>
+                          <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: GEN_STATUS_COLOR[g.status] + "18", color: GEN_STATUS_COLOR[g.status], fontWeight: 600 }}>{g.status}</span>
+                        </div>
+                        <p style={{ fontSize: 11, color: colors.textDim, lineHeight: 1.5, margin: "0 0 6px" }}>{g.prompt?.slice(0, 120)}{g.prompt?.length > 120 ? "..." : ""}</p>
+                        <div style={{ fontSize: 10, color: colors.textDim }}>{g.createdAt}</div>
+                      </div>
+                      {g.status === "ready" && (
+                        <button style={{ padding: "6px 12px", background: "transparent", border: `1px solid ${colors.border}`, borderRadius: 6, color: colors.textDim, fontSize: 11, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>View ↗</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // ── Detail routing ────────────────────────────────────────────────────────
+    if (selectedItem) {
+      const item = [...uploadedItems, ...capturedItems, ...artifactItems].find(i => i.id === selectedItem);
+      if (!item) return null;
+      if (artifactItems.find(i => i.id === selectedItem)) return <ArtifactDetail item={item} />;
+      if (capturedItems.find(i => i.id === selectedItem)) return <CapturedDetail item={item} />;
+      return <UploadedDetail item={item} />;
+    }
+
+    // ── Stats per tab ─────────────────────────────────────────────────────────
+    const tabStats = {
+      uploaded: [
+        { label: "Files",       value: uploadedItems.length },
+        { label: "Verified",    value: uploadedItems.filter(i => i.verified).length },
+        { label: "Team uploads",value: [...new Set(uploadedItems.map(i => i.uploadedBy.id))].length + " uploaders" },
+        { label: "Storage",     value: "1.8 GB" },
+      ],
+      captured: [
+        { label: "Captured",    value: capturedItems.length },
+        { label: "Members",     value: [...new Set(capturedItems.map(i => i.capturedBy.id))].length },
+        { label: "Verified",    value: capturedItems.filter(i => i.verified).length },
+        { label: "Storage",     value: "366 MB" },
+      ],
+      artifacts: [
+        { label: "Artifacts",   value: artifactItems.length },
+        { label: "Members",     value: [...new Set(artifactItems.map(i => i.producedBy.id))].length },
+        { label: "AI Outputs",  value: artifactItems.reduce((sum, a) => sum + (a.generated?.length || 0), 0) },
+        { label: "Storage",     value: "243 MB" },
+      ],
+    };
+
+    // ── Dashboard ─────────────────────────────────────────────────────────────
+    return (
+      <div>
+        <PageHeader title="Media" subtitle="Cycle media library — uploaded, captured, and artifact content with on-chain provenance">
+          {mediaTab === "uploaded" && <Btn onClick={() => {}}>+ Upload</Btn>}
+        </PageHeader>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 2, marginBottom: 20, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, overflow: "hidden", width: "fit-content" }}>
+          {[
+            { id: "uploaded",  label: "Uploaded",  icon: "lucide:upload",    count: uploadedItems.length },
+            { id: "captured",  label: "Captured",  icon: "lucide:aperture",  count: capturedItems.length },
+            { id: "artifacts", label: "Artifacts", icon: "lucide:layers",    count: artifactItems.length },
+          ].map((t, i) => (
+            <button key={t.id} onClick={() => { setMediaTab(t.id); setTypeFilter("All"); setMediaSearch(""); }}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", background: mediaTab === t.id ? colors.accent + "16" : "transparent", border: "none", borderRight: i < 2 ? `1px solid ${colors.border}` : "none", cursor: "pointer", fontFamily: "inherit" }}>
+              <Icon name={t.icon} size={13} style={{ color: mediaTab === t.id ? colors.accent : colors.textDim }} />
+              <span style={{ fontSize: 13, fontWeight: mediaTab === t.id ? 600 : 400, color: mediaTab === t.id ? colors.accent : colors.textMuted }}>{t.label}</span>
+              <span style={{ fontSize: 11, color: colors.textDim }}>({t.count})</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Captured coming-soon notice */}
+        {mediaTab === "captured" && (
+          <InfoBox color={colors.warning}>
+            📍 In-app capture is a planned feature. All items shown below were captured during beta testing. When live, every piece of captured media will carry device provenance, GPS coordinates, and an immediate on-chain record linked to the member's wallet — giving it clear, irrefutable origin.
+          </InfoBox>
+        )}
+
+        {/* Stats strip */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 20 }}>
+          {tabStats[mediaTab].map((s, i) => (
+            <div key={i} style={{ padding: "10px 14px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8 }}>
+              <div style={{ fontSize: 9, color: colors.textDim, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>{s.label}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
+          <input
+            value={mediaSearch}
+            onChange={e => setMediaSearch(e.target.value)}
+            placeholder="Search by name or tag..."
+            style={{ flex: 1, minWidth: 180, padding: "8px 12px", background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 7, color: colors.text, fontSize: 12, fontFamily: "inherit" }}
+          />
+          {["All", ...MEDIA_TYPES.map(t => t.label)].map(t => (
+            <FilterPill key={t} label={t} active={typeFilter === t} onClick={() => setTypeFilter(t === typeFilter ? "All" : t)} />
+          ))}
+        </div>
+
+        {/* Item grid */}
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "56px 0" }}>
+            <div style={{ fontSize: 36, marginBottom: 10, opacity: 0.4 }}>🎞️</div>
+            <p style={{ fontSize: 14, color: colors.textMuted, marginBottom: 4 }}>No items found</p>
+            <p style={{ fontSize: 12, color: colors.textDim }}>Try clearing the search or changing the type filter.</p>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 }}>
+            {filtered.map(item => {
+              const typeInfo = getTypeInfo(item.type);
+              const [hov, setHov] = React.useState(false);
+              const byKey   = mediaTab === "artifact" ? "producedBy" : mediaTab === "captured" ? "capturedBy" : "uploadedBy";
+              const timeKey = mediaTab === "artifact" ? "producedAt" : mediaTab === "captured" ? "capturedAt" : "uploadedAt";
+              const actor   = item.uploadedBy || item.capturedBy || item.producedBy;
+              return (
+                <div key={item.id} onClick={() => setSelectedItem(item.id)}
+                  onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+                  style={{ display: "flex", gap: 14, padding: "14px 16px", background: hov ? colors.surfaceHover : colors.surface, border: `1px solid ${hov ? colors.borderHover : colors.border}`, borderRadius: 10, cursor: "pointer", transition: "all 0.15s", alignItems: "flex-start" }}>
+                  {/* Thumb */}
+                  <div style={{ width: 52, height: 52, borderRadius: 10, background: typeInfo.color + "14", border: `1px solid ${typeInfo.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0 }}>
+                    {item.thumb}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: colors.text, marginBottom: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.name}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+                      <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 4, background: typeInfo.color + "18", color: typeInfo.color, fontWeight: 700 }}>{typeInfo.label}</span>
+                      <span style={{ fontSize: 10, color: colors.textDim }}>{item.size}</span>
+                      {mediaTab === "artifacts" && item.activityRef && (
+                        <span style={{ fontSize: 10, color: colors.textDim }}>· {item.activityRef.name}</span>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 11, color: colors.textDim }}>{actor?.name}</span>
+                      <span style={{ fontSize: 10, color: colors.textDim }}>·</span>
+                      <span style={{ fontSize: 11, color: colors.textDim }}>{item.uploadedAt || item.capturedAt || item.producedAt}</span>
+                      {item.location && <span style={{ fontSize: 10, color: colors.textDim }}>· {item.location.label}</span>}
+                    </div>
+                    {mediaTab === "artifacts" && (item.generated?.length || 0) > 0 && (
+                      <div style={{ marginTop: 5, fontSize: 10, color: colors.accent }}>
+                        ✨ {item.generated.length} AI output{item.generated.length !== 1 ? "s" : ""}
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 5, flexShrink: 0 }}>
+                    <div style={{ width: 7, height: 7, borderRadius: "50%", background: item.verified ? colors.green : colors.warning }} title={item.verified ? "Verified" : "Pending"} />
+                    <Icon name="lucide:chevron-right" size={14} style={{ color: colors.textDim }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1 style={{ fontSize: 22, fontWeight: 700, color: colors.text, letterSpacing: -0.3 }}>{page.charAt(0).toUpperCase() + page.slice(1)}</h1>
@@ -13716,6 +14417,7 @@ function App() {
       { id: "actors", icon: "lucide:user-cog", label: "Actors", count: 7 },
       { id: "challenges", icon: "lucide:zap", label: "Challenges", count: 3 },
       { id: "assets", icon: "lucide:images", label: "Assets", count: 69 },
+      { id: "media",  icon: "lucide:film",   label: "Media",  count: 28 },
     ],
     connect: [
       { id: "tools", icon: "lucide:wrench", label: "Tools", count: 6 },
