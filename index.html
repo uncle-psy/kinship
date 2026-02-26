@@ -8527,6 +8527,455 @@ const CycleContent = ({ page, context }) => {
     );
   }
 
+  if (page === "media") {
+
+    // ── State ────────────────────────────────────────────────────────────────
+    const cycleName   = { mountain: "Mountain Temple", ocean: "Ocean Depths", forest: "Dark Forest" }[context] || "Cycle";
+    const cycleSlug   = context || "cycle";
+    const blogUrl     = `https://kinship.today/${cycleSlug}`;
+
+    const [mediaTab,      setMediaTab]      = useState("publishing");
+
+    // Publishing state
+    const [blogTab,       setBlogTab]       = useState("posts");
+    const [autoPublish,   setAutoPublish]   = useState(true);
+    const [frequency,     setFrequency]     = useState("daily");
+    const [blogTone,      setBlogTone]      = useState("warm");
+    const [blogFocus,     setBlogFocus]     = useState("activities");
+    const [blogContent,   setBlogContent]   = useState(["activities","stories","reflections"]);
+    const [vibePrompt,    setVibePrompt]    = useState("");
+    const [vibeHistory,   setVibeHistory]   = useState([]);
+    const [showNewPost,   setShowNewPost]   = useState(false);
+    const [newPostTitle,  setNewPostTitle]  = useState("");
+    const [newPostBody,   setNewPostBody]   = useState("");
+    const [blogPosts,     setBlogPosts]     = useState([
+      { id:"bp1", title:"Week One: Opening the Temple Gates", date:"Feb 24", status:"Published", views:142, auto:true  },
+      { id:"bp2", title:"The Challenge of Stillness",          date:"Feb 23", status:"Published", views:98,  auto:true  },
+      { id:"bp3", title:"Members Share Their Reflections",     date:"Feb 22", status:"Published", views:211, auto:true  },
+      { id:"bp4", title:"Introducing the Inner Mirror Quest",  date:"Feb 21", status:"Published", views:87,  auto:false },
+      { id:"bp5", title:"Draft: What Happened This Week",      date:"Feb 25", status:"Draft",     views:0,   auto:true  },
+    ]);
+
+    // Social state
+    const [socialTab,     setSocialTab]     = useState("accounts");
+    const [editingAcct,   setEditingAcct]   = useState(null);
+    const [socialAccounts, setSocialAccounts] = useState([
+      { id:"sa1", platform:"Instagram",  handle:"@mountaintemple", connected:true,  freq:"3x/week", types:["stories","quotes","highlights"], tone:"warm",        autoReply:true  },
+      { id:"sa2", platform:"Twitter/X",  handle:"@mtn_temple",     connected:true,  freq:"daily",   types:["quotes","updates","threads"],    tone:"thoughtful",  autoReply:false },
+      { id:"sa3", platform:"Telegram",   handle:"Mountain Temple", connected:true,  freq:"manual",  types:["announcements","updates"],        tone:"direct",      autoReply:true  },
+      { id:"sa4", platform:"Discord",    handle:"kinship-temple",  connected:false, freq:"manual",  types:["events","discussions"],           tone:"community",   autoReply:false },
+    ]);
+    const [audienceTiers, setAudienceTiers] = useState([
+      {
+        id:"members", label:"Members", icon:"👥", desc:"Active paying or invited cycle participants",
+        dmEnabled:true, responseTime:"within 2 hours", tone:"warm and personal",
+        questAware:true, questContext:"Address by quest stage when possible",
+        autoReply:true, replyStyle:"Full personalized response",
+      },
+      {
+        id:"guests", label:"Guests", icon:"🧑‍🤝‍🧑", desc:"Invited trial or guest-access participants",
+        dmEnabled:true, responseTime:"within 6 hours", tone:"welcoming and curious",
+        questAware:false, questContext:"",
+        autoReply:true, replyStyle:"Friendly invitation to learn more",
+      },
+      {
+        id:"visitors", label:"Visitors", icon:"👁️", desc:"Public followers — not yet in the cycle",
+        dmEnabled:false, responseTime:"best effort", tone:"open and professional",
+        questAware:false, questContext:"",
+        autoReply:false, replyStyle:"Generic welcome or FAQ",
+      },
+      {
+        id:"quest", label:"Quest Participants", icon:"🧭", desc:"Members currently on an active quest",
+        dmEnabled:true, responseTime:"within 1 hour", tone:"supportive and focused",
+        questAware:true, questContext:"Always reference their current quest stage and progress",
+        autoReply:true, replyStyle:"Quest-aware guided response",
+      },
+    ]);
+
+    // ── Shared helpers ────────────────────────────────────────────────────────
+    const row = (label, value, accent) => (
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:`1px solid ${colors.border}` }}>
+        <span style={{ fontSize:12, color:colors.textMuted }}>{label}</span>
+        <span style={{ fontSize:12, color: accent || colors.text, fontWeight:500 }}>{value}</span>
+      </div>
+    );
+
+    const chip = (label, active, onClick) => (
+      <div onClick={onClick} style={{
+        padding:"4px 10px", borderRadius:20, fontSize:11, cursor:"pointer", userSelect:"none",
+        background: active ? colors.accent + "22" : colors.surfaceHigh,
+        color:       active ? colors.accent         : colors.textMuted,
+        border:`1px solid ${active ? colors.accent + "55" : colors.border}`,
+      }}>{label}</div>
+    );
+
+    const toggleContentItem = (item) => {
+      setBlogContent(prev => prev.includes(item) ? prev.filter(x=>x!==item) : [...prev, item]);
+    };
+
+    const handleVibeSubmit = () => {
+      if (!vibePrompt.trim()) return;
+      setVibeHistory(prev => [{ prompt: vibePrompt, ts: new Date().toLocaleTimeString() }, ...prev.slice(0,9)]);
+      setVibePrompt("");
+    };
+
+    const handlePublishPost = () => {
+      if (!newPostTitle.trim()) return;
+      const post = { id:`bp${Date.now()}`, title:newPostTitle, date:"Today", status:"Published", views:0, auto:false };
+      setBlogPosts(prev => [post, ...prev]);
+      setNewPostTitle(""); setNewPostBody(""); setShowNewPost(false);
+    };
+
+    const FREQ_OPTIONS   = ["daily","weekly","biweekly","manual"];
+    const TONE_OPTIONS   = ["warm","reflective","thoughtful","playful","direct","ceremonial"];
+    const FOCUS_OPTIONS  = ["activities","stories","reflections","quests","economy","community"];
+    const CONTENT_ITEMS  = ["activities","stories","reflections","quests","milestones","media","member-highlights"];
+    const PLATFORM_TONES = ["warm","thoughtful","direct","playful","professional","community","ceremonial"];
+
+    // ── Publishing Panel ──────────────────────────────────────────────────────
+    const PublishingPanel = () => (
+      <div style={{ padding:"24px" }}>
+
+        {/* Sub-tabs */}
+        <div style={{ display:"flex", gap:8, marginBottom:24 }}>
+          {["posts","settings","editor"].map(t => (
+            <button key={t} onClick={() => setBlogTab(t)} style={{
+              padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer",
+              background: blogTab===t ? colors.accent+"22" : colors.surfaceHigh,
+              color:       blogTab===t ? colors.accent        : colors.textMuted,
+              border:`1px solid ${blogTab===t ? colors.accent+"55" : colors.border}`,
+              fontWeight:  blogTab===t ? 600 : 400,
+            }}>
+              {t === "posts" ? "Posts" : t === "settings" ? "Settings" : "Vibe Editor"}
+            </button>
+          ))}
+          <div style={{ flex:1 }} />
+          <div style={{ fontSize:11, color:colors.textMuted, alignSelf:"center" }}>
+            Blog: <a href={blogUrl} style={{ color:colors.accent, textDecoration:"none" }} target="_blank" rel="noreferrer">{blogUrl}</a>
+          </div>
+        </div>
+
+        {/* ── Posts tab ── */}
+        {blogTab === "posts" && (
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <div style={{ fontSize:13, color:colors.textMuted }}>
+                {autoPublish ? `Auto-publishing ${frequency}` : "Manual publishing only"} · {blogPosts.filter(p=>p.status==="Published").length} published posts
+              </div>
+              <button onClick={() => setShowNewPost(v => !v)} style={{
+                padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer",
+                background:colors.accent+"22", color:colors.accent, border:`1px solid ${colors.accent}44`,
+              }}>+ New Post</button>
+            </div>
+
+            {showNewPost && (
+              <div style={{ background:colors.surfaceHigh, border:`1px solid ${colors.border}`, borderRadius:8, padding:16, marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:colors.text, marginBottom:10 }}>New Post</div>
+                <input
+                  value={newPostTitle} onChange={e => setNewPostTitle(e.target.value)}
+                  placeholder="Post title"
+                  style={{ width:"100%", padding:"8px 10px", borderRadius:6, border:`1px solid ${colors.border}`, background:colors.surface, color:colors.text, fontSize:12, marginBottom:8, boxSizing:"border-box" }}
+                />
+                <textarea
+                  value={newPostBody} onChange={e => setNewPostBody(e.target.value)}
+                  placeholder="Post body (optional — leave blank to auto-generate from cycle activity)"
+                  rows={4}
+                  style={{ width:"100%", padding:"8px 10px", borderRadius:6, border:`1px solid ${colors.border}`, background:colors.surface, color:colors.text, fontSize:12, resize:"vertical", boxSizing:"border-box" }}
+                />
+                <div style={{ display:"flex", gap:8, marginTop:8 }}>
+                  <button onClick={handlePublishPost} style={{ padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer", background:colors.accent, color:"#fff", border:"none" }}>Publish Now</button>
+                  <button onClick={() => setShowNewPost(false)} style={{ padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer", background:colors.surfaceHigh, color:colors.textMuted, border:`1px solid ${colors.border}` }}>Cancel</button>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {blogPosts.map(post => (
+                <div key={post.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", background:colors.surfaceHigh, borderRadius:8, border:`1px solid ${colors.border}` }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, color:colors.text, fontWeight:500 }}>{post.title}</div>
+                    <div style={{ fontSize:11, color:colors.textMuted, marginTop:2 }}>{post.date} · {post.auto ? "Auto-generated" : "Manual"}</div>
+                  </div>
+                  <div style={{ fontSize:11, color:colors.textMuted }}>{post.views > 0 ? `${post.views} views` : ""}</div>
+                  <div style={{
+                    fontSize:10, padding:"2px 8px", borderRadius:10, fontWeight:600,
+                    background: post.status==="Published" ? colors.success+"22" : colors.warning+"22",
+                    color:       post.status==="Published" ? colors.success        : colors.warning,
+                    border:`1px solid ${post.status==="Published" ? colors.success+"44" : colors.warning+"44"}`,
+                  }}>{post.status}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Settings tab ── */}
+        {blogTab === "settings" && (
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+
+            {/* Auto-publish */}
+            <div style={{ background:colors.surfaceHigh, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
+              <div style={{ fontSize:13, fontWeight:600, color:colors.text, marginBottom:12 }}>Auto-Publish</div>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                <span style={{ fontSize:12, color:colors.textMuted }}>Auto-publish enabled</span>
+                <div onClick={() => setAutoPublish(v=>!v)} style={{
+                  width:40, height:22, borderRadius:11, cursor:"pointer", position:"relative",
+                  background: autoPublish ? colors.accent : colors.border, transition:"background 0.2s",
+                }}>
+                  <div style={{
+                    position:"absolute", top:3, left: autoPublish ? 21 : 3,
+                    width:16, height:16, borderRadius:"50%", background:"#fff", transition:"left 0.2s",
+                  }} />
+                </div>
+              </div>
+              <div style={{ fontSize:12, color:colors.textMuted, marginBottom:8 }}>Frequency</div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {FREQ_OPTIONS.map(f => chip(f, frequency===f, () => setFrequency(f)))}
+              </div>
+            </div>
+
+            {/* Tone */}
+            <div style={{ background:colors.surfaceHigh, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
+              <div style={{ fontSize:13, fontWeight:600, color:colors.text, marginBottom:12 }}>Tone</div>
+              <div style={{ fontSize:12, color:colors.textMuted, marginBottom:8 }}>Writing tone for auto-generated posts</div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {TONE_OPTIONS.map(t => chip(t, blogTone===t, () => setBlogTone(t)))}
+              </div>
+            </div>
+
+            {/* Focus */}
+            <div style={{ background:colors.surfaceHigh, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
+              <div style={{ fontSize:13, fontWeight:600, color:colors.text, marginBottom:12 }}>Primary Focus</div>
+              <div style={{ fontSize:12, color:colors.textMuted, marginBottom:8 }}>What the post leads with</div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {FOCUS_OPTIONS.map(f => chip(f, blogFocus===f, () => setBlogFocus(f)))}
+              </div>
+            </div>
+
+            {/* Content */}
+            <div style={{ background:colors.surfaceHigh, borderRadius:8, padding:16, border:`1px solid ${colors.border}` }}>
+              <div style={{ fontSize:13, fontWeight:600, color:colors.text, marginBottom:12 }}>Content Sources</div>
+              <div style={{ fontSize:12, color:colors.textMuted, marginBottom:8 }}>What gets pulled into each post</div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {CONTENT_ITEMS.map(c => chip(c, blogContent.includes(c), () => toggleContentItem(c)))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Vibe Editor tab ── */}
+        {blogTab === "editor" && (
+          <div>
+            <div style={{ background:colors.surfaceHigh, borderRadius:8, padding:16, border:`1px solid ${colors.border}`, marginBottom:16 }}>
+              <div style={{ fontSize:13, fontWeight:600, color:colors.text, marginBottom:4 }}>Vibe Coding — Blog Editor</div>
+              <div style={{ fontSize:12, color:colors.textMuted, marginBottom:12 }}>
+                Describe what you want to change about the blog — tone, layout, content sections, post structure. Changes apply to future auto-generated posts.
+              </div>
+              <textarea
+                value={vibePrompt} onChange={e => setVibePrompt(e.target.value)}
+                placeholder='e.g. "Make posts shorter and lead with a member story. Add a brief quest update at the end. Use less formal language overall."'
+                rows={4}
+                style={{ width:"100%", padding:"10px 12px", borderRadius:6, border:`1px solid ${colors.border}`, background:colors.surface, color:colors.text, fontSize:12, resize:"vertical", boxSizing:"border-box" }}
+              />
+              <button onClick={handleVibeSubmit} style={{ marginTop:8, padding:"7px 16px", borderRadius:6, fontSize:12, cursor:"pointer", background:colors.accent, color:"#fff", border:"none" }}>
+                Apply Change
+              </button>
+            </div>
+            {vibeHistory.length > 0 && (
+              <div>
+                <div style={{ fontSize:12, color:colors.textMuted, marginBottom:8 }}>Recent edits</div>
+                {vibeHistory.map((h,i) => (
+                  <div key={i} style={{ padding:"8px 12px", background:colors.surfaceHigh, borderRadius:6, border:`1px solid ${colors.border}`, marginBottom:6 }}>
+                    <div style={{ fontSize:12, color:colors.text }}>{h.prompt}</div>
+                    <div style={{ fontSize:10, color:colors.textMuted, marginTop:3 }}>{h.ts}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+
+    // ── Social Panel ──────────────────────────────────────────────────────────
+    const SocialPanel = () => (
+      <div style={{ padding:"24px" }}>
+
+        {/* Sub-tabs */}
+        <div style={{ display:"flex", gap:8, marginBottom:24 }}>
+          {["accounts","audiences"].map(t => (
+            <button key={t} onClick={() => setSocialTab(t)} style={{
+              padding:"6px 14px", borderRadius:6, fontSize:12, cursor:"pointer",
+              background: socialTab===t ? colors.accent+"22" : colors.surfaceHigh,
+              color:       socialTab===t ? colors.accent        : colors.textMuted,
+              border:`1px solid ${socialTab===t ? colors.accent+"55" : colors.border}`,
+              fontWeight:  socialTab===t ? 600 : 400,
+            }}>
+              {t === "accounts" ? "Accounts & Posting" : "Audience Response"}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Accounts tab ── */}
+        {socialTab === "accounts" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {socialAccounts.map(acct => (
+              <div key={acct.id} style={{ background:colors.surfaceHigh, borderRadius:8, border:`1px solid ${colors.border}`, overflow:"hidden" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px" }}>
+                  <div style={{ fontSize:20 }}>
+                    { acct.platform==="Instagram"  ? "📸"
+                    : acct.platform==="Twitter/X"  ? "🐦"
+                    : acct.platform==="Telegram"   ? "✈️"
+                    : acct.platform==="Discord"    ? "🎮" : "🌐" }
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:colors.text }}>{acct.platform}</div>
+                    <div style={{ fontSize:11, color:colors.textMuted }}>{acct.handle}</div>
+                  </div>
+                  <div style={{
+                    fontSize:10, padding:"2px 8px", borderRadius:10, fontWeight:600,
+                    background: acct.connected ? colors.success+"22" : colors.border,
+                    color:       acct.connected ? colors.success        : colors.textMuted,
+                    border:`1px solid ${acct.connected ? colors.success+"44" : colors.border}`,
+                  }}>{acct.connected ? "Connected" : "Not Connected"}</div>
+                  {acct.connected && (
+                    <button onClick={() => setEditingAcct(editingAcct===acct.id ? null : acct.id)} style={{
+                      padding:"4px 10px", borderRadius:6, fontSize:11, cursor:"pointer",
+                      background: editingAcct===acct.id ? colors.accent+"22" : colors.surface,
+                      color:       editingAcct===acct.id ? colors.accent        : colors.textMuted,
+                      border:`1px solid ${colors.border}`,
+                    }}>{editingAcct===acct.id ? "Done" : "Edit"}</button>
+                  )}
+                </div>
+                {editingAcct===acct.id && acct.connected && (
+                  <div style={{ borderTop:`1px solid ${colors.border}`, padding:"14px 16px", background:colors.surface }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+                      <div>
+                        <div style={{ fontSize:11, color:colors.textMuted, marginBottom:6 }}>Post Frequency</div>
+                        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                          {["daily","3x/week","weekly","manual"].map(f => chip(f, acct.freq===f, () => {
+                            setSocialAccounts(prev => prev.map(a => a.id===acct.id ? {...a, freq:f} : a));
+                          }))}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:11, color:colors.textMuted, marginBottom:6 }}>Tone</div>
+                        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                          {PLATFORM_TONES.map(t => chip(t, acct.tone===t, () => {
+                            setSocialAccounts(prev => prev.map(a => a.id===acct.id ? {...a, tone:t} : a));
+                          }))}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:11, color:colors.textMuted, marginBottom:6 }}>Post Types</div>
+                        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                          {["quotes","updates","stories","announcements","highlights","threads","events","discussions"].map(t => chip(t, acct.types.includes(t), () => {
+                            setSocialAccounts(prev => prev.map(a => a.id===acct.id ? {...a, types: a.types.includes(t) ? a.types.filter(x=>x!==t) : [...a.types, t]} : a));
+                          }))}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:11, color:colors.textMuted, marginBottom:6 }}>Auto-reply to DMs</div>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <div onClick={() => setSocialAccounts(prev => prev.map(a => a.id===acct.id ? {...a, autoReply:!a.autoReply} : a))} style={{
+                            width:36, height:20, borderRadius:10, cursor:"pointer", position:"relative",
+                            background: acct.autoReply ? colors.accent : colors.border, transition:"background 0.2s",
+                          }}>
+                            <div style={{ position:"absolute", top:2, left: acct.autoReply ? 18 : 2, width:16, height:16, borderRadius:"50%", background:"#fff", transition:"left 0.2s" }} />
+                          </div>
+                          <span style={{ fontSize:11, color:colors.textMuted }}>{acct.autoReply ? "Enabled" : "Disabled"}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+            <div style={{ fontSize:11, color:colors.textMuted, textAlign:"center", paddingTop:8 }}>
+              Connect more accounts in <span style={{ color:colors.accent, cursor:"pointer" }}>Tools → Connections</span>
+            </div>
+          </div>
+        )}
+
+        {/* ── Audiences tab ── */}
+        {socialTab === "audiences" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={{ fontSize:12, color:colors.textMuted, marginBottom:4 }}>
+              Configure how the system responds to different audience types across all connected channels. Kinship identifies Members, Guests, Visitors, and Quest Participants automatically.
+            </div>
+            {audienceTiers.map(tier => (
+              <div key={tier.id} style={{ background:colors.surfaceHigh, borderRadius:8, border:`1px solid ${colors.border}`, padding:"14px 16px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                  <span style={{ fontSize:18 }}>{tier.icon}</span>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:600, color:colors.text }}>{tier.label}</div>
+                    <div style={{ fontSize:11, color:colors.textMuted }}>{tier.desc}</div>
+                  </div>
+                  <div style={{ flex:1 }} />
+                  <div onClick={() => {
+                    setAudienceTiers(prev => prev.map(t => t.id===tier.id ? {...t, autoReply:!t.autoReply} : t));
+                  }} style={{
+                    display:"flex", alignItems:"center", gap:6, cursor:"pointer",
+                    fontSize:11, color: tier.autoReply ? colors.success : colors.textMuted,
+                  }}>
+                    <div style={{
+                      width:36, height:20, borderRadius:10, position:"relative",
+                      background: tier.autoReply ? colors.success : colors.border, transition:"background 0.2s",
+                    }}>
+                      <div style={{ position:"absolute", top:2, left: tier.autoReply ? 18 : 2, width:16, height:16, borderRadius:"50%", background:"#fff", transition:"left 0.2s" }} />
+                    </div>
+                    Auto-reply
+                  </div>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                  {row("DM access",       tier.dmEnabled ? "Enabled" : "Disabled",    tier.dmEnabled ? colors.success : colors.textMuted)}
+                  {row("Response time",   tier.responseTime)}
+                  {row("Tone",            tier.tone)}
+                  {row("Reply style",     tier.replyStyle)}
+                  {tier.questAware && row("Quest context", tier.questContext, colors.accent)}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+
+    // ── Media page render ─────────────────────────────────────────────────────
+    const MEDIA_TABS = [
+      { id:"publishing", label:"Publishing", icon:"📝" },
+      { id:"social",     label:"Social & Messaging", icon:"📡" },
+    ];
+
+    return (
+      <div style={{ flex:1, overflowY:"auto", background:colors.bg }}>
+        <PageHeader
+          title="Media"
+          subtitle={`Publishing, social, and messaging for ${cycleName}`}
+        />
+
+        {/* Main tab bar */}
+        <div style={{ display:"flex", gap:4, padding:"0 24px 0", borderBottom:`1px solid ${colors.border}`, background:colors.surface }}>
+          {MEDIA_TABS.map(t => (
+            <button key={t.id} onClick={() => setMediaTab(t.id)} style={{
+              padding:"10px 18px", fontSize:13, cursor:"pointer", background:"transparent", border:"none",
+              borderBottom: mediaTab===t.id ? `2px solid ${colors.accent}` : "2px solid transparent",
+              color:         mediaTab===t.id ? colors.accent : colors.textMuted,
+              fontWeight:    mediaTab===t.id ? 600 : 400,
+              marginBottom: -1,
+            }}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+
+        {mediaTab === "publishing" && <PublishingPanel />}
+        {mediaTab === "social"     && <SocialPanel />}
+      </div>
+    );
+  }
+
+
   if (page === "tools") {
 
     // ── Cycle-level connection and tool data ────────────────────────────────
@@ -13721,6 +14170,7 @@ function App() {
       { id: "tools", icon: "lucide:wrench", label: "Tools", count: 6 },
       { id: "prompts", icon: "lucide:message-circle", label: "Prompts", count: 2 },
       { id: "knowledge", icon: "lucide:book", label: "Knowledge", count: 1 },
+      { id: "media",     icon: "lucide:radio", label: "Media" },
     ],
     commerce: [
       { id: "offerings", icon: "lucide:store", label: "Offerings", count: 5 },
